@@ -35,7 +35,7 @@ class Run:
 		# 注入临时配置参数
 		self.config['custom'] = {
 			'data_start_dt':'20150101',  # 数据开始日期
-			'data_test_dt':'20230101',   # 测试数据开始日期
+			'data_test_dt':'20250101',   # 测试数据开始日期
 			'data_end_dt':datetime.now().strftime("%Y%m%d"),  # 数据结束日期（当前日期）
 			'predict_label':'adjust_10d_yield_rate'  # 预测标签：10日收益率
 		}
