@@ -1,0 +1,16 @@
+{
+  "project": {
+    "name": "王满仓的量化投资项目",
+    "version": "1.0.0",
+    "description": "量化多因子模型预测股票的未来收益率，来进行股票投资"
+  },
+  "database": {
+      "url": "mysql+pymysql://root:wjr16622972321@localhost:3306"
+  },
+  "datasource": {
+    "tushare_token": "0332bac5e1f60e47195eb60e64e285d1dc1f40a34b0f7ea933998326"
+  },
+  "filecatalog": {
+    "file_url": "D:/work/quant/quant001"
+  }
+}
