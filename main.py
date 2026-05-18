@@ -35,7 +35,7 @@ class Run:
 		# 注入临时配置参数
 		self.config['custom'] = {
 			'data_start_dt':'20150101',  # 数据开始日期
-			'data_test_dt':'20250101',   # 测试数据开始日期
+			'data_test_dt':'20260101',   # 测试数据开始日期
 			'data_end_dt':datetime.now().strftime("%Y%m%d"),  # 数据结束日期（当前日期）
 			'predict_label':'adjust_10d_yield_rate'  # 预测标签：10日收益率
 		}
@@ -117,7 +117,7 @@ class Run:
 
 
 		# 以下代码被注释，用于测试
-		# stock_code_lst = ['000863.SZ','000036.SZ']
+		# stock_code_lst = ['300713.SZ','301302.SZ', '301360.SZ']
 		
 		# 返回股票代码列表
 		return stock_code_lst

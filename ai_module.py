@@ -96,7 +96,7 @@ def get_model(type):
     # eval_metric='mae',
     learning_rate=0.003,          # 可保持或适当增大(0.01-0.1)[2,6](@ref)
     max_depth = 3,                  # 可保持(3-10)[2,6](@ref)
-    n_estimators= 10000,             # 可增加至200-1000[2,7](@ref)
+    n_estimators= 5000,             # 可增加至200-1000[2,7](@ref)
     subsample=1,                # 可保持(0.5-1)[2,6](@ref)
     colsample_bytree=1,         # 可保持(0.5-1)[2,6](@ref)
     # reg_alpha=0,                  # L1正则化[2,6](@ref)
@@ -367,8 +367,8 @@ def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url):
 
 if __name__ == '__main__':
 	data_start_dt = '20150101'
-	data_test_dt = '20260101'  
-	download_pdb_data(data_start_dt, data_test_dt, label='adjust_10d_yield_rate', type='reg', data_file_url='D:/work/quant/quant001/quant/data_file') # open6_yield_rate，5d_yield_rate
+	data_test_dt = '20250101'  
+	download_pdb_data(data_start_dt, data_test_dt, label='10d_yield_rate', type='reg', data_file_url='D:/work/quant/quant001/quant/data_file') # open6_yield_rate，5d_yield_rate
     # 0.00109
 	# download_pdb_data( data_test_dt, label='day2_tag', type='class')
     # 110p-[ ]
