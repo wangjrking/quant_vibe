@@ -486,7 +486,7 @@ MIT License
 ## 📧 联系方式
 
 - **作者**: 王佳瑞
-- **邮箱**: wangjiarui@example.com
+- **邮箱**: wangjiarui0808@163.com
 - **项目地址**: https://github.com/yourusername/quant-project
 
 ---
