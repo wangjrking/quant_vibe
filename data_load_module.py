@@ -377,9 +377,10 @@ def get_stock_st(data_start_dt, data_end_dt, ts_pro):
 	return stock_st
 
 
-def get_index_daily(data_start_dt, data_end_dt, ts_pro):
+def get_index_daily(data_start_dt, data_end_dt, ts_pro, stock_code_lst=None):
     
-	stock_code_lst = ['932000.CSI']
+	if stock_code_lst is None:
+		stock_code_lst = ['000300.SH', '000905.SH', '932000.CSI']
 	index_daily_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
@@ -641,7 +642,7 @@ def download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data
 
 if __name__ == '__main__':
     
-    ts_token = '0332bac5e1f60e47195eb60e64e285d1dc1f40a34b0f7ea933998326'
+    ts_token = os.environ.get('TUSHARE_TOKEN', 'your_tushare_token_here')
     data_start_dt = '20200101'
     data_test_dt = '20251101'
     data_end_dt = datetime.now().strftime("%Y%m%d")

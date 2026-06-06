@@ -5,12 +5,49 @@
     "description": "量化多因子模型预测股票的未来收益率，来进行股票投资"
   },
   "database": {
-      "url": "mysql+pymysql://root:wjr16622972321@localhost:3306"
+      "url": "mysql+pymysql://root:password@localhost:3306"
   },
   "datasource": {
-    "tushare_token": "0332bac5e1f60e47195eb60e64e285d1dc1f40a34b0f7ea933998326"
+    "tushare_token": "your_tushare_token_here"
   },
   "filecatalog": {
-    "file_url": "D:/work/quant/quant001/quant"
+    "file_url": "D:/work/quant/quant_mcp/quant"
+  },
+  "juejin": {
+    "backtest": {
+      "stock_pool": "D:/work/quant/quant_mcp/quant/data_file/stock_pool_all_a.csv",
+      "start_date": "20240604",
+      "end_date": "20260605",
+      "initial_cash": 1000000,
+      "commission_ratio": 0.0003,
+      "sell_tax_ratio": 0.0005,
+      "slippage_ratio": 0.001
+    },
+    "strategies": {
+      "limit_board": {
+        "path": "D:/work/dfcf/juejin/strategy/4f0b5934-52b8-11f1-93b1-10ffe0295517",
+        "strategy_id": "4f0b5934-52b8-11f1-93b1-10ffe0295517",
+        "signal_file": "D:/work/quant/quant_mcp/quant/data_file/gm_signals_limit_board.csv",
+        "holding_days": 1,
+        "max_positions": 5,
+        "default_target_pct": 0.19
+      },
+      "long_term": {
+        "path": "D:/work/dfcf/juejin/strategy/fb9d4d71-6198-11f1-8a7e-10ffe0295517",
+        "strategy_id": "fb9d4d71-6198-11f1-8a7e-10ffe0295517",
+        "signal_file": "D:/work/quant/quant_mcp/quant/data_file/gm_signals_long_rolling_qtr_expanding_2y_top1_atr07.csv",
+        "holding_days": 10,
+        "max_positions": 8,
+        "default_target_pct": 0.98
+      },
+      "short_term": {
+        "path": "D:/work/dfcf/juejin/strategy/d0aaa450-6134-11f1-88f5-10ffe0295517",
+        "strategy_id": "d0aaa450-6134-11f1-88f5-10ffe0295517",
+        "signal_file": "D:/work/quant/quant_mcp/quant/data_file/gm_signals_short_2d_light_2020_fast.csv",
+        "holding_days": 1,
+        "max_positions": 5,
+        "default_target_pct": 0.19
+      }
+    }
   }
 }

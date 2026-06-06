@@ -6,7 +6,7 @@ import sqlite3
 
 
 # def get_sql_engine(schemas):
-# 	engine = create_engine('mysql+pymysql://root:wjr16622972321@localhost:3306/'+schemas,connect_args={'client_flag': CLIENT.MULTI_STATEMENTS}, )# pool_pre_ping=True, pool_size = 20,max_overflow=10,pool_recycle=3600,)
+# 	engine = create_engine('mysql+pymysql://root:password@localhost:3306/'+schemas,connect_args={'client_flag': CLIENT.MULTI_STATEMENTS}, )# pool_pre_ping=True, pool_size = 20,max_overflow=10,pool_recycle=3600,)
 # 	return engine
 
 # def get_integ_data(engine):

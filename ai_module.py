@@ -7,12 +7,17 @@ import numpy as np
 import shap
 import pickle
 import logging
+import json
+import os
+from pathlib import Path
 
 import sqlite3
 
 
 
 from dl_model_module import add_fttransformer_features_simple
+from leakage_guard import validate_no_leakage
+from stock_pool_module import filter_frame_by_stock_pool, load_stock_pool
 from sklearn.model_selection import TimeSeriesSplit
 
 
@@ -75,6 +80,9 @@ def custom_mae(y_true, y_pred):
 
 
 def get_model(type):
+	xgb_n_estimators = int(os.getenv("XGB_N_ESTIMATORS", "14000"))
+	xgb_learning_rate = float(os.getenv("XGB_LEARNING_RATE", "0.003"))
+	xgb_max_depth = int(os.getenv("XGB_MAX_DEPTH", "3"))
 	class_model = xgb.XGBClassifier(
     use_label_encoder=False,  # 禁用旧版标签编码器
     eval_metric='logloss',    # 显式指定评估指标
@@ -94,42 +102,70 @@ def get_model(type):
 	# objective="reg:quantileerror", quantile_alpha=0.7,
     eval_metric=custom_mae,           # 回归评估指标[3,6](@ref)
     # eval_metric='mae',
-    learning_rate=0.003,          # 可保持或适当增大(0.01-0.1)[2,6](@ref)
-    max_depth = 3,                  # 可保持(3-10)[2,6](@ref)
-    n_estimators= 5000,             # 可增加至200-1000[2,7](@ref)
+    learning_rate=xgb_learning_rate,          # 可保持或适当增大(0.01-0.1)[2,6](@ref)
+    max_depth = xgb_max_depth,                  # 可保持(3-10)[2,6](@ref)
+    n_estimators= xgb_n_estimators,             # 可增加至200-1000[2,7](@ref)
     subsample=1,                # 可保持(0.5-1)[2,6](@ref)
     colsample_bytree=1,         # 可保持(0.5-1)[2,6](@ref)
     # reg_alpha=0,                  # L1正则化[2,6](@ref)
     # reg_lambda=1,                 # L2正则化[2,6](@ref)
     random_state=42,   
 	device="cuda",       # GPU加速[6](@ref)   
-	# early_stopping_rounds=30, 
+	# early_stopping_rounds=500, 
 )                                          
 	if type == 'reg':
 		return reg_model
 	else:
  		return class_model
 
-def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url):
+def store_feature_importance(x, y, data_file_url, filename):
+    model = get_model('reg')
+    model.fit(x, y)
+    
+    importance_df = pd.DataFrame({
+        'Feature': x.columns,
+        'Importance': model.feature_importances_
+    })
+    importance_df = importance_df.sort_values('Importance', ascending=False).reset_index(drop=True)
+    importance_df.index = importance_df.index + 1
+    importance_df.index.name = 'Rank'
+    importance_path = data_file_url + '/' + filename
+    importance_df.to_csv(importance_path, encoding='utf-8-sig')
+    return importance_df
+
+def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=True):
     # print(test_x)
     global group_dates
     group_dates = test_x[~np.isnan(test_y)].index.get_level_values(level=1).values
+
+    # store_feature_importance(train_x, train_y, data_file_url, 'train_feature_importance.csv')
+    # print('训练集模型特征重要性已保存')
+    # store_feature_importance(test_x[~np.isnan(test_y)], test_y[~np.isnan(test_y)], data_file_url, 'test_feature_importance.csv') 
+    # print('测试集模型特征重要性已保存')
+
     model.fit(train_x, train_y,
         eval_set = [(test_x[~np.isnan(test_y)],test_y[~np.isnan(test_y)]),],
         verbose=100 ) 
+    print('模型训练完成')
+
+    import gc
+    gc.collect()
+    
     pred_y_proba = model.predict(test_x)
-    explainer = shap.Explainer(model)
-    shap_values = explainer(test_x)
-    test_index = test_x.index.tolist()
-    with open(data_file_url + '/shap_values.pkl', 'wb') as file:
-        pickle.dump(shap_values, file)
-        
-    with open(data_file_url + '/test_index.pkl', 'wb') as file:
-        pickle.dump(test_index, file)
+
+    if save_shap:
+        explainer = shap.Explainer(model)
+        shap_values = explainer(test_x)
+        test_index = test_x.index.tolist()
+        with open(data_file_url + '/shap_values.pkl', 'wb') as file:
+            pickle.dump(shap_values, file)
+            
+        with open(data_file_url + '/test_index.pkl', 'wb') as file:
+            pickle.dump(test_index, file)
     return test_y, pred_y_proba
 	
 # 691
-def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='class', data_file_url=None):
+def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='class', data_file_url=None, save_shap=True):
     
     if type == 'class':
         model = get_model(type)
@@ -148,7 +184,7 @@ def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='
 
         train_x = train_x[top_features]
         test_x = test_x[top_features]
-        test_y, pred_y_proba = incre_fit(model, train_x, train_y, test_x, test_y)
+        test_y, pred_y_proba = incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=save_shap)
         pred_y = (pred_y_proba > 0.5).astype(int)
         try:
             auc = roc_auc_score(test_y[~np.isnan(test_y)], pred_y_proba[~np.isnan(test_y)])
@@ -159,7 +195,7 @@ def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='
         test_data['pred_prob'] = pred_y_proba
     else:
         model = get_model(type)
-        test_y, pred_y = incre_fit(model, train_x, train_y, test_x, test_y, data_file_url)
+        test_y, pred_y = incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=save_shap)
         try:
             mse = mean_squared_error(test_y[~np.isnan(test_y)], pred_y[~np.isnan(test_y)])
             logging.info(f"MSE: {mse:.8f}")
@@ -167,8 +203,13 @@ def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='
         logging.info(test_data.shape)
         test_data['pred_prob'] = pred_y.astype('float64')
         logging.info(test_data.shape)
-    test_data = test_data[['trade_date', 'name', 'stock_code', 'pred_prob','std_his_high', '10d_yield_rate','st_type',
-                            'open3_yield_rate', 'open2_yield_rate', 'limit_times', 'close','pre_close','post_open', 'post2_open', 'post3_open', 'post4_open', 'post5_open', 'post6_open','industry_encode','atr_qfq','close_rate']]
+    output_columns = ['trade_date', 'name', 'stock_code', 'pred_prob','std_his_high', '10d_yield_rate', '2d_yield_rate', 'st_type','post_high','post_close','post2_close','post2_high',
+                            'open3_yield_rate', 'open2_yield_rate', 'limit_times', 'close','pre_close','post_open', 'post2_open', 'post3_open', 'post4_open', 'post5_open', 'post6_open', 'post12_open',
+                            'industry', 'industry_encode','atr_qfq','close_rate', 'amount', 'vol', 'turnover_rate', 'turnover_rate_f', 'circ_mv', 'total_mv', 'volume_ratio']
+    label = getattr(test_y, "name", None)
+    if label not in output_columns and label in test_data.columns:
+        output_columns.append(label)
+    test_data = test_data[[col for col in output_columns if col in test_data.columns]]
     return test_data
 	
 def sort_within_group(group):
@@ -178,34 +219,68 @@ def sort_within_group(group):
     return (rank_data_max-rank_data)/(rank_data_max-rank_data_min)
 
 
+def prepare_training_label(factor_data, label):
+    if label == "risk_adjusted_10d_yield_rate":
+        base_return = pd.to_numeric(factor_data["10d_yield_rate"], errors="coerce")
+        atr = pd.to_numeric(factor_data["atr_qfq"], errors="coerce")
+        close = pd.to_numeric(factor_data["close"], errors="coerce")
+        atr_ratio = (atr / close).clip(lower=0.01, upper=0.20)
+        factor_data[label] = base_return / atr_ratio
+    elif label == "executable_10d_open_return":
+        buy = pd.to_numeric(factor_data["post_open"], errors="coerce")
+        sell = pd.to_numeric(factor_data["post12_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        factor_data[label] = exit_cash / entry_cash - 1.0
+    elif label == "excess_10d_yield_rate":
+        if "adjust_10d_yield_rate" not in factor_data.columns:
+            raise ValueError("adjust_10d_yield_rate is required for excess_10d_yield_rate")
+        factor_data[label] = pd.to_numeric(factor_data["adjust_10d_yield_rate"], errors="coerce")
+    elif label not in factor_data.columns:
+        raise ValueError(f"label column not found: {label}")
+    return factor_data
 
-def get_factor_data(data_start_dt, data_test_dt, label, data_file_url):
+
+def load_selected_features(data_file_url, label):
+    candidates = [
+        Path(data_file_url) / f"selected_features_{label}.json",
+        Path(data_file_url) / "selected_features.json",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        features = payload.get("features", payload if isinstance(payload, list) else [])
+        return [str(feature) for feature in features]
+    return None
+
+
+
+def get_factor_data(data_start_dt, data_test_dt, label, data_file_url, stock_pool_path=None):
     '''factor_data = pd.read_sql('SELECT * FROM CDB.stock_factor_data ORDER BY stock_code, trade_date', engine)
 	
     factor_data = factor_data[factor_data['stock_code'].isin(stock_code_lst)]
     factor_data = factor_data[(factor_data['trade_date'] >= data_start_dt) & (factor_data['trade_date'] <= data_end_dt)]'''
      
 	
-    query = '''
-    SELECT * 
-    FROM stock_factor_data 
-    WHERE NAME NOT LIKE '%ST%'
-    ORDER BY stock_code, trade_date
-    '''
 
     factor_data = pd.read_parquet(data_file_url + '/stock_factor_data.parquet')
     factor_data = factor_data.set_index(['stock_code', 'trade_date'], drop=False)
+    if stock_pool_path:
+        stock_pool = load_stock_pool(stock_pool_path)
+        factor_data = filter_frame_by_stock_pool(factor_data, stock_pool)
 	
     # 先过滤掉name为空的行，避免str.contains报错
-    # factor_data = factor_data[factor_data['name'].notna()]
-    # factor_data = factor_data[~factor_data['name'].str.contains('ST')]
-    # factor_data = factor_data[factor_data['st_type'] != 'ST']
+    factor_data = factor_data[factor_data['name'].notna()]
+    factor_data = factor_data[~factor_data['name'].str.contains('ST')]
+    factor_data = factor_data[factor_data['st_type'] != 'ST']
     print(factor_data.shape)
-    # factor_data = factor_data[factor_data['limit_times'].isnull()]
+    factor_data = factor_data[factor_data['limit_times'].isnull()]
     # print(factor_data.shape)
 	
     # logging.info(factor_data['trade_date'].max(),factor_data['trade_date'].min(),'1')
     factor_data = factor_data[factor_data['trade_date'] >= data_start_dt]
+    factor_data = prepare_training_label(factor_data, label)
     # logging.info(factor_data['trade_date'].max(),factor_data['trade_date'].min(),'3')
 	
     factor_data['5d_yield_rate_rank']= factor_data[['5d_yield_rate']].groupby('trade_date')['5d_yield_rate'].transform(sort_within_group)
@@ -251,7 +326,49 @@ def get_factor_data(data_start_dt, data_test_dt, label, data_file_url):
     'industry_encode', 'act_ent_type_encode',
 	'fd_amount','fd_amount_rate','fd_vol_rate','open_times','up_stat_nom','up_stat_denom','up_stat_rate','limit_times','first_time_int' ,'last_time_int',
 	'l_sell','l_buy','l_amount','net_amount','net_rate','amount_rate','float_values',
+
     # 'ths_rank','ths_hot','dc_rank',
+
+
+    # 'alpha158_kmid', 'alpha158_klen', 'alpha158_kmid2', 'alpha158_kup',
+    # 'alpha158_kup2', 'alpha158_klow', 'alpha158_klow2', 'alpha158_ksft', 'alpha158_ksft2',
+    # # 趋势类因子（15个）
+    # 'alpha158_roc5', 'alpha158_roc10', 'alpha158_roc20', 'alpha158_roc30', 'alpha158_roc60',
+    # 'alpha158_ma5', 'alpha158_ma10', 'alpha158_ma20', 'alpha158_ma30', 'alpha158_ma60',
+    # 'alpha158_std5', 'alpha158_std10', 'alpha158_std20', 'alpha158_std30', 'alpha158_std60',
+    # # 波动类因子（25个）
+    # 'alpha158_max5', 'alpha158_max10', 'alpha158_max20', 'alpha158_max30', 'alpha158_max60',
+    # 'alpha158_min5', 'alpha158_min10', 'alpha158_min20', 'alpha158_min30', 'alpha158_min60',
+    # 'alpha158_qtlu5', 'alpha158_qtlu10', 'alpha158_qtlu20', 'alpha158_qtlu30', 'alpha158_qtlu60',
+    # 'alpha158_qtld5', 'alpha158_qtld10', 'alpha158_qtld20', 'alpha158_qtld30', 'alpha158_qtld60',
+    # 'alpha158_rsv5', 'alpha158_rsv10', 'alpha158_rsv20', 'alpha158_rsv30', 'alpha158_rsv60',
+    
+    # # 极值位置因子（15个）
+    # 'alpha158_imax5', 'alpha158_imax10', 'alpha158_imax20', 'alpha158_imax30', 'alpha158_imax60',
+    # 'alpha158_imin5', 'alpha158_imin10', 'alpha158_imin20', 'alpha158_imin30', 'alpha158_imin60',
+    # 'alpha158_imxd5', 'alpha158_imxd10', 'alpha158_imxd20', 'alpha158_imxd30', 'alpha158_imxd60',
+    
+    # # 价量统计类因子（25个）
+    # 'alpha158_corr5', 'alpha158_corr10', 'alpha158_corr20', 'alpha158_corr30', 'alpha158_corr60',
+    # 'alpha158_cord5', 'alpha158_cord10', 'alpha158_cord20', 'alpha158_cord30', 'alpha158_cord60',
+    # 'alpha158_cntp5', 'alpha158_cntp10', 'alpha158_cntp20', 'alpha158_cntp30', 'alpha158_cntp60',
+    # 'alpha158_cntn5', 'alpha158_cntn10', 'alpha158_cntn20', 'alpha158_cntn30', 'alpha158_cntn60',
+    # 'alpha158_cntd5', 'alpha158_cntd10', 'alpha158_cntd20', 'alpha158_cntd30', 'alpha158_cntd60',
+    
+    # # RSI类因子（6个）
+    # 'alpha158_sump6', 'alpha158_sump12', 'alpha158_sump24',
+    # 'alpha158_sumd6', 'alpha158_sumd12', 'alpha158_sumd24',
+    
+    # # 复合技术指标（11个）
+    # 'alpha158_boll', 'alpha158_adx',
+    # 'alpha158_k6', 'alpha158_k12', 'alpha158_k24',
+    # 'alpha158_d6', 'alpha158_d12', 'alpha158_d24',
+    # 'alpha158_j6', 'alpha158_j12', 'alpha158_j24',
+    
+    # # 其他因子（3个）
+    # 'alpha158_rank5', 'alpha158_rank10', 'alpha158_rank20',
+
+
     # 'st_code',# 'days_from_20200101' , # 'weekday', 'quarter',  'week_of_year','month',# 'days_from_20200101' , 'year', 'days',
     # 'season_eps', 'season_dt_eps', 'season_total_revenue_ps', 'season_revenue_ps', 'season_capital_rese_ps', 'season_surplus_rese_ps', 'season_undist_profit_ps',
     # 'season_extra_item', 'season_profit_dedt', 'season_gross_margin', 'season_current_ratio', 'season_quick_ratio', 'season_cash_ratio', 'season_ar_turn', 'season_ca_turn',
@@ -301,9 +418,47 @@ def get_factor_data(data_start_dt, data_test_dt, label, data_file_url):
     label
     ]
 	
+#     factor_list = [
+#     "rsi_bfq_6", "gtja_alpha077", "gtja_alpha083", "ktn_down_bfq", "ema_hfq_250", "sell_lg_vol", "ma", "xsii_td3_bfq",
+#     "gtja_alpha059", "gtja_alpha186", "bias3_bfq", "gtja_alpha093", "bias1_bfq", "ktn_upper_bfq", "trix_hfq", "gtja_alpha079",
+#     "gtja_alpha175", "ema_bfq_5", "boll_lower_bfq", "maemv_hfq", "ma_qfq_90", "kdj_k_hfq", "mass_hfq", "brar_br_bfq",
+#     "gtja_alpha074", "expma_12_bfq", "macdhist", "sell_lg_amount", "buy_sm_vol", "ma_bfq_10", "asi_bfq", "net_mf_amount",
+#     "gtja_alpha095", "ema_close_low", "low_rate", "bias3_hfq", "macd_dif_bfq", "xsii_td3_qfq", "trima", "ma_bfq_30",
+#     "dpo_hfq", "dmi_pdi_bfq", "ps_ttm", "ema_qfq_250", "ema_hfq_30", "dmi_adxr_hfq", "boll_upper_qfq", "trma_hfq",
+#     "ema_close_high", "asi_hfq", "madpo_hfq", "buy_sm_amount", "gtja_alpha160", "kdj_hfq", "gtja_alpha067", "dfma_difma_bfq",
+#     "trma_bfq", "bias2_hfq", "macd_dea_qfq", "dmi_mdi_hfq", "dmi_adxr_qfq", "xsii_td3_hfq", "taq_down_qfq", "trix_bfq",
+#     "taq_down_bfq", "gtja_alpha024", "dmi_mdi_bfq", "boll_upper_bfq", "std_cost_5pct", "ema_qfq_90", "wma", "bias1_hfq",
+#     "boll_lower_qfq", "gtja_alpha179", "expma_50_qfq", "madpo_qfq", "pb", "gtja_alpha058", "atr_qfq", "std_cost_15pct",
+#     "gtja_alpha140", "gtja_alpha031", "ma_qfq_250", "ema_bfq_250", "free_share", "gtja_alpha080", "gtja_alpha124", "gtja_alpha007",
+#     "roc_bfq", "volume_ratio", "gtja_alpha064", "dmi_adxr_bfq", "taq_mid_qfq", "std_weight_avg", "kama", "gtja_alpha152",
+#     "gtja_alpha148", "bbi_qfq", "ema", "gtja_alpha139", "open_rate", "ma_bfq_250", "gtja_alpha030", "macdsignal",
+#     "winner_rate", "bbi_bfq", "boll_mid_bfq", "maroc_hfq", "gtja_alpha052", "maroc_bfq", "sell_sm_vol", "gtja_alpha137",
+#     "ema_close_low_10", "circ_mv", "ma_hfq_30", "gtja_alpha102", "taq_mid_bfq", "gtja_alpha162", "dmi_adx_hfq", "industry_encode",
+#     "asit_qfq", "atr_hfq", "taq_up_bfq", "turnover_rate_f", "gtja_alpha013", "sell_md_amount", "gtja_alpha113", "maemv_bfq",
+#     "dv_ratio", "gtja_alpha182", "std_his_high", "dmi_pdi_hfq", "gtja_alpha100", "ema_10", "mtm_bfq", "gtja_alpha068",
+#     "gtja_alpha063", "atr_bfq", "ema_bfq_90", "emv_bfq", "gtja_alpha157", "dmi_pdi_qfq", "gtja_alpha185", "gtja_alpha110",
+#     "sell_elg_amount", "buy_lg_amount", "gtja_alpha099", "gtja_alpha008", "std_cost_50pct", "taq_down_hfq", "gtja_alpha155", "obv_bfq",
+#     "gtja_alpha002", "high_rate", "pe", "madpo_bfq", "gtja_alpha154", "gtja_alpha076", "gtja_alpha046", "topdays",
+#     "gtja_alpha150", "brar_br_hfq", "boll_lower_hfq", "gtja_alpha092", "gtja_alpha161", "gtja_alpha053", "ema_hfq_60", "ma_mass_qfq",
+#     "ma_hfq_250", "gtja_alpha025", "ma_bfq_90", "gtja_alpha069", "rsi_hfq_24", "gtja_alpha020", "ps", "std_his_low",
+#     "buy_lg_vol", "gtja_alpha191", "mass_bfq", "mtmma_qfq", "gtja_alpha061", "buy_md_amount", "gtja_alpha112", "brar_ar_bfq",
+#     "cr_hfq", "gtja_alpha017", "gtja_alpha090", "total_share", "dfma_difma_hfq", "std_cost_85pct", "taq_up_hfq", "ema_high_low",
+#     "ma_qfq_5", "dfma_dif_bfq", "gtja_alpha062", "macd_dif_qfq", "gtja_alpha022", "dpo_qfq", "gtja_alpha057", "gtja_alpha029",
+#     "expma_50_hfq", "brar_ar_hfq", "gtja_alpha159", "bias2_bfq", "dmi_adx_bfq", "high_open_rate", "gtja_alpha146", "mtmma_bfq",
+#     "ema_close_high_10", "gtja_alpha050", "gtja_alpha147", "midpoint", "dema", "gtja_alpha151", "buy_md_vol", "rsi_bfq_24",
+#     "gtja_alpha131", "asi_qfq", "gtja_alpha003", "std_cost_95pct", "gtja_alpha027", "low_open_rate", "gtja_alpha010", "gtja_alpha006",
+#     "gtja_alpha142", "amount_rate", "gtja_alpha037", label 
+# ]
+
     # train_factor_data = pd.concat([train_data[factor_list] , train_data_new], axis=1)
     # test_factor_data = pd.concat([test_data[factor_list] , test_data_new], axis=1)
     
+    selected_features = load_selected_features(data_file_url, label)
+    if selected_features:
+        selected_features = [feature for feature in selected_features if feature in factor_data.columns and feature != label]
+        factor_list = selected_features + [label]
+        print(f"selected_feature_file_loaded count={len(selected_features)}")
+
     train_factor_data = train_data[factor_list]
     test_factor_data = test_data[factor_list]
     
@@ -318,7 +473,13 @@ def get_factor_data(data_start_dt, data_test_dt, label, data_file_url):
     train_x = train_factor_data.drop(columns=[label]) 
     test_y = test_factor_data.loc[:, label]
     test_x = test_factor_data.drop(columns=[label]) 
+    validate_no_leakage(train_x.columns, label=label)
+    validate_no_leakage(test_x.columns, label=label)
+    
+
     return train_x, train_y, test_x, test_y, train_data, test_data
+
+
 
 def model_adjust(train_x, train_y, test_x, test_y):
 	model = get_model('reg')
@@ -345,13 +506,13 @@ def download_pred_data(data, label, data_file_url):
 	data.to_sql('stock_predict_data_'+label, con=conn, if_exists='replace', index=False)
 	conn.close()
 
-def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url):
+def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url, stock_pool_path=None):
 	
 	logging.info(f'#--------------------------------------------AI模块启动--------------------------------------------#')
 	
 	
 	logging.info(f'AI模块：1.MYSQL数据库连接成功')
-	train_x, train_y, test_x, test_y, train_data, test_data = get_factor_data(data_start_dt, data_test_dt, label, data_file_url)
+	train_x, train_y, test_x, test_y, train_data, test_data = get_factor_data(data_start_dt, data_test_dt, label, data_file_url, stock_pool_path)
 	logging.info(f'AI模块：2.数据集划分完成')
 	
 	
@@ -365,10 +526,12 @@ def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url):
 	logging.info(f'#--------------------------------------------AI模块完成--------------------------------------------#')
 
 
+
+
 if __name__ == '__main__':
-	data_start_dt = '20150101'
-	data_test_dt = '20250101'  
-	download_pdb_data(data_start_dt, data_test_dt, label='10d_yield_rate', type='reg', data_file_url='D:/work/quant/quant001/quant/data_file') # open6_yield_rate，5d_yield_rate
+    data_start_dt = '20100101'
+    data_test_dt = '20260101'  
+    download_pdb_data(data_start_dt, data_test_dt, label='10d_yield_rate', type='reg', data_file_url='D:/work/quant/quant001/quant/data_file')
+    # download_pdb_data(data_start_dt, data_test_dt, label='22d_yield_rate', type='reg', data_file_url='D:/work/quant/quant001/quant/data_file')
     # 0.00109
 	# download_pdb_data( data_test_dt, label='day2_tag', type='class')
-    # 110p-[ ]

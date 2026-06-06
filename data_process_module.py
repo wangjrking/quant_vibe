@@ -13,6 +13,7 @@ from tqdm import tqdm
 import os
 # 导入日志模块
 import logging
+from pathlib import Path
 
 import sqlite3
 
@@ -24,10 +25,9 @@ def get_integ_data(data_file_url):
 	conn = sqlite3.connect(data_file_url + "/odb.db")
 	integ_data = pd.read_sql("SELECT * FROM STOCK_DAILY_DATA order by stock_code, trade_date", conn)
 	# integ_data = conn.execute("SELECT * FROM STOCK_DAILY_DATA order by stock_code, trade_date").df()
-	print(integ_data)
 	conn.close()    
 	# 记录日志
-	logging.info(integ_data)
+	logging.info(f"integ_data shape={integ_data.shape}")
 
 	# 将列名转换为小写
 	integ_data.columns = integ_data.columns.str.lower()
@@ -115,7 +115,7 @@ def group_factor_eng(group_data):
 	new_columns['last_time_int'] = pd.to_numeric(group_data['last_time'], errors='coerce').astype('Int64')  # 最后涨停时间
 	
 	# 分解涨跌统计数据
-	up_stat_split = group_data['up_stat'].fillna('0/0').str.split('/', expand=True)
+	up_stat_split = group_data['up_stat'].astype("string").fillna('0/0').str.split('/', expand=True)
 	new_columns['up_stat_nom'] = up_stat_split[0]
 	new_columns['up_stat_denom'] = up_stat_split[1]
 
@@ -172,7 +172,7 @@ def group_factor_eng(group_data):
 	new_columns['post_close'] = group_data['close'].shift(-1) # 后一天收盘价
 	new_columns['post2_close'] = group_data['close'].shift(-2) # 后两天收盘价
 	new_columns['post5_close'] = group_data['close'].shift(-5) # 后五天收盘价
-	new_columns['post6_close'] = group_data['close'].shift(-5) # 后六天收盘价
+	new_columns['post6_close'] = group_data['close'].shift(-6) # 后六天收盘价
 	new_columns['post10_close'] = group_data['close'].shift(-10) # 后十天收盘价
 	new_columns['post15_close'] = group_data['close'].shift(-15) # 后15天收盘价
 	new_columns['post22_close'] = group_data['close'].shift(-22) # 后一月收盘价
@@ -240,7 +240,7 @@ def group_factor_eng(group_data):
 	new_columns['log_2d_yield_rate'] = np.log(new_columns['2d_yield_rate']+1) # 2天对数收益率
 
 	# 计算其他收益率指标
-	new_columns['open_yield_rate'] = (new_columns['post2_open'] - new_columns['post_open'])/new_columns['post_open'] # 后2天开盘价收益率
+	new_columns['next_open_yield_rate'] = (new_columns['post_open'] - group_data['close'])/group_data['close'] # 后一天开盘价相对当日收盘价收益率
 	new_columns['close_open_yield_rate'] = (new_columns['post_close'] - new_columns['post_open'])/new_columns['post_open'] # 后一天收盘价相对于开盘价的收益率
 	new_columns['close_low_yield_rate'] = (new_columns['post_close'] - new_columns['post_low'])/new_columns['post_low'] # 后一天收盘价相对于最低价的收益率
 	new_columns['low_close_yield_rate'] = (
@@ -285,7 +285,7 @@ def group_factor_eng(group_data):
 		return pd.concat([y, x], axis=1).rolling(window).apply(intercept, raw=True)
 	
 	# 计算VWAP（成交量加权平均价）
-	vwap = (group_data['amount'] / group_data['vol'])
+	vwap = (group_data['open'] + group_data['high'] + group_data['low'] + group_data['close']) / 4
 	
 	# 计算ADV（平均成交量）
 	adv10 = group_data['vol'].rolling(10).mean()
@@ -301,7 +301,7 @@ def group_factor_eng(group_data):
 	returns = group_data['close'].pct_change()
 	
 	# 计算VWAP（成交量加权平均价）
-	vwap = group_data['amount'] / group_data['vol']
+	vwap = (group_data['open'] + group_data['high'] + group_data['low'] + group_data['close']) / 4
 	
 	# 计算ADV（平均成交量）
 	adv10 = group_data['vol'].rolling(10).mean()
@@ -358,7 +358,7 @@ def group_factor_eng(group_data):
 	new_columns['_ts_min_vwap_close_3'] = vwap_close.rolling(3).min()
 	
 	# ==================== 多空力量不平衡度 ====================
-	new_columns['_ts_imbalance'] = ((group_data['close'] - group_data['low']) - (group_data['high'] - group_data['close'])) / (group_data['high'] - group_data['low'])
+	new_columns['_ts_imbalance'] = ((group_data['close'] - group_data['low']) - (group_data['high'] - group_data['close'])) / (group_data['high'] - group_data['low'] + 1e-12)
 	
 	# ==================== 价格波动性 ====================
 	new_columns['_ts_std_abs_close_open_5'] = abs(group_data['close'] - group_data['open']).rolling(5).std()
@@ -503,12 +503,125 @@ def group_factor_eng(group_data):
 	new_columns['_ts_high_low_ratio'] = group_data['high'] / group_data['low']
 	new_columns['_ts_close_vwap_diff'] = group_data['close'] - vwap
 	
+	# ============================================================
+	# Alpha158 缺失因子补充
+	# ============================================================
+	
+	# K线基础因子（9个）
+	new_columns['alpha158_kmid'] = (group_data['close'] - group_data['open']) / group_data['open']
+	new_columns['alpha158_klen'] = (group_data['high'] - group_data['low']) / group_data['open']
+	new_columns['alpha158_kmid2'] = (group_data['close'] - group_data['open']) / (group_data['high'] - group_data['low'] + 1e-12)
+	new_columns['alpha158_kup'] = (group_data['high'] - np.maximum(group_data['open'], group_data['close'])) / group_data['open']
+	new_columns['alpha158_kup2'] = (group_data['high'] - np.maximum(group_data['open'], group_data['close'])) / (group_data['high'] - group_data['low'] + 1e-12)
+	new_columns['alpha158_klow'] = (np.minimum(group_data['open'], group_data['close']) - group_data['low']) / group_data['open']
+	new_columns['alpha158_klow2'] = (np.minimum(group_data['open'], group_data['close']) - group_data['low']) / (group_data['high'] - group_data['low'] + 1e-12)
+	new_columns['alpha158_ksft'] = (2 * group_data['close'] - group_data['high'] - group_data['low']) / group_data['open']
+	new_columns['alpha158_ksft2'] = (2 * group_data['close'] - group_data['high'] - group_data['low']) / (group_data['high'] - group_data['low'] + 1e-12)
+	
+	# 趋势类因子 - 多周期窗口
+	for window in [5, 10, 20, 30, 60]:
+		# ROC: 价格变化率
+		new_columns[f'alpha158_roc{window}'] = group_data['close'] / group_data['close'].shift(window)
+		# MA: 移动平均比
+		new_columns[f'alpha158_ma{window}'] = group_data['close'].rolling(window).mean() / group_data['close']
+		# STD: 标准差比
+		new_columns[f'alpha158_std{window}'] = group_data['close'].rolling(window).std() / group_data['close']
+	
+	# 波动类因子 - 多周期窗口
+	for window in [5, 10, 20, 30, 60]:
+		# MAX: 最高价比
+		new_columns[f'alpha158_max{window}'] = group_data['high'].rolling(window).max() / group_data['close']
+		# MIN: 最低价比
+		new_columns[f'alpha158_min{window}'] = group_data['low'].rolling(window).min() / group_data['close']
+		# QTLU: 80%分位比
+		new_columns[f'alpha158_qtlu{window}'] = group_data['close'].rolling(window).quantile(0.8) / group_data['close']
+		# QTLD: 20%分位比
+		new_columns[f'alpha158_qtld{window}'] = group_data['close'].rolling(window).quantile(0.2) / group_data['close']
+		# RSV: 相对强弱值
+		lowest_low = group_data['low'].rolling(window).min()
+		highest_high = group_data['high'].rolling(window).max()
+		new_columns[f'alpha158_rsv{window}'] = (group_data['close'] - lowest_low) / (highest_high - lowest_low + 1e-12)
+	
+	# 极值位置因子
+	for window in [5, 10, 20, 30, 60]:
+		# IMAX: 最高价出现位置
+		new_columns[f'alpha158_imax{window}'] = group_data['high'].rolling(window).apply(
+			lambda x: np.argmax(x) + 1 if len(x) > 0 else np.nan, raw=True
+		) / window
+		# IMIN: 最低价出现位置
+		new_columns[f'alpha158_imin{window}'] = group_data['low'].rolling(window).apply(
+			lambda x: np.argmin(x) + 1 if len(x) > 0 else np.nan, raw=True
+		) / window
+		# IMXD: 高低点跨度
+		new_columns[f'alpha158_imxd{window}'] = new_columns[f'alpha158_imax{window}'] - new_columns[f'alpha158_imin{window}']
+	
+	# 价量统计类因子
+	log_vol = np.log(group_data['vol'].replace(0, np.nan) + 1)
+	returns = group_data['close'].pct_change()
+	vol_change = group_data['vol'].pct_change()
+	
+	for window in [5, 10, 20, 30, 60]:
+		# CORR: 价格与成交量相关性
+		new_columns[f'alpha158_corr{window}'] = group_data['close'].rolling(window).corr(log_vol)
+		# CORD: 变化相关性
+		new_columns[f'alpha158_cord{window}'] = returns.rolling(window).corr(vol_change)
+		# CNTP: 上涨天数比例
+		new_columns[f'alpha158_cntp{window}'] = (returns > 0).rolling(window).mean()
+		# CNTN: 下跌天数比例
+		new_columns[f'alpha158_cntn{window}'] = (returns < 0).rolling(window).mean()
+		# CNTD: 净涨天数
+		new_columns[f'alpha158_cntd{window}'] = new_columns[f'alpha158_cntp{window}'] - new_columns[f'alpha158_cntn{window}']
+	
+	# RSI类因子
+	for window in [6, 12, 24]:
+		# SUMP: 正收益占比
+		pos_gain = returns.clip(lower=0).rolling(window).sum()
+		total_change = returns.abs().rolling(window).sum()
+		new_columns[f'alpha158_sump{window}'] = pos_gain / (total_change + 1e-12)
+		# SUMD: 负收益占比
+		neg_loss = (-returns).clip(lower=0).rolling(window).sum()
+		new_columns[f'alpha158_sumd{window}'] = neg_loss / (total_change + 1e-12)
+	
+	# 复合技术指标
+	# BOLL: 布林带位置
+	ma20 = group_data['close'].rolling(20).mean()
+	std20 = group_data['close'].rolling(20).std()
+	new_columns['alpha158_boll'] = (group_data['close'] - ma20) / (2 * std20 + 1e-12)
+	
+	# KDJ指标
+	for window in [6, 12, 24]:
+		lowest_low = group_data['low'].rolling(window).min()
+		highest_high = group_data['high'].rolling(window).max()
+		rsv = (group_data['close'] - lowest_low) / (highest_high - lowest_low + 1e-12)
+		new_columns[f'alpha158_k{window}'] = rsv.ewm(span=3, adjust=False).mean()
+		new_columns[f'alpha158_d{window}'] = new_columns[f'alpha158_k{window}'].ewm(span=3, adjust=False).mean()
+		new_columns[f'alpha158_j{window}'] = 3 * new_columns[f'alpha158_k{window}'] - 2 * new_columns[f'alpha158_d{window}']
+	
+	# ADX: 平均趋向指数
+	high_low = group_data['high'] - group_data['low']
+	high_close = np.abs(group_data['high'] - group_data['close'].shift(1))
+	low_close = np.abs(group_data['low'] - group_data['close'].shift(1))
+	tr = np.maximum(high_low, np.maximum(high_close, low_close))
+	atr_value = tr.rolling(14).mean()
+	up_move = group_data['high'] - group_data['high'].shift(1)
+	down_move = group_data['low'].shift(1) - group_data['low']
+	plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
+	minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+	plus_di = 100 * pd.Series(plus_dm).rolling(14).mean() / atr_value
+	minus_di = 100 * pd.Series(minus_dm).rolling(14).mean() / atr_value
+	dx = 100 * np.abs(plus_di - minus_di) / (plus_di + minus_di + 1e-12)
+	new_columns['alpha158_adx'] = dx.rolling(14).mean()
+	
+	# 其他Alpha158因子
+	for window in [5, 10, 20]:
+		new_columns[f'alpha158_rank{window}'] = group_data['close'].rolling(window).rank(pct=True)
+	
 	# 将新列转换为DataFrame
 	new_columns_df = pd.DataFrame(new_columns, index=group_data.index)
-	
+
 	# 使用pd.concat一次性合并所有新列
 	result = pd.concat([group_data, new_columns_df], axis=1)
-	
+
 	# 返回处理后的数据
 	return result
 
@@ -1419,7 +1532,10 @@ def download_cdb_data(down_db, data_file_url):
 	# 保存因子数据到parquet文件
 	# conn = sqlite3.connect('D:/办公/量化交易/quant_project/data_file/odb.db')
 	# factor_data.to_sql('stock_factor_data', con=conn, if_exists='replace', index=False)
-	factor_data.to_parquet(data_file_url + '/stock_factor_data.parquet')
+	final_path = Path(data_file_url) / 'stock_factor_data.parquet'
+	temp_path = final_path.with_suffix('.tmp.parquet')
+	factor_data.to_parquet(temp_path, index=False)
+	temp_path.replace(final_path)
 	# conn.close()
 
 	
@@ -1436,4 +1552,4 @@ def download_cdb_data(down_db, data_file_url):
 if __name__ == '__main__':
 	"""主程序入口"""
 	# 调用数据加工函数
-	data = download_cdb_data(down_db=True)
+	data = download_cdb_data(down_db=True, data_file_url='D:/work/quant/quant001/quant/data_file')	

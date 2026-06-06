@@ -7,7 +7,10 @@ from sqlalchemy import text
 from pandas_market_calendars import get_calendar
 import pandas as pd
 
-from database_module import get_sql_engine
+try:
+    from database_module import get_sql_engine
+except ImportError:
+    get_sql_engine = None
 from data_load_module import get_config
 
 
@@ -68,6 +71,8 @@ def get_message():
     return msg
 
 def get_stock_data(day, stock_lst):
+    if get_sql_engine is None:
+        raise RuntimeError("get_sql_engine is not available; configure database_module before sending messages")
     engine = get_sql_engine('cdb')
     stock_list_str = "'" + "','".join(stock_lst) + "'"
     sql = f'''
@@ -114,4 +119,5 @@ def send_message():
     smtp.login(send_email, authorization_code)
     msg = get_message()
     smtp.sendmail(send_email, recieve_email, msg.as_string())
-send_message()
+if __name__ == '__main__':
+    send_message()

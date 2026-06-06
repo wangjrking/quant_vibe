@@ -15,12 +15,13 @@ from datetime import datetime
 # 导入数据分析库
 import pandas as pd
 # 导入日志模块
-import logging
+import logging                                                                             
 # 导入JSON处理模块
 import json
 # 导入Tushare金融数据接口
 import tushare as ts
 import os
+from stock_pool_module import DEFAULT_INDEX_CODES, fetch_index_stock_pool
 
 
 class Run:
@@ -32,14 +33,14 @@ class Run:
 		# 加载默认配置文件
 		self.config = self._load_default_config()
 
-		# 注入临时配置参数
+		# 注入临时配置参数nm                            
 		self.config['custom'] = {
-			'data_start_dt':'20150101',  # 数据开始日期
+			'data_start_dt':'20100101',  # 数据开始日期
 			'data_test_dt':'20260101',   # 测试数据开始日期
 			'data_end_dt':datetime.now().strftime("%Y%m%d"),  # 数据结束日期（当前日期）
-			'predict_label':'adjust_10d_yield_rate'  # 预测标签：10日收益率
+			'predict_label':'10d_yield_rate'  # 预测标签：10日收益率
 		}
-
+ 
 		# 设定日志配置
 		self._setup_logging()
 
@@ -96,25 +97,15 @@ class Run:
 		ts_token = self.config['datasource']['tushare_token']
 
 		# 获取Tushare pro接口
-		print(ts_token)
 		ts_pro = get_pro(ts_token)
 
 		
 		
-		# 初始化股票代码列表
-		stock_code_lst = []
-		
-		# 从指定指数中获取成分股
-		# 这里只使用了'932000.CSI'（中证1000指数），其他指数被注释
-		for index_id in ['932000.CSI' ]: # 000300.SH 沪深300指数,000905.SH 中证500指数,000852.SH 中证1000指数,932000.CSI 中证2000指数
-			# 获取指数成分股并添加到列表
-			stock_code_lst += ts_pro.index_weight(index_code=index_id,trade_date='20251231')['con_code'].tolist()
-		stock_code_lst = [s for s in stock_code_lst if not s.endswith(".BJ")]
+		stock_code_lst = fetch_index_stock_pool(ts_pro, index_codes=DEFAULT_INDEX_CODES, trade_date='20251231')
 		# 取所有A股
 		# stock_data = ts_pro.query('stock_basic', list_status='L', fields='ts_code,list_date')
 		# stock_code_lst = stock_data['ts_code'].tolist()
 		
-
 
 		# 以下代码被注释，用于测试
 		# stock_code_lst = ['300713.SZ','301302.SZ', '301360.SZ']
@@ -152,6 +143,7 @@ class Run:
 		# AI模块：下载AI预测数据，type='reg'表示回归任务
 		
 		download_pdb_data(data_start_dt, data_test_dt, label=predict_label, type='reg', data_file_url=self.data_file_url)
+		# download_pdb_data(data_start_dt, data_test_dt, label='10d_yield_rate', type='reg', data_file_url=self.data_file_url)
 		
 
 

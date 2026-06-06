@@ -33,12 +33,12 @@ def sma(series, length=30):
 
 def midpoint(series, length=14):
     """中点价"""
-    return series.rolling(window=length).mean()
+    return (series.rolling(window=length).max() + series.rolling(window=length).min()) / 2
 
 
 def midprice(high, low, length=14):
     """中间价"""
-    return (high + low) / 2
+    return (high.rolling(window=length).max() + low.rolling(window=length).min()) / 2
 
 
 def t3(series, length=5):
