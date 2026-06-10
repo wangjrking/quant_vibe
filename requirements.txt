@@ -1,0 +1,45 @@
+# =============================================
+# 量化多因子投资项目依赖文件
+# =============================================
+
+# 基础数据处理
+pandas>=1.5.0
+numpy>=1.21.0
+
+# 机器学习
+xgboost>=1.6.0
+scikit-learn>=1.0.0
+shap>=0.40.0
+
+# 因子分析和挖掘
+alphalens>=0.4.0
+gplearn>=0.4.0
+
+# 数据采集
+tushare>=1.2.0
+
+# 技术指标
+ta>=0.10.0
+
+# 数据库
+sqlalchemy>=1.4.0
+
+# 可视化和工具
+tqdm>=4.62.0
+matplotlib>=3.5.0
+
+# 深度学习（可选，用于FTTransformer）
+# torch>=1.12.0
+# torchvision>=0.13.0
+
+# =============================================
+# 安装说明
+# =============================================
+# 标准安装:
+# pip install -r requirements.txt
+#
+# 使用国内源加速:
+# pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+#
+# 升级所有包:
+# pip install --upgrade -r requirements.txt
