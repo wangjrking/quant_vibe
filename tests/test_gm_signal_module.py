@@ -132,6 +132,195 @@ class GmSignalModuleTests(unittest.TestCase):
         by_code = {signal["stock_code"]: signal for signal in signals}
         self.assertLess(by_code["600000.SH"]["target_pct"], by_code["000001.SZ"]["target_pct"])
 
+    def test_build_gm_signal_rows_can_attach_per_signal_holding_days(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000002.SZ",
+                "name": "C",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+        ]
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=2, min_pred_prob=0.01),
+            holding_days=3,
+        )
+
+        self.assertEqual(len(signals), 2)
+        self.assertTrue(all(signal["holding_days"] == 3 for signal in signals))
+
+    def test_build_gm_signal_rows_can_cap_target_pct_by_expected_concurrency(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "pre_close": 9.8,
+                "open": 10.0,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000002.SZ",
+                "name": "C",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "pre_close": 10.0,
+                "open": 10.0,
+            },
+        ]
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=1, min_pred_prob=0.01),
+            holding_days=3,
+            target_total_pct=0.98,
+            max_positions=5,
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertAlmostEqual(signals[0]["target_pct"], 0.98 / 3.0, places=6)
+
+    def test_build_gm_signal_rows_skips_unbuyable_next_day_limit_open(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "pre_close": 9.0,
+                "open": 9.5,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.10,
+                "close": 11.0,
+                "atr_qfq": 0.2,
+                "pre_close": 10.0,
+                "open": 11.0,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "pre_close": 9.8,
+                "open": 10.0,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.15,
+                "close": 10.2,
+                "atr_qfq": 0.2,
+                "pre_close": 10.0,
+                "open": 10.1,
+            },
+            {
+                "trade_date": "20260104",
+                "stock_code": "000002.SZ",
+                "name": "C",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "pre_close": 10.0,
+                "open": 10.0,
+            },
+        ]
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=2, min_pred_prob=0.01),
+        )
+
+        first_day_signals = [signal for signal in signals if signal["signal_date"] == "20260102"]
+        self.assertEqual(len(first_day_signals), 1)
+        self.assertEqual(first_day_signals[0]["stock_code"], "000001.SZ")
+
+    def test_build_gm_signal_rows_uses_market_rows_for_next_day_unbuyable_filter(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000002.SZ",
+                "name": "C",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+        ]
+
+        market_rows_by_trade_date = {
+            "20260103": {
+                "600000.SH": {
+                    "stock_code": "600000.SH",
+                    "name": "A",
+                    "pre_close": 10.0,
+                    "open": 11.0,
+                },
+                "000001.SZ": {
+                    "stock_code": "000001.SZ",
+                    "name": "B",
+                    "pre_close": 10.0,
+                    "open": 10.1,
+                },
+            }
+        }
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=2, min_pred_prob=0.01),
+            market_rows_by_trade_date=market_rows_by_trade_date,
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["stock_code"], "000001.SZ")
+
 
 if __name__ == "__main__":
     unittest.main()

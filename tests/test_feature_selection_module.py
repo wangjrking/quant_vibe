@@ -3,7 +3,11 @@ import unittest
 import pandas as pd
 
 from ai_module import prepare_training_label
-from feature_selection_module import FeatureSelectionConfig, select_features
+from feature_selection_module import (
+    FeatureSelectionConfig,
+    prepare_selection_label,
+    select_features,
+)
 
 
 class FeatureSelectionModuleTests(unittest.TestCase):
@@ -48,6 +52,54 @@ class FeatureSelectionModuleTests(unittest.TestCase):
 
         expected = (11.0 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
         self.assertAlmostEqual(result.loc[0, "executable_10d_open_return"], expected)
+
+    def test_prepare_training_label_builds_executable_5d_open_return(self):
+        frame = pd.DataFrame({"post_open": [10.0], "post6_open": [10.8]})
+
+        result = prepare_training_label(frame, "executable_5d_open_return")
+
+        expected = (10.8 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
+        self.assertAlmostEqual(result.loc[0, "executable_5d_open_return"], expected)
+
+    def test_prepare_selection_label_builds_executable_5d_open_return(self):
+        frame = pd.DataFrame({"post_open": [10.0], "post6_open": [10.8]})
+
+        result = prepare_selection_label(frame, "executable_5d_open_return")
+
+        expected = (10.8 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
+        self.assertAlmostEqual(result.loc[0, "executable_5d_open_return"], expected)
+
+    def test_prepare_training_label_builds_executable_3d_open_return(self):
+        frame = pd.DataFrame({"post_open": [10.0], "post4_open": [10.6]})
+
+        result = prepare_training_label(frame, "executable_3d_open_return")
+
+        expected = (10.6 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
+        self.assertAlmostEqual(result.loc[0, "executable_3d_open_return"], expected)
+
+    def test_prepare_selection_label_builds_executable_3d_open_return(self):
+        frame = pd.DataFrame({"post_open": [10.0], "post4_open": [10.6]})
+
+        result = prepare_selection_label(frame, "executable_3d_open_return")
+
+        expected = (10.6 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
+        self.assertAlmostEqual(result.loc[0, "executable_3d_open_return"], expected)
+
+    def test_prepare_training_label_builds_executable_1d_open_return(self):
+        frame = pd.DataFrame({"post_open": [10.0], "post2_open": [10.3]})
+
+        result = prepare_training_label(frame, "executable_1d_open_return")
+
+        expected = (10.3 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
+        self.assertAlmostEqual(result.loc[0, "executable_1d_open_return"], expected)
+
+    def test_prepare_selection_label_builds_executable_1d_open_return(self):
+        frame = pd.DataFrame({"post_open": [10.0], "post2_open": [10.3]})
+
+        result = prepare_selection_label(frame, "executable_1d_open_return")
+
+        expected = (10.3 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
+        self.assertAlmostEqual(result.loc[0, "executable_1d_open_return"], expected)
 
 
 if __name__ == "__main__":

@@ -14,9 +14,19 @@ from pathlib import Path
 import sqlite3
 
 
+try:
+    from dl_model_module import add_fttransformer_features_simple
+except ModuleNotFoundError as exc:
+    _dl_model_import_error = exc
 
-from dl_model_module import add_fttransformer_features_simple
+    def add_fttransformer_features_simple(*args, **kwargs):
+        raise ModuleNotFoundError(
+            "dl_model_module depends on optional torch, which is not installed. "
+            "The XGBoost/light-factor pipeline does not need it."
+        ) from _dl_model_import_error
+
 from leakage_guard import validate_no_leakage
+from light_factor_module import get_light_factor_data
 from stock_pool_module import filter_frame_by_stock_pool, load_stock_pool
 from sklearn.model_selection import TimeSeriesSplit
 
@@ -51,26 +61,31 @@ def custom_mae(y_true, y_pred):
     global group_dates
     dates = group_dates
 
-    # 给每个日期分配组号 0,1,2...
+    if dates is None or len(dates) == 0:
+        return 0.0
+
+    # ??????????????0,1,2...
     _, group_idx = np.unique(dates, return_inverse=True)
     
     keep_pred = []
     keep_true = []
-    # 遍历每一天
+    # ????????
     for g in np.unique(group_idx):
-        # 取出当天所有样本的位置
+        # ?????????????????
         mask = group_idx == g
         
         day_p = y_pred[mask]
         day_t = y_true[mask]
         
-        # 当天取前10
+        # ??????10
         n = min(10, len(day_p))
         top10_idx = np.argpartition(day_p, -n)[-n:]
         
         keep_pred.append(day_p[top10_idx])
         keep_true.append(day_t[top10_idx])
-    # 合并所有天的前10
+    # ???????????10
+    if not keep_pred:
+        return 0.0
     all_p = np.concatenate(keep_pred)
     all_t = np.concatenate(keep_true)
     # print(all_t)
@@ -78,6 +93,15 @@ def custom_mae(y_true, y_pred):
     # return np.mean(np.abs(all_p - all_t))
 
 
+def _valid_eval_data(test_x, test_y):
+    valid_mask = ~pd.isna(test_y)
+    if hasattr(valid_mask, "any") and not valid_mask.any():
+        return None
+    eval_x = test_x.loc[valid_mask]
+    eval_y = test_y.loc[valid_mask]
+    if len(eval_y) == 0:
+        return None
+    return eval_x, eval_y
 
 def get_model(type):
 	xgb_n_estimators = int(os.getenv("XGB_N_ESTIMATORS", "14000"))
@@ -136,17 +160,22 @@ def store_feature_importance(x, y, data_file_url, filename):
 def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=True):
     # print(test_x)
     global group_dates
-    group_dates = test_x[~np.isnan(test_y)].index.get_level_values(level=1).values
+    eval_data = _valid_eval_data(test_x, test_y)
+    if eval_data is not None:
+        group_dates = eval_data[0].index.get_level_values(level=1).values
+    else:
+        group_dates = np.array([])
 
     # store_feature_importance(train_x, train_y, data_file_url, 'train_feature_importance.csv')
-    # print('训练集模型特征重要性已保存')
+    # print('????????????????????')
     # store_feature_importance(test_x[~np.isnan(test_y)], test_y[~np.isnan(test_y)], data_file_url, 'test_feature_importance.csv') 
-    # print('测试集模型特征重要性已保存')
+    # print('????????????????????')
 
-    model.fit(train_x, train_y,
-        eval_set = [(test_x[~np.isnan(test_y)],test_y[~np.isnan(test_y)]),],
-        verbose=100 ) 
-    print('模型训练完成')
+    if eval_data is not None:
+        model.fit(train_x, train_y, eval_set=[eval_data], verbose=100)
+    else:
+        model.fit(train_x, train_y, verbose=100)
+    print('?????????')
 
     import gc
     gc.collect()
@@ -169,7 +198,11 @@ def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='
     
     if type == 'class':
         model = get_model(type)
-        model.fit(train_x, train_y,eval_set = [(train_x, train_y),(test_x[~np.isnan(test_y)],test_y[~np.isnan(test_y)]),])
+        eval_data = _valid_eval_data(test_x, test_y)
+        if eval_data is not None:
+            model.fit(train_x, train_y, eval_set=[(train_x, train_y), eval_data])
+        else:
+            model.fit(train_x, train_y, eval_set=[(train_x, train_y)])
         importance = model.feature_importances_
         feature_names = train_x.columns
 		
@@ -232,6 +265,24 @@ def prepare_training_label(factor_data, label):
         entry_cash = buy * (1.0 + 0.0003 + 0.001)
         exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
         factor_data[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_5d_open_return":
+        buy = pd.to_numeric(factor_data["post_open"], errors="coerce")
+        sell = pd.to_numeric(factor_data["post6_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        factor_data[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_3d_open_return":
+        buy = pd.to_numeric(factor_data["post_open"], errors="coerce")
+        sell = pd.to_numeric(factor_data["post4_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        factor_data[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_1d_open_return":
+        buy = pd.to_numeric(factor_data["post_open"], errors="coerce")
+        sell = pd.to_numeric(factor_data["post2_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        factor_data[label] = exit_cash / entry_cash - 1.0
     elif label == "excess_10d_yield_rate":
         if "adjust_10d_yield_rate" not in factor_data.columns:
             raise ValueError("adjust_10d_yield_rate is required for excess_10d_yield_rate")
@@ -256,13 +307,40 @@ def load_selected_features(data_file_url, label):
 
 
 
-def get_factor_data(data_start_dt, data_test_dt, label, data_file_url, stock_pool_path=None):
+def get_factor_data(
+    data_start_dt,
+    data_test_dt,
+    label,
+    data_file_url,
+    stock_pool_path=None,
+    selected_features=None,
+    use_light_factor_data=False,
+):
     '''factor_data = pd.read_sql('SELECT * FROM CDB.stock_factor_data ORDER BY stock_code, trade_date', engine)
 	
     factor_data = factor_data[factor_data['stock_code'].isin(stock_code_lst)]
     factor_data = factor_data[(factor_data['trade_date'] >= data_start_dt) & (factor_data['trade_date'] <= data_end_dt)]'''
      
 	
+    if use_light_factor_data:
+        features_path = None
+        if selected_features:
+            features_path = Path(data_file_url) / f"selected_features_runtime_{label}.json"
+            payload = {"label": label, "features": list(selected_features)}
+            features_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            return get_light_factor_data(
+                data_dir=data_file_url,
+                features_path=features_path or (Path(data_file_url) / f"selected_features_{label}.json"),
+                train_start=data_start_dt,
+                test_start=data_test_dt,
+                label=label,
+                stock_pool_path=stock_pool_path,
+                allow_missing_features=True,
+            )
+        finally:
+            if features_path and features_path.exists():
+                features_path.unlink()
 
     factor_data = pd.read_parquet(data_file_url + '/stock_factor_data.parquet')
     factor_data = factor_data.set_index(['stock_code', 'trade_date'], drop=False)
@@ -453,7 +531,7 @@ def get_factor_data(data_start_dt, data_test_dt, label, data_file_url, stock_poo
     # train_factor_data = pd.concat([train_data[factor_list] , train_data_new], axis=1)
     # test_factor_data = pd.concat([test_data[factor_list] , test_data_new], axis=1)
     
-    selected_features = load_selected_features(data_file_url, label)
+    selected_features = selected_features or load_selected_features(data_file_url, label)
     if selected_features:
         selected_features = [feature for feature in selected_features if feature in factor_data.columns and feature != label]
         factor_list = selected_features + [label]
@@ -490,17 +568,19 @@ def model_adjust(train_x, train_y, test_x, test_y):
 	for train_index, test_index in tscv.split(x):
 		train_x, test_x = x.iloc[train_index], x.iloc[test_index]
 		train_y, test_y = y.iloc[train_index], y.iloc[test_index]
-		model.fit(train_x, train_y,eval_set = [(test_x[~np.isnan(test_y)],test_y[~np.isnan(test_y)])], verbose=1000, )
-		logging.info(f"最佳迭代轮数: {model.best_iteration}")
+		eval_data = _valid_eval_data(test_x, test_y)
+		if eval_data is not None:
+			model.fit(train_x, train_y, eval_set=[eval_data], verbose=1000)
+		else:
+			model.fit(train_x, train_y, verbose=1000)
+		logging.info(f"?????????? {model.best_iteration}")
 		pred_y = model.predict(test_x)
 		mse = mean_squared_error(test_y[~np.isnan(test_y)], pred_y[~np.isnan(test_y)])
 		mse_lst.append(mse)
 	
-	logging.info('时间序列交叉验证的结果：',mse_lst, '平均交叉验证指标', sum(mse_lst) / len(mse_lst))
+	logging.info('??????????????????',mse_lst, '????????????', sum(mse_lst) / len(mse_lst))
 
 
-
-    
 def download_pred_data(data, label, data_file_url): 
 	conn = sqlite3.connect(data_file_url + '/odb.db')
 	data.to_sql('stock_predict_data_'+label, con=conn, if_exists='replace', index=False)

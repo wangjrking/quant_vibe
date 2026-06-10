@@ -60,7 +60,7 @@ def _chunks(values: list[str], size: int):
         yield start // size, values[start : start + size]
 
 
-def rebuild(data_dir: Path, batch_size: int, resume: bool) -> Path:
+def rebuild(data_dir: Path, batch_size: int, resume: bool, end_date: str | None = None) -> Path:
     db_path = data_dir / "odb.db"
     output_dir = data_dir / "factor_rebuild_parts"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -93,11 +93,15 @@ def rebuild(data_dir: Path, batch_size: int, resume: bool) -> Path:
     try:
         for path in part_paths:
             frame = _normalize_types(pd.read_parquet(path))
+            if end_date and "trade_date" in frame.columns:
+                frame = frame[frame["trade_date"].astype(str) <= end_date].copy()
             if "trade_date" in frame.columns:
                 max_date = max(max_date, str(frame["trade_date"].max()))
-            table = pa.Table.from_pandas(frame, preserve_index=False)
+            table = pa.Table.from_pandas(frame, preserve_index=False).replace_schema_metadata(None)
             if writer is None:
                 writer = pq.ParquetWriter(temp_path, table.schema)
+            elif table.schema != writer.schema:
+                table = table.cast(writer.schema)
             writer.write_table(table)
             total_rows += frame.shape[0]
             print(f"merge_part path={path.name} rows={frame.shape[0]} total={total_rows}", flush=True)
@@ -116,12 +120,13 @@ def parse_args(argv=None):
     parser.add_argument("--data-dir", default="../data_file")
     parser.add_argument("--batch-size", type=int, default=25)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--end-date", help="Optional YYYYMMDD cutoff applied when merging factor parts.")
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
-    rebuild(Path(args.data_dir), batch_size=args.batch_size, resume=args.resume)
+    rebuild(Path(args.data_dir), batch_size=args.batch_size, resume=args.resume, end_date=args.end_date)
 
 
 if __name__ == "__main__":

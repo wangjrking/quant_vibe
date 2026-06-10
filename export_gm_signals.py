@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from backtest_module import read_prediction_rows
-from gm_signal_module import build_gm_signal_rows, write_gm_signals_csv
+from gm_signal_module import build_gm_signal_rows, load_market_rows_by_trade_date, write_gm_signals_csv
 from selection_module import SelectionConfig
 
 
@@ -15,12 +15,15 @@ def parse_args(argv=None):
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate_oos_2y_ic160")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
+    parser.add_argument("--stock-pool")
     parser.add_argument("--top-k", type=int, default=defaults.top_k)
     parser.add_argument("--min-pred", default=str(defaults.min_pred_prob))
     parser.add_argument("--max-atr-ratio", type=float, default=defaults.max_atr_ratio)
     parser.add_argument("--max-per-industry", type=int, default=defaults.max_per_industry)
     parser.add_argument("--weight-mode", default="equal", choices=["equal", "rank", "score"])
     parser.add_argument("--target-total-pct", type=float)
+    parser.add_argument("--max-positions", type=int)
+    parser.add_argument("--holding-days", type=int)
     parser.add_argument("--liquidity-target-pct", action="store_true")
     parser.add_argument("--liquidity-min-amount", type=float)
     parser.add_argument("--liquidity-min-turnover-rate", type=float)
@@ -33,7 +36,8 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     min_pred = None if str(args.min_pred).strip().lower() in {"none", "null", ""} else float(args.min_pred)
-    rows = read_prediction_rows(args.db, args.table, args.start, args.end)
+    rows = read_prediction_rows(args.db, args.table, args.start, args.end, stock_pool_path=args.stock_pool)
+    market_rows_by_trade_date = load_market_rows_by_trade_date(args.db, args.start, args.end)
     signals = build_gm_signal_rows(
         rows,
         SelectionConfig(
@@ -42,6 +46,9 @@ def main(argv=None):
             max_atr_ratio=args.max_atr_ratio,
             max_per_industry=args.max_per_industry,
         ),
+        market_rows_by_trade_date=market_rows_by_trade_date,
+        holding_days=args.holding_days,
+        max_positions=args.max_positions,
         weight_mode=args.weight_mode,
         target_total_pct=args.target_total_pct,
         liquidity_target_pct_enabled=args.liquidity_target_pct,

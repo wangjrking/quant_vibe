@@ -9,6 +9,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from stock_pool_module import load_stock_pool
+
 
 @dataclass
 class BacktestConfig:
@@ -390,7 +392,7 @@ def run_backtest(rows, config=None):
     return BacktestResult(metrics=metrics, daily_returns=daily_returns, trades=trades)
 
 
-def read_prediction_rows(db_path, table, start_date=None, end_date=None):
+def read_prediction_rows(db_path, table, start_date=None, end_date=None, stock_pool_path=None):
     path = Path(db_path)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
@@ -449,7 +451,11 @@ def read_prediction_rows(db_path, table, start_date=None, end_date=None):
         if where:
             sql += " WHERE " + " AND ".join(where)
         sql += " ORDER BY p.trade_date, p.pred_prob DESC"
-        return [dict(row) for row in conn.execute(sql, params)]
+        rows = [dict(row) for row in conn.execute(sql, params)]
+        if stock_pool_path:
+            stock_pool = load_stock_pool(stock_pool_path)
+            rows = [row for row in rows if str(row.get("stock_code", "")).upper() in stock_pool]
+        return rows
     finally:
         conn.close()
 

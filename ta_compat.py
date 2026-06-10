@@ -76,19 +76,39 @@ def ema(series, length=30):
 def rsi(series, length=14):
     """相对强弱指标"""
     from ta.momentum import RSIIndicator
-    return RSIIndicator(close=series, window=length).rsi()
+    if len(series) < length:
+        return pd.Series(np.nan, index=series.index)
+    try:
+        return RSIIndicator(close=series, window=length).rsi()
+    except Exception:
+        return pd.Series(np.nan, index=series.index)
 
 
 def atr(high, low, close, length=14):
     """平均真实波动范围"""
-    return AverageTrueRange(high=high, low=low, close=close, window=length).average_true_range()
+    if min(len(high), len(low), len(close)) < length:
+        return pd.Series(np.nan, index=close.index)
+    try:
+        return AverageTrueRange(high=high, low=low, close=close, window=length).average_true_range()
+    except Exception:
+        return pd.Series(np.nan, index=close.index)
 
 
 def cmf(high, low, close, volume, length=14):
     """资金流量指标"""
-    return ChaikinMoneyFlowIndicator(high=high, low=low, close=close, volume=volume, window=length).chaikin_money_flow()
+    if min(len(high), len(low), len(close), len(volume)) < length:
+        return pd.Series(np.nan, index=close.index)
+    try:
+        return ChaikinMoneyFlowIndicator(high=high, low=low, close=close, volume=volume, window=length).chaikin_money_flow()
+    except Exception:
+        return pd.Series(np.nan, index=close.index)
 
 
 def cci(high, low, close, length=14):
     """顺势指标"""
-    return CCIIndicator(high=high, low=low, close=close, window=length).cci()
+    if min(len(high), len(low), len(close)) < length:
+        return pd.Series(np.nan, index=close.index)
+    try:
+        return CCIIndicator(high=high, low=low, close=close, window=length).cci()
+    except Exception:
+        return pd.Series(np.nan, index=close.index)

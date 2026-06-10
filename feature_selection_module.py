@@ -61,6 +61,24 @@ def prepare_selection_label(frame: pd.DataFrame, label: str) -> pd.DataFrame:
         entry_cash = buy * (1.0 + 0.0003 + 0.001)
         exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
         frame[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_5d_open_return":
+        buy = pd.to_numeric(frame["post_open"], errors="coerce")
+        sell = pd.to_numeric(frame["post6_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        frame[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_3d_open_return":
+        buy = pd.to_numeric(frame["post_open"], errors="coerce")
+        sell = pd.to_numeric(frame["post4_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        frame[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_1d_open_return":
+        buy = pd.to_numeric(frame["post_open"], errors="coerce")
+        sell = pd.to_numeric(frame["post2_open"], errors="coerce")
+        entry_cash = buy * (1.0 + 0.0003 + 0.001)
+        exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
+        frame[label] = exit_cash / entry_cash - 1.0
     elif label == "excess_10d_yield_rate":
         frame[label] = pd.to_numeric(frame["adjust_10d_yield_rate"], errors="coerce")
     return frame

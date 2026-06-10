@@ -211,6 +211,36 @@ class BacktestModuleTests(unittest.TestCase):
         self.assertEqual(rows[0]["turnover_rate"], 0.8)
         self.assertEqual(rows[0]["industry"], "电子")
 
+    def test_read_prediction_rows_can_filter_by_stock_pool(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            pool_path = Path(tmpdir) / "pool.csv"
+            conn = sqlite3.connect(db_path)
+            conn.execute(
+                """
+                CREATE TABLE stock_predict_data_2d_yield_rate (
+                    trade_date TEXT,
+                    stock_code TEXT,
+                    pred_prob REAL
+                )
+                """
+            )
+            conn.execute("INSERT INTO stock_predict_data_2d_yield_rate VALUES ('20260105', '600001.SH', 0.2)")
+            conn.execute("INSERT INTO stock_predict_data_2d_yield_rate VALUES ('20260105', '000001.SZ', 0.3)")
+            conn.commit()
+            conn.close()
+
+            pool_path.write_text("stock_code\n000001.SZ\n", encoding="utf-8")
+
+            rows = read_prediction_rows(
+                db_path,
+                "stock_predict_data_2d_yield_rate",
+                stock_pool_path=pool_path,
+            )
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["stock_code"], "000001.SZ")
+
 
 if __name__ == "__main__":
     unittest.main()

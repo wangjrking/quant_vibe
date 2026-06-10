@@ -103,6 +103,7 @@ def parse_args(argv=None):
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate_oos_2y_ic160")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
+    parser.add_argument("--stock-pool")
     parser.add_argument("--top-k", default="1,2,3,4,5")
     parser.add_argument("--max-positions", default="3,5,8,10")
     parser.add_argument("--holding-days", type=int, default=10)
@@ -126,7 +127,13 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     data_dir = Path(args.data_dir)
-    rows = read_prediction_rows(data_dir / "odb.db", args.table, args.start, args.end)
+    rows = read_prediction_rows(
+        data_dir / "odb.db",
+        args.table,
+        args.start,
+        args.end,
+        stock_pool_path=args.stock_pool,
+    )
     if args.market_filter:
         index_codes = [item.strip() for item in args.index_code.split(",") if item.strip()]
         if len(index_codes) == 1:

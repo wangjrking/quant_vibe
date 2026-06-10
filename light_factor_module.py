@@ -142,11 +142,15 @@ def build_light_factor_frame(raw_frame: pd.DataFrame, features: list[str], label
     frame = raw_frame.copy()
     frame["trade_date"] = frame["trade_date"].astype(str)
     frame = frame.sort_values(["stock_code", "trade_date"]).reset_index(drop=True)
+    grouped = frame.groupby("stock_code", sort=False)
     for col in ["open", "close", "high", "low", "pre_close", "atr_qfq"]:
         if col in frame.columns:
             frame[col] = pd.to_numeric(frame[col], errors="coerce")
 
-    if {"open", "close", "high", "low", "pre_close"}.issubset(frame.columns):
+    if {"open", "close", "high", "low"}.issubset(frame.columns):
+        # Use the prior qfq close from the same adjusted price series so every
+        # price-derived factor stays on a single front-adjusted basis.
+        frame["pre_close"] = grouped["close"].shift(1)
         frame["close_rate"] = frame["close"] / frame["pre_close"]
         frame["open_rate"] = frame["open"] / frame["pre_close"]
         frame["high_rate"] = frame["high"] / frame["pre_close"]
@@ -168,6 +172,18 @@ def build_light_factor_frame(raw_frame: pd.DataFrame, features: list[str], label
     if label == "executable_10d_open_return":
         entry_cash = frame["post_open"] * (1.0 + 0.0003 + 0.001)
         exit_cash = frame["post12_open"] * (1.0 - 0.0003 - 0.0005 - 0.001)
+        frame[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_5d_open_return":
+        entry_cash = frame["post_open"] * (1.0 + 0.0003 + 0.001)
+        exit_cash = frame["post6_open"] * (1.0 - 0.0003 - 0.0005 - 0.001)
+        frame[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_3d_open_return":
+        entry_cash = frame["post_open"] * (1.0 + 0.0003 + 0.001)
+        exit_cash = frame["post4_open"] * (1.0 - 0.0003 - 0.0005 - 0.001)
+        frame[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_1d_open_return":
+        entry_cash = frame["post_open"] * (1.0 + 0.0003 + 0.001)
+        exit_cash = frame["post2_open"] * (1.0 - 0.0003 - 0.0005 - 0.001)
         frame[label] = exit_cash / entry_cash - 1.0
     elif label == "executable_2d_open_return":
         entry_cash = frame["post_open"] * (1.0 + 0.0003 + 0.001)
