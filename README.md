@@ -1,19 +1,19 @@
-# Quant Vibe 多因子量化项目
+# Quant Vibe Multi-Factor Quant Project
 
-这是一个面向 A 股的多因子量化研究与交易信号项目，包含数据更新、因子加工、模型训练、选股、回测、掘金信号导出和报表生成等流程。
+Quant Vibe is an A-share multi-factor research and signal-generation project. It includes raw data updates, factor processing, model training, stock selection, backtesting, GM signal export, and report generation.
 
-项目已经改成以仓库根目录为基准的相对路径，新用户 clone 后配置依赖和 Token 即可运行，不需要修改本机绝对路径。
+The project uses paths relative to the repository root by default, so a fresh clone does not need machine-specific path edits.
 
-## 快速开始
+## Quick Start
 
-### 1. 克隆项目
+### 1. Clone
 
 ```bash
 git clone https://github.com/wangjrking/quant_vibe.git
 cd quant_vibe
 ```
 
-### 2. 创建环境
+### 2. Local Python Environment
 
 ```bash
 python -m venv .venv
@@ -21,86 +21,133 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-如果是在 Linux/macOS 上运行，虚拟环境激活命令通常是：
+On Linux/macOS:
 
 ```bash
 source .venv/bin/activate
 ```
 
-### 3. 配置 Token
+### 3. Configure Token
 
-推荐通过环境变量配置 Tushare Token，避免把个人密钥提交进仓库：
+Prefer environment variables so private tokens are not committed:
 
 ```powershell
 $env:TUSHARE_TOKEN="your_token_here"
 ```
 
-也可以复制 `config.example.json` 为 `config.json` 后手动填写：
+You can also copy the example config and edit it:
 
 ```bash
 copy config.example.json config.json
 ```
 
-默认配置使用相对路径：
+Default paths:
 
-| 配置项 | 默认位置 |
+| Item | Default path |
 | --- | --- |
-| 配置文件 | `config.json` |
-| 数据目录 | `data_file/` |
-| 日志目录 | `log/` |
-| 报表目录 | `data_file/reports/` |
-| 掘金策略目录 | `juejin_strategies/` |
+| Config | `config.json` |
+| Data | `data_file/` |
+| Logs | `log/`, `logs/` |
+| Reports | `data_file/reports/` |
+| GM strategies | `juejin_strategies/` |
 
-可以通过环境变量覆盖数据目录，例如改到仓库内的 `my_data/`：
+Override the data directory when needed:
 
 ```powershell
 $env:QUANT_DATA_DIR="my_data"
 ```
 
-## 常用命令
+## Docker
+
+Build the default image:
 
 ```bash
-# 主流程：数据下载、因子加工、训练预测
+docker build -t quant-vibe .
+```
+
+Run the main pipeline with local data/log folders mounted:
+
+```powershell
+docker run --rm `
+  -e TUSHARE_TOKEN=your_token_here `
+  -v "${PWD}/data_file:/app/data_file" `
+  -v "${PWD}/log:/app/log" `
+  -v "${PWD}/logs:/app/logs" `
+  quant-vibe
+```
+
+Run another script in the same image:
+
+```powershell
+docker run --rm -e TUSHARE_TOKEN=your_token_here -v "${PWD}/data_file:/app/data_file" quant-vibe python run_cdb_update.py
+```
+
+Use Docker Compose:
+
+```bash
+copy .env.example .env
+docker compose up --build
+```
+
+Optional build args:
+
+```bash
+# Install CPU-only PyTorch for MLP/deep-learning scripts
+docker build --build-arg INSTALL_TORCH=true -t quant-vibe:torch .
+
+# Install the GM SDK if your environment can access the package
+docker build --build-arg INSTALL_GM=true -t quant-vibe:gm .
+
+# Use a custom PyPI mirror
+docker build --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple -t quant-vibe .
+```
+
+The image stores runtime data in `/app/data_file`, logs in `/app/log` and `/app/logs`, and local GM strategies in `/app/juejin_strategies`. These directories are declared as volumes and are ignored by Git.
+
+## Common Commands
+
+```bash
+# Main flow: raw data, factor processing, model training
 python main.py
 
-# 更新因子数据
+# Update factor data
 python run_cdb_update.py
 
-# 训练模型并写入预测表
+# Train model and write predictions
 python run_pdb_update.py
 
-# 每日增量流程（Windows PowerShell）
+# Daily incremental flow on Windows PowerShell
 .\run_daily_strategy.ps1
 
-# 导出股票池
+# Export stock pool
 python export_stock_pool.py
 
-# 生成掘金策略报告
+# Generate GM strategy reports
 python generate_juejin_strategy_reports.py
 ```
 
-掘金相关脚本默认读取 `juejin_strategies/` 下的相对目录。新用户需要把自己的掘金策略 `main.py` 放到对应目录，或通过命令行参数传入策略目录。
+GM-related scripts read relative paths under `juejin_strategies/` by default. Put your own GM strategy `main.py` there, or pass a strategy directory via command-line arguments where supported.
 
-## 目录说明
+## Project Layout
 
-| 路径 | 说明 |
+| Path | Purpose |
 | --- | --- |
-| `project_paths.py` | 统一解析项目根目录、配置文件和数据目录 |
-| `config.json` | 本地默认配置，Token 建议用环境变量覆盖 |
-| `config.example.json` | 可提交、可分享的配置模板 |
-| `data_file/` | 本地数据、SQLite 数据库、信号和报表输出目录，默认不提交 |
-| `log/` | 运行日志目录，默认不提交 |
-| `juejin_strategies/` | 本地掘金策略目录，默认不提交 |
-| `tests/` | 项目测试 |
+| `project_paths.py` | Central path/config resolver |
+| `config.json` | Local default config; token can be provided by env var |
+| `config.example.json` | Shareable config template |
+| `Dockerfile` | Reproducible runtime image |
+| `docker-compose.yml` | Local container runner with mounted data/log folders |
+| `.dockerignore` | Keeps data/cache/git files out of Docker build context |
+| `data_file/` | Local data, SQLite DB, signals, and reports; not committed |
+| `log/`, `logs/` | Runtime logs; not committed |
+| `juejin_strategies/` | Local GM strategies; not committed |
+| `tests/` | Unit tests |
 
-## 开箱即用约定
+## Notes
 
-- 不依赖任何本机固定绝对路径。
-- 所有默认数据输出都落在仓库内的 `data_file/`。
-- `config.json` 中的 `datasource.tushare_token` 可以为空，运行时优先读取 `TUSHARE_TOKEN`。
-- 大体积数据、日志、缓存和本地掘金策略不进入 Git。
-- 如果需要把数据放到仓库外，用 `QUANT_DATA_DIR` 覆盖即可。
+- The repository does not depend on fixed local absolute paths.
+- Default outputs are written under `data_file/`.
+- `datasource.tushare_token` may stay empty in `config.json`; `TUSHARE_TOKEN` takes precedence at runtime.
+- Large data, logs, caches, and local GM strategies are excluded from Git and Docker build context.
 
-## 注意事项
-
-本项目用于量化研究和策略验证，不构成任何投资建议。实盘前请自行完成数据核验、回测复现、交易成本评估、风控设置和小资金验证。
+This project is for quantitative research and strategy validation only. It is not investment advice. Before live trading, verify data quality, reproduce backtests, evaluate costs, configure risk controls, and test with small capital.
