@@ -10,7 +10,7 @@ from portfolio_backtest_module import PortfolioBacktestConfig, run_portfolio_bac
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Run 2-year portfolio backtest with optional market filter.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate_oos_2y_ic160")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
@@ -24,7 +24,7 @@ def parse_args(argv=None):
     parser.add_argument("--ma-window", type=int, default=20)
     parser.add_argument("--stop-loss", type=float)
     parser.add_argument("--take-profit", type=float)
-    parser.add_argument("--output-prefix", default="../data_file/reports/portfolio_2y")
+    parser.add_argument("--output-prefix", default="data_file/reports/portfolio_2y")
     return parser.parse_args(argv)
 
 

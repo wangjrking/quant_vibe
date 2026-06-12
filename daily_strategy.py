@@ -230,7 +230,7 @@ def run_daily(args) -> dict:
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Run the daily stock selection strategy.")
     parser.add_argument("--project-dir", default=".")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--label", default=DEFAULT_LABEL)
     parser.add_argument(
@@ -242,7 +242,7 @@ def parse_args(argv=None):
     parser.add_argument("--min-pred", type=float, default=0.01)
     parser.add_argument("--max-atr-ratio", type=float, default=0.10)
     parser.add_argument("--output")
-    parser.add_argument("--summary-output", default="../data_file/daily_strategy_summary.json")
+    parser.add_argument("--summary-output", default="data_file/daily_strategy_summary.json")
     return parser.parse_args(argv)
 
 

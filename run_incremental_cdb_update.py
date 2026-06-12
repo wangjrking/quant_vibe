@@ -8,9 +8,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from data_process_module import get_factor_data
+from project_paths import resolve_data_dir
 
 
-DATA_DIR = Path("../data_file")
+DATA_DIR = resolve_data_dir()
 FACTOR_PATH = DATA_DIR / "stock_factor_data.parquet"
 WINDOW_START = "20250101"
 

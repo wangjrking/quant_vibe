@@ -3,9 +3,10 @@ import argparse
 from pathlib import Path
 
 from ai_module import get_factor_data, model_assess
+from project_paths import resolve_data_dir
 
 
-DATA_DIR = Path("../data_file")
+DATA_DIR = resolve_data_dir()
 LABEL = "10d_yield_rate"
 TRAIN_START = "20100101"
 TEST_START = "20260101"

@@ -13,7 +13,7 @@ def parse_args(argv=None):
     parser.add_argument("--label", default="10d_yield_rate")
     parser.add_argument("--train-start", default="20100101")
     parser.add_argument("--test-start", default="20240604")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--stock-pool")
     parser.add_argument("--output-table", default="stock_predict_data_10d_yield_rate_mlp")
     parser.add_argument("--epochs", type=int, default=8)

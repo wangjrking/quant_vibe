@@ -479,7 +479,7 @@ def _print_metrics(metrics):
 
 def main():
     parser = argparse.ArgumentParser(description="Run a practical backtest for prediction output.")
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate")
     parser.add_argument("--start", dest="start_date")
     parser.add_argument("--end", dest="end_date")

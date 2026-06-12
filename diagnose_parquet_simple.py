@@ -1,8 +1,9 @@
 import pandas as pd
 import pyarrow.parquet as pq
 import os
+from project_paths import resolve_data_dir
 
-file_path = 'D:/work/quant/quant001/quant/data_file/stock_factor_data.parquet'
+file_path = resolve_data_dir() / 'stock_factor_data.parquet'
 
 print("Step 1: Check file exists")
 if os.path.exists(file_path):
@@ -29,7 +30,7 @@ try:
     print(f"Columns: {df_sample.columns.tolist()[:10]}")
 except Exception as e:
     print(f"Failed: {e}")
-    
+
 print("\nStep 4: Try to read with fastparquet")
 try:
     df_fast = pd.read_parquet(file_path, engine='fastparquet')
@@ -42,14 +43,14 @@ try:
     parquet_file = pq.ParquetFile(file_path)
     columns = parquet_file.schema_arrow.names
     print(f"Total columns: {len(columns)}")
-    
+
     for i, col in enumerate(columns[:5]):
         try:
             df_col = pd.read_parquet(file_path, columns=[col])
             print(f"Column {i} ({col}): OK")
         except Exception as e:
             print(f"Column {i} ({col}): ERROR - {str(e)[:100]}")
-            
+
 except Exception as e:
     print(f"Failed: {e}")
 

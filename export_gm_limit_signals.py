@@ -106,11 +106,11 @@ def write_csv(signals: list[dict], output_path: str | Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Export gm.api signals from limit-up stock list.")
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
     parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--output", default="../data_file/gm_signals_limit_board.csv")
+    parser.add_argument("--output", default="data_file/gm_signals_limit_board.csv")
     return parser.parse_args(argv)
 
 

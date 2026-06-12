@@ -55,9 +55,9 @@ def add_legacy_columns(current_path: str | Path, legacy_path: str | Path, score_
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Add legacy pre-fix factor columns into current stock_factor_data.")
-    parser.add_argument("--current", default="../data_file/stock_factor_data.parquet")
-    parser.add_argument("--legacy", default="../data_file/stock_factor_data_before_formula_fix_20260606.parquet")
-    parser.add_argument("--scores", default="../data_file/feature_ic_scores_10d_yield_rate_pre_2y_oos.csv")
+    parser.add_argument("--current", default="data_file/stock_factor_data.parquet")
+    parser.add_argument("--legacy", default="data_file/stock_factor_data_before_formula_fix_20260606.parquet")
+    parser.add_argument("--scores", default="data_file/feature_ic_scores_10d_yield_rate_pre_2y_oos.csv")
     parser.add_argument("--top-n", type=int, default=160)
     return parser.parse_args(argv)
 

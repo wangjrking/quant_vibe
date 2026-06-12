@@ -7,11 +7,12 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib import font_manager
 from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Rectangle
 
 ROOT = Path(__file__).resolve().parent
-DATA = ROOT.parent / "data_file"
+DATA = ROOT / "data_file"
 REPORT_DIR = DATA / "reports"
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(ROOT))
@@ -26,10 +27,10 @@ END = "20260603"
 
 
 def configure_fonts():
-    font_path = Path("C:/Windows/Fonts/simhei.ttf")
-    bold_path = Path("C:/Windows/Fonts/msyhbd.ttc")
-    font = FontProperties(fname=str(font_path))
-    bold = FontProperties(fname=str(bold_path if bold_path.exists() else font_path))
+    path = font_manager.findfont("SimHei", fallback_to_default=True)
+    bold_path = font_manager.findfont("Microsoft YaHei", fallback_to_default=True)
+    font = FontProperties(fname=path)
+    bold = FontProperties(fname=bold_path)
     plt.rcParams["font.family"] = font.get_name()
     plt.rcParams["font.sans-serif"] = [font.get_name(), "Microsoft YaHei", "SimHei"]
     plt.rcParams["axes.unicode_minus"] = False

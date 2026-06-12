@@ -1,8 +1,9 @@
 import pandas as pd
 import pyarrow.parquet as pq
 import os
+from project_paths import resolve_data_dir
 
-file_path = 'D:/work/quant/quant001/quant/data_file/stock_factor_data.parquet'
+file_path = resolve_data_dir() / 'stock_factor_data.parquet'
 
 print("=" * 60)
 print("Parquet 文件诊断")
@@ -55,7 +56,7 @@ print("=" * 60)
 try:
     parquet_file = pq.ParquetFile(file_path)
     columns = parquet_file.schema_arrow.names
-    
+
     problematic_columns = []
     for i, col in enumerate(columns[:20]):  # 只测试前20列
         try:
@@ -64,12 +65,12 @@ try:
         except Exception as e:
             print(f"[ERROR] {col}: {str(e)[:100]}")
             problematic_columns.append(col)
-    
+
     if problematic_columns:
         print(f"\n问题列: {problematic_columns}")
     else:
         print("\n[OK] 前20列都可以正常读取")
-        
+
 except Exception as e:
     print(f"[ERROR] 逐列读取测试失败: {e}")
 

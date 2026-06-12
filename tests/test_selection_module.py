@@ -43,6 +43,17 @@ class SelectionModuleTests(unittest.TestCase):
 
         self.assertEqual([row["stock_code"] for row in selected], ["OK"])
 
+    def test_filters_delisting_names(self):
+        rows = [
+            {"trade_date": "20260106", "stock_code": "BAD1", "name": "\u9000\u5e02\u521b\u5174", "pred_prob": 0.90, "close": 10.0, "atr_qfq": 0.1, "industry_encode": 1},
+            {"trade_date": "20260106", "stock_code": "BAD2", "name": "\u9000A", "pred_prob": 0.80, "close": 10.0, "atr_qfq": 0.1, "industry_encode": 1},
+            {"trade_date": "20260106", "stock_code": "OK", "name": "Good", "pred_prob": 0.70, "close": 10.0, "atr_qfq": 0.1, "industry_encode": 1},
+        ]
+
+        selected = select_candidates(rows, SelectionConfig(top_k=3))
+
+        self.assertEqual([row["stock_code"] for row in selected], ["OK"])
+
 
 if __name__ == "__main__":
     unittest.main()

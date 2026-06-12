@@ -2,12 +2,18 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.venv/
+venv/
 
 .pytest_cache/
 .coverage
 htmlcov/
 
+data_file/
+gmcache/
+juejin_strategies/
 log/
+logs/
 *.log
 
 .DS_Store

@@ -158,15 +158,15 @@ def write_score_csv(rows: list[dict], output_path: Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Select training features by daily IC.")
-    parser.add_argument("--data", default="../data_file/stock_factor_data.parquet")
+    parser.add_argument("--data", default="data_file/stock_factor_data.parquet")
     parser.add_argument("--label", default="10d_yield_rate")
     parser.add_argument("--top-n", type=int, default=160)
     parser.add_argument("--min-abs-ic", type=float, default=0.005)
     parser.add_argument("--max-missing-ratio", type=float, default=0.35)
     parser.add_argument("--start")
     parser.add_argument("--end")
-    parser.add_argument("--output", default="../data_file/selected_features_10d_yield_rate.json")
-    parser.add_argument("--score-output", default="../data_file/feature_ic_scores_10d_yield_rate.csv")
+    parser.add_argument("--output", default="data_file/selected_features_10d_yield_rate.json")
+    parser.add_argument("--score-output", default="data_file/feature_ic_scores_10d_yield_rate.csv")
     return parser.parse_args(argv)
 
 

@@ -76,11 +76,11 @@ def load_index_data(data_dir: str | Path) -> pd.DataFrame:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Build market regime filter CSV.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--index-code", default="932000.CSI")
     parser.add_argument("--index-mode", default="all", choices=["all", "any"])
     parser.add_argument("--ma-window", type=int, default=20)
-    parser.add_argument("--output", default="../data_file/market_filter.csv")
+    parser.add_argument("--output", default="data_file/market_filter.csv")
     return parser.parse_args(argv)
 
 

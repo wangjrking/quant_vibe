@@ -1,7 +1,7 @@
 param(
-    [string]$Python = "D:\work\quant\quant001\quant_vibe\.venv\Scripts\python.exe",
-    [string]$ProjectDir = "D:\work\quant\quant_mcp\quant\main",
-    [string]$DataDir = "D:\work\quant\quant_mcp\quant\data_file",
+    [string]$Python = "python",
+    [string]$ProjectDir = $PSScriptRoot,
+    [string]$DataDir = (Join-Path $PSScriptRoot "data_file"),
     [string]$Label = "10d_yield_rate",
     [string]$SourceCommand = "",
     [switch]$ForcePrediction

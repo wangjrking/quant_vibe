@@ -10,6 +10,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from project_paths import load_config as load_project_config
+from project_paths import resolve_data_dir, resolve_project_path
 from backtest_module import (
     _annualized_return,
     _annualized_volatility,
@@ -32,7 +34,7 @@ class SuiteConfig:
 
 
 def load_config(path: str | Path) -> tuple[SuiteConfig, dict]:
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    payload = load_project_config(path)
     backtest = payload["juejin"]["backtest"]
     suite = SuiteConfig(
         start_date=str(backtest["start_date"]),
@@ -41,9 +43,15 @@ def load_config(path: str | Path) -> tuple[SuiteConfig, dict]:
         commission_ratio=float(backtest["commission_ratio"]),
         sell_tax_ratio=float(backtest["sell_tax_ratio"]),
         slippage_ratio=float(backtest["slippage_ratio"]),
-        stock_pool=str(backtest["stock_pool"]),
+        stock_pool=str(resolve_project_path(backtest["stock_pool"])),
     )
-    return suite, payload["juejin"]["strategies"]
+    strategies = {}
+    for key, strategy in payload["juejin"]["strategies"].items():
+        strategy = dict(strategy)
+        strategy["path"] = str(resolve_project_path(strategy["path"]))
+        strategy["signal_file"] = str(resolve_project_path(strategy["signal_file"]))
+        strategies[key] = strategy
+    return suite, strategies
 
 
 def load_trade_calendar(db_path: Path, start_date: str, end_date: str) -> list[str]:
@@ -327,12 +335,13 @@ def strategy_title(key: str) -> str:
 
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="Generate 2-year juejin strategy backtest reports.")
-    parser.add_argument("--config", default="./config.json")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--config", default="config.json")
+    parser.add_argument("--data-dir", default=None)
     args = parser.parse_args(argv)
 
     suite, strategies = load_config(args.config)
-    db_path = Path(args.data_dir) / "odb.db"
+    data_dir = resolve_data_dir(args.data_dir)
+    db_path = data_dir / "odb.db"
     summary_rows = []
 
     for key, strategy in strategies.items():
@@ -360,8 +369,8 @@ def main(argv=None) -> None:
         )
 
     summary_rows.sort(key=lambda row: row["annualized_return"], reverse=True)
-    summary_path = Path(args.data_dir) / "reports" / "juejin_strategy_suite_summary.csv"
-    summary_md = Path(args.data_dir) / "reports" / "juejin_strategy_suite_summary.md"
+    summary_path = data_dir / "reports" / "juejin_strategy_suite_summary.csv"
+    summary_md = data_dir / "reports" / "juejin_strategy_suite_summary.md"
     write_csv(summary_rows, summary_path)
     lines = [
         "# 掘金三策略近2年回测汇总",

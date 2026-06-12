@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from data_load_module import date_range_pandas, get_pro
+from project_paths import load_config, resolve_data_dir, resolve_project_path
 from raw_data_update_module import (
     RAW_TABLE_SPECS,
     append_parquet_dedup,
@@ -83,9 +84,9 @@ def _sync_sqlite_table(data_dir: Path, file_name: str, table_name: str) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Incrementally update local raw data for the all-A-share universe.")
-    parser.add_argument("--config", default="./config.json")
-    parser.add_argument("--data-dir", default="../data_file")
-    parser.add_argument("--stock-pool", default="../data_file/stock_pool_all_a.csv")
+    parser.add_argument("--config", default="config.json")
+    parser.add_argument("--data-dir", default=None)
+    parser.add_argument("--stock-pool", default="data_file/stock_pool_all_a.csv")
     parser.add_argument("--start", default="20100101")
     parser.add_argument("--end", required=True)
     parser.add_argument("--tables", default=DEFAULT_TABLES)
@@ -97,10 +98,10 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    data_dir = Path(args.data_dir)
-    config = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    data_dir = resolve_data_dir(args.data_dir)
+    config = load_config(args.config)
     ts_pro = get_pro(config["datasource"]["tushare_token"])
-    stock_codes = load_stock_codes(args.stock_pool)
+    stock_codes = load_stock_codes(resolve_project_path(args.stock_pool))
     if args.limit_stocks:
         stock_codes = stock_codes[: args.limit_stocks]
     tables = [item.strip() for item in args.tables.split(",") if item.strip()]

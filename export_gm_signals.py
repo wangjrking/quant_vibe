@@ -11,7 +11,7 @@ from selection_module import SelectionConfig
 def parse_args(argv=None):
     defaults = SelectionConfig()
     parser = argparse.ArgumentParser(description="Export next-day gm.api signals from prediction rows.")
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate_oos_2y_ic160")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
@@ -29,7 +29,7 @@ def parse_args(argv=None):
     parser.add_argument("--liquidity-min-turnover-rate", type=float)
     parser.add_argument("--liquidity-mid-scale", type=float, default=0.8)
     parser.add_argument("--liquidity-low-scale", type=float, default=0.6)
-    parser.add_argument("--output", default="../data_file/gm_signals_2y_ic160.csv")
+    parser.add_argument("--output", default="data_file/gm_signals_2y_ic160.csv")
     return parser.parse_args(argv)
 
 

@@ -1,7 +1,8 @@
 import pandas as pd
 import sys
+from project_paths import resolve_data_dir
 
-file_path = 'D:/work/quant/quant001/quant/data_file/stock_factor_data.parquet'
+file_path = resolve_data_dir() / 'stock_factor_data.parquet'
 
 print("Attempting to read the full parquet file...")
 print("=" * 60)
@@ -15,7 +16,7 @@ try:
 except Exception as e:
     print(f"FAILED: {e}")
     print(f"Error type: {type(e).__name__}")
-    
+
     import traceback
     print("\nFull traceback:")
     traceback.print_exc()

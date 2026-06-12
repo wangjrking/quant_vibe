@@ -122,7 +122,7 @@ def prune_correlated_features(
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Select long-horizon light features with IC ranking and redundancy pruning.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--train-start", default="20200101")
     parser.add_argument("--test-start", default="20240604")
     parser.add_argument("--end", default="20260605")
@@ -133,8 +133,8 @@ def parse_args(argv=None):
     parser.add_argument("--max-abs-corr", type=float, default=0.92)
     parser.add_argument("--candidates")
     parser.add_argument("--force-include")
-    parser.add_argument("--output", default="../data_file/selected_features_executable_10d_open_return_light_long_v2.json")
-    parser.add_argument("--score-output", default="../data_file/feature_ic_scores_executable_10d_open_return_light_long_v2.csv")
+    parser.add_argument("--output", default="data_file/selected_features_executable_10d_open_return_light_long_v2.json")
+    parser.add_argument("--score-output", default="data_file/feature_ic_scores_executable_10d_open_return_light_long_v2.csv")
     return parser.parse_args(argv)
 
 

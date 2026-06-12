@@ -301,7 +301,7 @@ def write_csv(rows, output_path):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Run portfolio-level backtest.")
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate")
     parser.add_argument("--start")
     parser.add_argument("--end")

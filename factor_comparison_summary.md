@@ -153,7 +153,7 @@
 
 ## Excel 文件位置
 完整的对比 Excel 文件已生成：
-`D:\办公\量化交易\quant_project\main\alpha_factor_comparison.xlsx`
+`alpha_factor_comparison.xlsx`
 
 ## 总结
 当前代码实现了国泰君安 191ALPHA 因子库中约 44.5% 的因子（85 个），主要集中在：

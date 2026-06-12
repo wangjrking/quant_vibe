@@ -44,7 +44,7 @@ def patch_factor_columns(path: str | Path) -> pd.DataFrame:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Patch deterministic formula columns in stock_factor_data.parquet.")
-    parser.add_argument("--path", default="../data_file/stock_factor_data.parquet")
+    parser.add_argument("--path", default="data_file/stock_factor_data.parquet")
     return parser.parse_args(argv)
 
 

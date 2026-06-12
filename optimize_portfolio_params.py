@@ -99,7 +99,7 @@ def write_csv(rows: list[dict], output_path: str | Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Optimize portfolio-level strategy parameters.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate_oos_2y_ic160")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
@@ -120,7 +120,7 @@ def parse_args(argv=None):
     parser.add_argument("--min-trades", type=int, default=250)
     parser.add_argument("--max-drawdown-limit", type=float, default=0.20)
     parser.add_argument("--limit", type=int, default=20)
-    parser.add_argument("--output", default="../data_file/optimizer_portfolio_long_2y.csv")
+    parser.add_argument("--output", default="data_file/optimizer_portfolio_long_2y.csv")
     return parser.parse_args(argv)
 
 

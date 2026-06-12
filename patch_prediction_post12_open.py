@@ -7,7 +7,7 @@ import pandas as pd
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Patch post12_open into a prediction table from factor parquet.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--table", required=True)
     return parser.parse_args(argv)
 

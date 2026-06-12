@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import sys
 import types
 import unittest
@@ -8,10 +9,18 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 
-STRATEGY_PATH = Path(r"D:\work\dfcf\juejin\strategy\fb9d4d71-6198-11f1-8a7e-10ffe0295517\main.py")
+STRATEGY_PATH = Path(
+    os.environ.get(
+        "JUEJIN_LONG_STRATEGY_PATH",
+        Path(__file__).resolve().parents[1] / "juejin_strategies" / "long_term" / "main.py",
+    )
+)
 
 
 def _load_strategy_module():
+    if not STRATEGY_PATH.exists():
+        raise unittest.SkipTest(f"Juejin long strategy file not found: {STRATEGY_PATH}")
+
     fake_gm = types.ModuleType("gm")
     fake_api = types.ModuleType("gm.api")
     fake_api.OrderType_Market = "market"

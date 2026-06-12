@@ -115,7 +115,7 @@ def write_results_csv(results, output_path):
 
 def main():
     parser = argparse.ArgumentParser(description="Search backtest parameters.")
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate")
     parser.add_argument("--start", dest="start_date")
     parser.add_argument("--end", dest="end_date")

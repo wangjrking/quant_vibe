@@ -3,26 +3,28 @@ import time
 from datetime import datetime
 import itertools
 import json
+import os
 import tushare as ts
 import logging
 import multiprocessing
 import sqlite3
+from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 # 导入进度条工具
 from tqdm import tqdm
+
+from project_paths import load_config, resolve_data_dir
 
 
 
 
 def get_config():
-	with open('D:/办公/量化交易/quant_project/data_file/config.json', 'r', encoding='utf-8') as file:
-		config = json.load(file) 
-	return config
+	return load_config()
 
 
 def get_pro(ts_token):
 	ts_pro = ts.pro_api(ts_token)
-	return ts_pro 
+	return ts_pro
 
 def date_range_pandas(start_str, end_str):
     date_range = pd.date_range(
@@ -37,17 +39,17 @@ def optimize_dtypes(df):
     int_cols = df.select_dtypes(include=['int64']).columns
     for col in int_cols:
         df[col] = pd.to_numeric(df[col], downcast='integer')
-    
+
     # 浮点列优化
     float_cols = df.select_dtypes(include=['float64']).columns
     for col in float_cols:
         df[col] = pd.to_numeric(df[col], downcast='float')
-    
+
     # 对象/字符串列优化
     obj_cols = df.select_dtypes(include=['object']).columns
     for col in obj_cols:
         df[col] = df[col].astype('str')
-    
+
     return df
 
 def memory_usage(df):
@@ -61,7 +63,7 @@ def get_daily_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 	daily_data_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
-      
+
 			try:
 				daily_data_dct[stock_code] = ts_pro.query('daily', ts_code=stock_code, start_date=data_start_dt,end_date=data_end_dt)
 				break
@@ -77,7 +79,7 @@ def get_daily_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 
 
 def get_daily_index_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-	
+
 	daily_index_data_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
@@ -95,13 +97,13 @@ def get_daily_index_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 	return daily_index_data
 
 def get_stock_basic_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-	
+
 	stock_basic_data = ts_pro.query('stock_basic')
-	
+
 	stock_basic_data = optimize_dtypes(stock_basic_data)
-	
+
 	return stock_basic_data
-	
+
 # 获取财务数据
 # 入参：stock_code_lst（股票代码列表）, data_start_dt（数据开始日期）, data_end_dt（数据结束日期）, ts_pro（tushare查询引擎）
 # 出餐：data（DataFrame类型）--字段列表：stock_code, ann_date ... 各种指标
@@ -117,7 +119,7 @@ def get_finan_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 				time.sleep(61)
 
 	finan_data = pd.concat(finan_data_dct.values())
-	
+
 	finan_data_season = finan_data[finan_data['end_date'].str.slice(4, 6) != '12']
 	finan_data_season = finan_data_season[finan_data_season['update_flag']=='1']
 	finan_data_season = finan_data_season.drop_duplicates(subset=['ts_code', 'ann_date'], keep='first')
@@ -128,15 +130,15 @@ def get_finan_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 	finan_data_year = finan_data_year[finan_data_year['update_flag']=='1']
 	finan_data_year = finan_data_year.drop_duplicates(subset=['ts_code', 'ann_date'], keep='first')
 	finan_data_year = finan_data_year.dropna(subset=['ts_code', 'ann_date'])
-	
+
 	finan_data_season = optimize_dtypes(finan_data_season)
 	finan_data_year = optimize_dtypes(finan_data_year)
-	
-	
+
+
 	return finan_data_season, finan_data_year
 
 def get_limit_list_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-	
+
 	limit_list_data_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
@@ -149,17 +151,17 @@ def get_limit_list_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 
 	limit_list_data = pd.concat(limit_list_data_dct.values())
 
-	
+
 	limit_list_data = optimize_dtypes(limit_list_data)
-	
+
 	return limit_list_data
 
 def get_adj_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-    
-	
+
+
 	adj_factor_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
-	
+
 	for trade_date in trade_date_lst:
 		while True:
 			try:
@@ -171,12 +173,12 @@ def get_adj_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 
 	adj_factor = pd.concat(adj_factor_dct.values())
 
-	
+
 	adj_factor = optimize_dtypes(adj_factor)
 	return adj_factor
 
 def get_moneyflow(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-	
+
 	moneyflow_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
@@ -189,12 +191,12 @@ def get_moneyflow(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 
 	moneyflow = pd.concat(moneyflow_dct.values())
 
-	
+
 	moneyflow = optimize_dtypes(moneyflow)
 	return moneyflow
 
 def get_stk_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-	
+
 	stk_factor_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
@@ -207,14 +209,14 @@ def get_stk_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 
 	stk_factor = pd.concat(stk_factor_dct.values())
 
-	
+
 	stk_factor = optimize_dtypes(stk_factor)
 	return stk_factor
 
 
 
 def get_tdx_index(data_start_dt, data_end_dt, ts_pro):
-	
+
 	tdx_index_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
 	for trade_date in trade_date_lst:
@@ -228,12 +230,12 @@ def get_tdx_index(data_start_dt, data_end_dt, ts_pro):
 
 	tdx_index = pd.concat(tdx_index_dct.values())
 
-	
+
 	tdx_index = optimize_dtypes(tdx_index)
 	return tdx_index
 
 def get_tdx_member(tdx_index_lst, ts_pro):
-	
+
 	tdx_member_dct = {}
 	for ts_code,trade_date in tdx_index_lst:
 		while True:
@@ -246,12 +248,12 @@ def get_tdx_member(tdx_index_lst, ts_pro):
 
 	tdx_member = pd.concat(tdx_member_dct.values())
 
-	
+
 	tdx_member = optimize_dtypes(tdx_member)
 	return tdx_member
 
 def get_tdx_daily(data_start_dt, data_end_dt, ts_pro):
-	
+
 	tdx_daily_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
 	for trade_date in trade_date_lst:
@@ -265,13 +267,13 @@ def get_tdx_daily(data_start_dt, data_end_dt, ts_pro):
 
 	tdx_daily = pd.concat(tdx_daily_dct.values())
 
-	
+
 	tdx_daily = optimize_dtypes(tdx_daily)
 	return tdx_daily
 
 # 获取龙虎榜数据
 def get_top_list(data_start_dt, data_end_dt, ts_pro):
-	
+
 	top_list_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
 	for trade_date in trade_date_lst:
@@ -285,7 +287,7 @@ def get_top_list(data_start_dt, data_end_dt, ts_pro):
 
 	top_list = pd.concat(top_list_dct.values())
 
-	
+
 	top_list = optimize_dtypes(top_list)
 
 	top_list = top_list.drop_duplicates(subset=['ts_code', 'trade_date'], keep='first')
@@ -293,7 +295,7 @@ def get_top_list(data_start_dt, data_end_dt, ts_pro):
 
 # 获取同花顺热榜
 def get_ths_hot(data_start_dt, data_end_dt, ts_pro):
-	
+
 	ths_hot_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
 	for trade_date in trade_date_lst:
@@ -307,7 +309,7 @@ def get_ths_hot(data_start_dt, data_end_dt, ts_pro):
 
 	ths_hot = pd.concat(ths_hot_dct.values())
 
-	
+
 	ths_hot = optimize_dtypes(ths_hot)
 
 	ths_hot = ths_hot.drop_duplicates(subset=['ts_code', 'trade_date'], keep='first')
@@ -315,7 +317,7 @@ def get_ths_hot(data_start_dt, data_end_dt, ts_pro):
 
 # 获取东方财富热榜
 def get_dc_hot(data_start_dt, data_end_dt, ts_pro):
-	
+
 	dc_hot_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
 	for trade_date in trade_date_lst:
@@ -329,15 +331,15 @@ def get_dc_hot(data_start_dt, data_end_dt, ts_pro):
 
 	dc_hot = pd.concat(dc_hot_dct.values())
 
-	
+
 	dc_hot = optimize_dtypes(dc_hot)
-	
+
 	dc_hot = dc_hot.drop_duplicates(subset=['ts_code', 'trade_date'], keep='first')
 	return dc_hot
 
 # 获取筹码盘分布
 def get_cyq_perf(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
-	
+
 	cyq_perf_dct = {}
 	for stock_code in stock_code_lst:
 		while True:
@@ -350,13 +352,13 @@ def get_cyq_perf(stock_code_lst, data_start_dt, data_end_dt, ts_pro):
 
 	cyq_perf = pd.concat(cyq_perf_dct.values())
 
-	
+
 	cyq_perf = optimize_dtypes(cyq_perf)
 	return cyq_perf
 
 # 获取ST股票列表
 def get_stock_st(data_start_dt, data_end_dt, ts_pro):
-	
+
 	stock_st_dct = {}
 	trade_date_lst = date_range_pandas(data_start_dt, data_end_dt)
 	for trade_date in trade_date_lst:
@@ -370,15 +372,15 @@ def get_stock_st(data_start_dt, data_end_dt, ts_pro):
 
 	stock_st = pd.concat(stock_st_dct.values())
 
-	
+
 	stock_st = optimize_dtypes(stock_st)
-	
+
 	stock_st = stock_st.drop_duplicates(subset=['ts_code', 'trade_date'], keep='first')
 	return stock_st
 
 
 def get_index_daily(data_start_dt, data_end_dt, ts_pro, stock_code_lst=None):
-    
+
 	if stock_code_lst is None:
 		stock_code_lst = ['000300.SH', '000905.SH', '932000.CSI']
 	index_daily_dct = {}
@@ -570,16 +572,16 @@ def store_index_daily(stock_code_lst, data_start_dt, data_end_dt, ts_token, data
 
 
 def download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
-	
+
 	logging.info(f'#--------------------------------------------数据接入模块启动--------------------------------------------#')
 	logging.info(f'股票数量：{str(len(stock_code_lst))}')
 	logging.info(f'开始日期：{data_start_dt}')
 	logging.info(f'结束日期：{data_end_dt}')
-	
-	
+
+
 	logging.info(f'数据接入模块：1.MYSQL数据库连接成功')
 
-	
+
 	# mutil_process1(1,stock_code_lst,data_start_dt, data_end_dt, ts_pro, engine)
 	with ProcessPoolExecutor() as executor:
 		futures = [
@@ -613,7 +615,7 @@ def download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data
 
 	'''
 	# 创建进程实例
-	
+
 	p1 = multiprocessing.Process(target=mutil_process1, args=(stock_code_lst,data_start_dt, data_end_dt, ts_token))
 	p2 = multiprocessing.Process(target=mutil_process2, args=(stock_code_lst,data_start_dt, data_end_dt, ts_token))
 	p3 = multiprocessing.Process(target=mutil_process3, args=(stock_code_lst,data_start_dt, data_end_dt, ts_token))
@@ -636,43 +638,16 @@ def download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data
 	'''
 
 	logging.info(f'数据接入模块：数据表入仓完成')
-	
+
 	logging.info(f'#--------------------------------------------数据接入模块完成--------------------------------------------#')
-	
+
 
 if __name__ == '__main__':
-    
-    ts_token = os.environ.get('TUSHARE_TOKEN', 'your_tushare_token_here')
+    ts_token = os.environ.get('TUSHARE_TOKEN', '')
+    data_dir = resolve_data_dir()
     data_start_dt = '20200101'
-    data_test_dt = '20251101'
     data_end_dt = datetime.now().strftime("%Y%m%d")
-    ts_pro = get_pro(ts_token)
-    print(store_adj_factor(['000926.SZ'], data_start_dt='20200101', data_end_dt='20260512', ts_token=ts_token))
-    data = pd.read_parquet('D:/办公/量化交易/quant_project/data_file/odb/adj_factor.parquet')
-    conn = sqlite3.connect('D:/办公/量化交易/quant_project/data_file/odb.db')
-    data.to_sql('adj_factor_test', con=conn, if_exists='replace', index=False)
-
-    
-    '''
-    logging.basicConfig(
-			level=logging.INFO,  # 日志器级别设为INFO
-			filename='D:/办公/量化交易/quant_project/data_file',   # 输出到文件
-			filemode="a",         # 追加模式
-			encoding="utf-8",     # 中文编码
-			format="%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s",  # 日志格式
-			datefmt="%Y-%m-%d %H:%M:%S"  # 时间格式
-			)
-    stock_code_lst = []
-    for index_id in ['000300.SH','000905.SH', '000852.SH', '932000.CSI']: # '000300.SH','000905.SH', '000852.SH', '932000.CSI'
-        stock_code_lst += ts_pro.index_weight(index_code=index_id,trade_date='20250731')['con_code'].tolist()
-	# stock_code_lst = ['000863.SZ','000036.SZ']
-
-	
-
-	# 数据载入模块
-    download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
-	'''
-
-
-
-
+    print(store_adj_factor(['000926.SZ'], data_start_dt=data_start_dt, data_end_dt=data_end_dt, ts_token=ts_token))
+    data = pd.read_parquet(data_dir / 'adj_factor.parquet')
+    with sqlite3.connect(data_dir / 'odb.db') as conn:
+        data.to_sql('adj_factor_test', con=conn, if_exists='replace', index=False)

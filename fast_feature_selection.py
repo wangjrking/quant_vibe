@@ -104,7 +104,7 @@ def write_score_csv(rows: list[dict], output_path: Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Fast time-fold IC feature selection.")
-    parser.add_argument("--data", default="../data_file/stock_factor_data.parquet")
+    parser.add_argument("--data", default="data_file/stock_factor_data.parquet")
     parser.add_argument("--label", default="executable_10d_open_return")
     parser.add_argument("--top-n", type=int, default=160)
     parser.add_argument("--min-abs-ic", type=float, default=0.005)
@@ -112,8 +112,8 @@ def parse_args(argv=None):
     parser.add_argument("--folds", type=int, default=8)
     parser.add_argument("--start")
     parser.add_argument("--end")
-    parser.add_argument("--output", default="../data_file/selected_features_executable_10d_open_return.json")
-    parser.add_argument("--score-output", default="../data_file/feature_ic_scores_executable_10d_open_return_fast.csv")
+    parser.add_argument("--output", default="data_file/selected_features_executable_10d_open_return.json")
+    parser.add_argument("--score-output", default="data_file/feature_ic_scores_executable_10d_open_return_fast.csv")
     return parser.parse_args(argv)
 
 

@@ -16,8 +16,12 @@ class SelectionConfig:
     pred_col: str = "pred_prob"
     min_pred_prob: float = 0.01
     max_atr_ratio: float = 0.10
+    min_amount: float | None = None
+    min_turnover_rate: float | None = None
+    max_total_mv: float | None = None
     max_per_industry: int = 2
     exclude_st: bool = True
+    exclude_delisting: bool = True
     exclude_current_limit: bool = True
 
 
@@ -42,6 +46,11 @@ def _to_float(value):
 def _is_st(row):
     name = str(_value(row, "name", "") or "")
     return bool(_value(row, "st_type")) or name.startswith("ST") or name.startswith("*ST")
+
+
+def _is_delisting(row):
+    name = str(_value(row, "name", "") or "")
+    return "\u9000\u5e02" in name or name.startswith("\u9000")
 
 
 def _is_current_limit(row):
@@ -80,10 +89,21 @@ def select_candidates(rows, config=None):
             continue
         if config.exclude_st and _is_st(row):
             continue
+        if config.exclude_delisting and _is_delisting(row):
+            continue
         if config.exclude_current_limit and _is_current_limit(row):
             continue
         ratio = _atr_ratio(row)
         if ratio is None or ratio > config.max_atr_ratio:
+            continue
+        amount = _to_float(_value(row, "amount"))
+        if config.min_amount is not None and (amount is None or amount < config.min_amount):
+            continue
+        turnover_rate = _to_float(_value(row, "turnover_rate"))
+        if config.min_turnover_rate is not None and (turnover_rate is None or turnover_rate < config.min_turnover_rate):
+            continue
+        total_mv = _to_float(_value(row, "total_mv"))
+        if config.max_total_mv is not None and (total_mv is None or total_mv > config.max_total_mv):
             continue
         enriched = dict(row)
         enriched["atr_ratio"] = ratio
@@ -129,7 +149,7 @@ def write_candidates_csv(candidates, output_path):
 def parse_args(argv=None):
     defaults = SelectionConfig()
     parser = argparse.ArgumentParser(description="Select daily buy candidates from prediction output.")
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--table", default="stock_predict_data_10d_yield_rate")
     parser.add_argument("--date", dest="trade_date")
     parser.add_argument("--top-k", type=int, default=defaults.top_k)

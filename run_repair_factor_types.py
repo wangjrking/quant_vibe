@@ -3,8 +3,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from project_paths import resolve_data_dir
 
-DATA_DIR = Path("../data_file")
+
+DATA_DIR = resolve_data_dir()
 FACTOR_PATH = DATA_DIR / "stock_factor_data.parquet"
 TEXT_COLUMNS = {"stock_code", "trade_date", "name", "industry", "act_ent_type"}
 

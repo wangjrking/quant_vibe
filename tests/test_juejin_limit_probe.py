@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 
-PROBE_PATH = Path(r"D:\work\quant\quant_mcp\quant\main\juejin_limit_probe.py")
+PROBE_PATH = Path(__file__).resolve().parents[1] / "juejin_limit_probe.py"
 
 
 def _load_probe_module():

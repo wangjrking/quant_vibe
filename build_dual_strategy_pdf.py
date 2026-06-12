@@ -4,6 +4,7 @@ import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
+from matplotlib import font_manager
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_ALIGN_VERTICAL
@@ -13,24 +14,33 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 REPORT_DIR = ROOT / "data_file" / "reports"
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
-OUTPUT_DOCX = REPORT_DIR / "双策略说明书_20260608.docx"
-OUTPUT_PDF = REPORT_DIR / "双策略说明书_20260608.pdf"
+OUTPUT_DOCX = REPORT_DIR / "鍙岀瓥鐣ヨ鏄庝功_20260608.docx"
+OUTPUT_PDF = REPORT_DIR / "鍙岀瓥鐣ヨ鏄庝功_20260608.pdf"
 CHART_DIR = REPORT_DIR / "strategy_dual_assets"
 CHART_DIR.mkdir(parents=True, exist_ok=True)
 
-FONT_REG = Path("C:/Windows/Fonts/msyh.ttc")
-FONT_BOLD = Path("C:/Windows/Fonts/msyhbd.ttc")
+def find_font(families: list[str]) -> Path | None:
+    for family in families:
+        try:
+            return Path(font_manager.findfont(family, fallback_to_default=False))
+        except ValueError:
+            continue
+    return None
+
+
+FONT_REG = find_font(["Microsoft YaHei", "SimHei", "PingFang SC", "WenQuanYi Micro Hei"])
+FONT_BOLD = find_font(["Microsoft YaHei", "SimHei", "PingFang SC", "WenQuanYi Micro Hei"])
 
 
 STRATEGIES = [
     {
         "key": "high_return",
-        "title": "收益率最高版",
-        "subtitle": "clean 满仓收益版（t099）",
+        "title": "鏀剁泭鐜囨渶楂樼増",
+        "subtitle": "clean 婊′粨鏀剁泭鐗堬紙t099锛?,
         "annualized": 203.50,
         "cumulative": 410.91,
         "sharpe": 2.0598,
@@ -41,22 +51,22 @@ STRATEGIES = [
         "win_ratio": 49.29,
         "first_buy": "2024-06-06",
         "last_buy": "2026-06-03",
-        "log_file": r"D:\work\dfcf\juejin\strategy\fb9d4d71-6198-11f1-8a7e-10ffe0295517\gm_backtest_clean_v2_t099_20260608.log",
-        "signal_file": r"D:\work\quant\quant_mcp\quant\data_file\gm_signals_rolling_exec5d_alla_light_top1_none_atr07_hold3_equal_clean_v2_t099.csv",
+        "log_file": str(ROOT / "juejin_strategies" / "long_term" / "gm_backtest_clean_v2_t099_20260608.log"),
+        "signal_file": str(ROOT / "data_file" / "gm_signals_rolling_exec5d_alla_light_top1_none_atr07_hold3_equal_clean_v2_t099.csv"),
         "strategy_shape": [
-            "滚动训练：quarterly expanding 2y",
-            "标签：executable_5d_open_return",
-            "股票池：all_a_light",
-            "选股：top1 + ATR<=0.07 + hold3",
-            "仓位：单笔 0.33，峰值接近 99%",
-            "执行：开盘价限价买卖，零 WARN",
+            "婊氬姩璁粌锛歲uarterly expanding 2y",
+            "鏍囩锛歟xecutable_5d_open_return",
+            "鑲＄エ姹狅細all_a_light",
+            "閫夎偂锛歵op1 + ATR<=0.07 + hold3",
+            "浠撲綅锛氬崟绗?0.33锛屽嘲鍊兼帴杩?99%",
+            "鎵ц锛氬紑鐩樹环闄愪环涔板崠锛岄浂 WARN",
         ],
-        "purpose": "目标是把资金利用率尽量打满，在保持 clean 执行链的前提下，优先追求更高收益率。",
+        "purpose": "鐩爣鏄妸璧勯噾鍒╃敤鐜囧敖閲忔墦婊★紝鍦ㄤ繚鎸?clean 鎵ц閾剧殑鍓嶆彁涓嬶紝浼樺厛杩芥眰鏇撮珮鏀剁泭鐜囥€?,
     },
     {
         "key": "high_sharpe",
-        "title": "夏普最高版（加仓后）",
-        "subtitle": "双指数 all + MA20 + t099",
+        "title": "澶忔櫘鏈€楂樼増锛堝姞浠撳悗锛?,
+        "subtitle": "鍙屾寚鏁?all + MA20 + t099",
         "annualized": 130.52,
         "cumulative": 221.35,
         "sharpe": 2.7345,
@@ -67,18 +77,18 @@ STRATEGIES = [
         "win_ratio": 55.17,
         "first_buy": "2024-09-25",
         "last_buy": "2026-05-26",
-        "log_file": r"D:\work\dfcf\juejin\strategy\fb9d4d71-6198-11f1-8a7e-10ffe0295517\gm_backtest_hs300_zz500_all_ma20_top1_atr07_hold3_clean_v1_t099_20260608.log",
-        "signal_file": r"D:\work\quant\quant_mcp\quant\data_file\gm_signals_hs300_zz500_all_ma20_top1_atr07_hold3_clean_v1_t099.csv",
+        "log_file": str(ROOT / "juejin_strategies" / "long_term" / "gm_backtest_hs300_zz500_all_ma20_top1_atr07_hold3_clean_v1_t099_20260608.log"),
+        "signal_file": str(ROOT / "data_file" / "gm_signals_hs300_zz500_all_ma20_top1_atr07_hold3_clean_v1_t099.csv"),
         "strategy_shape": [
-            "滚动训练：quarterly expanding 2y",
-            "标签：executable_5d_open_return",
-            "股票池：all_a_light",
-            "市场过滤：沪深300 与 中证500 都站上 MA20",
-            "选股：top1 + ATR<=0.07 + hold3",
-            "仓位：单笔 0.33，峰值接近 99%",
-            "执行：开盘价限价买卖，零 WARN",
+            "婊氬姩璁粌锛歲uarterly expanding 2y",
+            "鏍囩锛歟xecutable_5d_open_return",
+            "鑲＄エ姹狅細all_a_light",
+            "甯傚満杩囨护锛氭勃娣?00 涓?涓瘉500 閮界珯涓?MA20",
+            "閫夎偂锛歵op1 + ATR<=0.07 + hold3",
+            "浠撲綅锛氬崟绗?0.33锛屽嘲鍊兼帴杩?99%",
+            "鎵ц锛氬紑鐩樹环闄愪环涔板崠锛岄浂 WARN",
         ],
-        "purpose": "目标是在风险调整后收益最优的前提下，把高夏普主线继续加仓，争取更高收益而不过度伤害 Sharpe。",
+        "purpose": "鐩爣鏄湪椋庨櫓璋冩暣鍚庢敹鐩婃渶浼樼殑鍓嶆彁涓嬶紝鎶婇珮澶忔櫘涓荤嚎缁х画鍔犱粨锛屼簤鍙栨洿楂樻敹鐩婅€屼笉杩囧害浼ゅ Sharpe銆?,
     },
 ]
 
@@ -129,7 +139,7 @@ def style_doc(doc: Document) -> None:
 def add_title_block(doc: Document) -> None:
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run("双策略说明书")
+    run = p.add_run("鍙岀瓥鐣ヨ鏄庝功")
     run.bold = True
     run.font.name = "Microsoft YaHei"
     run._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
@@ -138,7 +148,7 @@ def add_title_block(doc: Document) -> None:
 
     p2 = doc.add_paragraph()
     p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r2 = p2.add_run("收益率最高版 vs 夏普最高版（加仓后）")
+    r2 = p2.add_run("鏀剁泭鐜囨渶楂樼増 vs 澶忔櫘鏈€楂樼増锛堝姞浠撳悗锛?)
     r2.font.name = "Microsoft YaHei"
     r2._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
     r2.font.size = Pt(12)
@@ -146,7 +156,7 @@ def add_title_block(doc: Document) -> None:
 
     p3 = doc.add_paragraph()
     p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r3 = p3.add_run("口径说明：两版均为 clean 执行链，显式开盘价限价买卖，回测日志 0 WARN，已考虑 0.03% 手续费与 0.10% 滑点。")
+    r3 = p3.add_run("鍙ｅ緞璇存槑锛氫袱鐗堝潎涓?clean 鎵ц閾撅紝鏄惧紡寮€鐩樹环闄愪环涔板崠锛屽洖娴嬫棩蹇?0 WARN锛屽凡鑰冭檻 0.03% 鎵嬬画璐逛笌 0.10% 婊戠偣銆?)
     r3.font.name = "Microsoft YaHei"
     r3._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
     r3.font.size = Pt(9.5)
@@ -154,6 +164,9 @@ def add_title_block(doc: Document) -> None:
 
 
 def load_fonts():
+    if FONT_REG is None or FONT_BOLD is None:
+        default_font = ImageFont.load_default()
+        return (default_font, default_font, default_font, default_font, default_font, default_font)
     return (
         ImageFont.truetype(str(FONT_REG), 22),
         ImageFont.truetype(str(FONT_REG), 16),
@@ -194,12 +207,12 @@ def draw_bar_chart(title: str, subtitle: str, rows: list[tuple[str, float, float
 
     legend_y = height - 58
     draw.rounded_rectangle((46, legend_y, 70, legend_y + 20), radius=6, fill=colors[0])
-    draw.text((80, legend_y - 1), "收益率最高版", font=reg14, fill="#333333")
+    draw.text((80, legend_y - 1), "鏀剁泭鐜囨渶楂樼増", font=reg14, fill="#333333")
     draw.rounded_rectangle((250, legend_y, 274, legend_y + 20), radius=6, fill=colors[1])
-    draw.text((284, legend_y - 1), "夏普版加仓后", font=reg14, fill="#333333")
+    draw.text((284, legend_y - 1), "澶忔櫘鐗堝姞浠撳悗", font=reg14, fill="#333333")
 
     if not higher_better:
-        note = "此图为风险指标，越低越好。"
+        note = "姝ゅ浘涓洪闄╂寚鏍囷紝瓒婁綆瓒婂ソ銆?
         draw.text((width - 280, legend_y - 1), note, font=reg14, fill="#8A4B08")
     img.save(path)
 
@@ -207,12 +220,12 @@ def draw_bar_chart(title: str, subtitle: str, rows: list[tuple[str, float, float
 def build_charts() -> list[Path]:
     annual_png = CHART_DIR / "annual_return_compare.png"
     draw_bar_chart(
-        "回测核心指标对比",
-        "先看收益能力：收益版追求更高年化，夏普版加仓后在收益与稳定之间取平衡。",
+        "鍥炴祴鏍稿績鎸囨爣瀵规瘮",
+        "鍏堢湅鏀剁泭鑳藉姏锛氭敹鐩婄増杩芥眰鏇撮珮骞村寲锛屽鏅増鍔犱粨鍚庡湪鏀剁泭涓庣ǔ瀹氫箣闂村彇骞宠　銆?,
         [
-            ("年化收益率", STRATEGIES[0]["annualized"], STRATEGIES[1]["annualized"]),
-            ("累计收益率", STRATEGIES[0]["cumulative"], STRATEGIES[1]["cumulative"]),
-            ("夏普比率", STRATEGIES[0]["sharpe"], STRATEGIES[1]["sharpe"]),
+            ("骞村寲鏀剁泭鐜?, STRATEGIES[0]["annualized"], STRATEGIES[1]["annualized"]),
+            ("绱鏀剁泭鐜?, STRATEGIES[0]["cumulative"], STRATEGIES[1]["cumulative"]),
+            ("澶忔櫘姣旂巼", STRATEGIES[0]["sharpe"], STRATEGIES[1]["sharpe"]),
         ],
         "%",
         annual_png,
@@ -221,12 +234,12 @@ def build_charts() -> list[Path]:
 
     risk_png = CHART_DIR / "risk_exposure_compare.png"
     draw_bar_chart(
-        "风险与仓位利用率",
-        "再看风险侧：收益版更接近持续高暴露，夏普版加仓后依然受市场过滤约束。",
+        "椋庨櫓涓庝粨浣嶅埄鐢ㄧ巼",
+        "鍐嶇湅椋庨櫓渚э細鏀剁泭鐗堟洿鎺ヨ繎鎸佺画楂樻毚闇诧紝澶忔櫘鐗堝姞浠撳悗渚濈劧鍙楀競鍦鸿繃婊ょ害鏉熴€?,
         [
-            ("最大回撤", STRATEGIES[0]["drawdown"], STRATEGIES[1]["drawdown"]),
-            ("平均持仓率", STRATEGIES[0]["avg_exposure"], STRATEGIES[1]["avg_exposure"]),
-            ("峰值持仓率", STRATEGIES[0]["peak_exposure"], STRATEGIES[1]["peak_exposure"]),
+            ("鏈€澶у洖鎾?, STRATEGIES[0]["drawdown"], STRATEGIES[1]["drawdown"]),
+            ("骞冲潎鎸佷粨鐜?, STRATEGIES[0]["avg_exposure"], STRATEGIES[1]["avg_exposure"]),
+            ("宄板€兼寔浠撶巼", STRATEGIES[0]["peak_exposure"], STRATEGIES[1]["peak_exposure"]),
         ],
         "%",
         risk_png,
@@ -235,11 +248,11 @@ def build_charts() -> list[Path]:
 
     trade_png = CHART_DIR / "trade_count_compare.png"
     draw_bar_chart(
-        "交易节奏与命中率",
-        "交易频次反映策略活跃程度，胜率则帮助判断信号的稳定性与市场过滤效果。",
+        "浜ゆ槗鑺傚涓庡懡涓巼",
+        "浜ゆ槗棰戞鍙嶆槧绛栫暐娲昏穬绋嬪害锛岃儨鐜囧垯甯姪鍒ゆ柇淇″彿鐨勭ǔ瀹氭€т笌甯傚満杩囨护鏁堟灉銆?,
         [
-            ("开仓次数", STRATEGIES[0]["open_count"], STRATEGIES[1]["open_count"]),
-            ("胜率", STRATEGIES[0]["win_ratio"], STRATEGIES[1]["win_ratio"]),
+            ("寮€浠撴鏁?, STRATEGIES[0]["open_count"], STRATEGIES[1]["open_count"]),
+            ("鑳滅巼", STRATEGIES[0]["win_ratio"], STRATEGIES[1]["win_ratio"]),
         ],
         "%",
         trade_png,
@@ -270,7 +283,7 @@ def add_bullets(doc: Document, items: list[str]) -> None:
 
 
 def add_strategy_card(doc: Document, strategy: dict) -> None:
-    add_heading(doc, f"{strategy['title']}：{strategy['subtitle']}", level=1)
+    add_heading(doc, f"{strategy['title']}锛歿strategy['subtitle']}", level=1)
     p = doc.add_paragraph()
     r = p.add_run(strategy["purpose"])
     r.font.name = "Microsoft YaHei"
@@ -282,28 +295,28 @@ def add_strategy_card(doc: Document, strategy: dict) -> None:
     table.autofit = True
     set_table_borders(table)
     hdr = table.rows[0].cells
-    set_cell_text(hdr[0], "字段", bold=True, color=RGBColor(255, 255, 255), size=10)
-    set_cell_text(hdr[1], "内容", bold=True, color=RGBColor(255, 255, 255), size=10)
+    set_cell_text(hdr[0], "瀛楁", bold=True, color=RGBColor(255, 255, 255), size=10)
+    set_cell_text(hdr[1], "鍐呭", bold=True, color=RGBColor(255, 255, 255), size=10)
     for c in hdr:
         shading = OxmlElement("w:shd")
         shading.set(qn("w:fill"), "1F4E79")
         c._tc.get_or_add_tcPr().append(shading)
     rows = [
-        ("训练方式", "rolling / quarterly expanding / 2y"),
-        ("预测标签", "executable_5d_open_return"),
-        ("股票池", "all_a_light"),
-        ("执行方式", "次日开盘价限价买入，到期日开盘价限价卖出，开盘涨停跳过买入，开盘跌停顺延卖出"),
-        ("回测口径", "手续费 0.03% + 滑点 0.10%，官方 clean 回测日志 0 WARN"),
-        ("信号周期", f"{strategy['first_buy']} 至 {strategy['last_buy']}"),
-        ("日志文件", strategy["log_file"]),
-        ("信号文件", strategy["signal_file"]),
+        ("璁粌鏂瑰紡", "rolling / quarterly expanding / 2y"),
+        ("棰勬祴鏍囩", "executable_5d_open_return"),
+        ("鑲＄エ姹?, "all_a_light"),
+        ("鎵ц鏂瑰紡", "娆℃棩寮€鐩樹环闄愪环涔板叆锛屽埌鏈熸棩寮€鐩樹环闄愪环鍗栧嚭锛屽紑鐩樻定鍋滆烦杩囦拱鍏ワ紝寮€鐩樿穼鍋滈『寤跺崠鍑?),
+        ("鍥炴祴鍙ｅ緞", "鎵嬬画璐?0.03% + 婊戠偣 0.10%锛屽畼鏂?clean 鍥炴祴鏃ュ織 0 WARN"),
+        ("淇″彿鍛ㄦ湡", f"{strategy['first_buy']} 鑷?{strategy['last_buy']}"),
+        ("鏃ュ織鏂囦欢", strategy["log_file"]),
+        ("淇″彿鏂囦欢", strategy["signal_file"]),
     ]
     for left, right in rows:
         cells = table.add_row().cells
         set_cell_text(cells[0], left, bold=True)
         set_cell_text(cells[1], right)
 
-    add_heading(doc, "规则拆解", level=2)
+    add_heading(doc, "瑙勫垯鎷嗚В", level=2)
     add_bullets(doc, strategy["strategy_shape"])
 
 
@@ -313,35 +326,35 @@ def build_docx() -> Path:
     style_doc(doc)
     add_title_block(doc)
 
-    add_heading(doc, "核心结论", level=1)
+    add_heading(doc, "鏍稿績缁撹", level=1)
     add_bullets(
         doc,
         [
-            "收益率最高版更偏进攻，核心在于不做市场过滤，并把单笔仓位抬到 0.33，从而把总暴露推到接近满仓滚动。",
-            "夏普版加仓后更偏稳健，核心在于保留“双指数都站上 MA20 才开仓”的市场环境闸门，同时把单笔仓位也抬到 0.33。",
-            "两版都采用相同的 clean 执行链：显式开盘价限价单、开盘涨停跳过、开盘跌停顺延、官方回测日志 0 WARN。",
+            "鏀剁泭鐜囨渶楂樼増鏇村亸杩涙敾锛屾牳蹇冨湪浜庝笉鍋氬競鍦鸿繃婊わ紝骞舵妸鍗曠瑪浠撲綅鎶埌 0.33锛屼粠鑰屾妸鎬绘毚闇叉帹鍒版帴杩戞弧浠撴粴鍔ㄣ€?,
+            "澶忔櫘鐗堝姞浠撳悗鏇村亸绋冲仴锛屾牳蹇冨湪浜庝繚鐣欌€滃弻鎸囨暟閮界珯涓?MA20 鎵嶅紑浠撯€濈殑甯傚満鐜闂搁棬锛屽悓鏃舵妸鍗曠瑪浠撲綅涔熸姮鍒?0.33銆?,
+            "涓ょ増閮介噰鐢ㄧ浉鍚岀殑 clean 鎵ц閾撅細鏄惧紡寮€鐩樹环闄愪环鍗曘€佸紑鐩樻定鍋滆烦杩囥€佸紑鐩樿穼鍋滈『寤躲€佸畼鏂瑰洖娴嬫棩蹇?0 WARN銆?,
         ],
     )
 
-    add_heading(doc, "一页对比", level=1)
+    add_heading(doc, "涓€椤靛姣?, level=1)
     comparison = doc.add_table(rows=1, cols=3)
     comparison.style = "Table Grid"
     set_table_borders(comparison)
     headers = comparison.rows[0].cells
-    for idx, text in enumerate(["指标", "收益率最高版", "夏普版加仓后"]):
+    for idx, text in enumerate(["鎸囨爣", "鏀剁泭鐜囨渶楂樼増", "澶忔櫘鐗堝姞浠撳悗"]):
         set_cell_text(headers[idx], text, bold=True, color=RGBColor(255, 255, 255), size=10)
         shading = OxmlElement("w:shd")
         shading.set(qn("w:fill"), "1F4E79")
         headers[idx]._tc.get_or_add_tcPr().append(shading)
     metrics_rows = [
-        ("年化收益率", "203.50%", "130.52%"),
-        ("累计收益率", "410.91%", "221.35%"),
-        ("夏普比率", "2.0598", "2.7345"),
-        ("最大回撤", "14.39%", "7.46%"),
-        ("平均持仓率", "85.55%", "56.49%"),
-        ("峰值持仓率", "99%", "99%"),
-        ("开仓次数", "353", "174"),
-        ("胜率", "49.29%", "55.17%"),
+        ("骞村寲鏀剁泭鐜?, "203.50%", "130.52%"),
+        ("绱鏀剁泭鐜?, "410.91%", "221.35%"),
+        ("澶忔櫘姣旂巼", "2.0598", "2.7345"),
+        ("鏈€澶у洖鎾?, "14.39%", "7.46%"),
+        ("骞冲潎鎸佷粨鐜?, "85.55%", "56.49%"),
+        ("宄板€兼寔浠撶巼", "99%", "99%"),
+        ("寮€浠撴鏁?, "353", "174"),
+        ("鑳滅巼", "49.29%", "55.17%"),
     ]
     for metric, a, b in metrics_rows:
         row = comparison.add_row().cells
@@ -358,23 +371,23 @@ def build_docx() -> Path:
     add_strategy_card(doc, STRATEGIES[0])
     add_strategy_card(doc, STRATEGIES[1])
 
-    add_heading(doc, "怎么选", level=1)
+    add_heading(doc, "鎬庝箞閫?, level=1)
     add_bullets(
         doc,
         [
-            "如果目标是尽量把收益率做高，而且接受更大的资金暴露与更高的回撤波动，就选收益率最高版。",
-            "如果目标是让收益曲线更稳、回撤更低、风险调整后收益更漂亮，就选夏普版加仓后。",
-            "收益版更像“持续进攻”，夏普版更像“带市场环境闸门的稳健进攻”。",
+            "濡傛灉鐩爣鏄敖閲忔妸鏀剁泭鐜囧仛楂橈紝鑰屼笖鎺ュ彈鏇村ぇ鐨勮祫閲戞毚闇蹭笌鏇撮珮鐨勫洖鎾ゆ尝鍔紝灏遍€夋敹鐩婄巼鏈€楂樼増銆?,
+            "濡傛灉鐩爣鏄鏀剁泭鏇茬嚎鏇寸ǔ銆佸洖鎾ゆ洿浣庛€侀闄╄皟鏁村悗鏀剁泭鏇存紓浜紝灏遍€夊鏅増鍔犱粨鍚庛€?,
+            "鏀剁泭鐗堟洿鍍忊€滄寔缁繘鏀烩€濓紝澶忔櫘鐗堟洿鍍忊€滃甫甯傚満鐜闂搁棬鐨勭ǔ鍋ヨ繘鏀烩€濄€?,
         ],
     )
 
-    add_heading(doc, "来源材料", level=1)
+    add_heading(doc, "鏉ユ簮鏉愭枡", level=1)
     add_bullets(
         doc,
         [
-            r"参考 PDF：D:\download\edge\满仓收益版.pdf",
-            r"参考 PDF：D:\download\edge\夏普.pdf",
-            "说明：这份说明书重新统一了指标口径、执行规则和图表表现，因此最终数字以本说明书列出的官方 clean 日志为准。",
+            r"鍙傝€?PDF锛欴:\download\edge\婊′粨鏀剁泭鐗?pdf",
+            r"鍙傝€?PDF锛欴:\download\edge\澶忔櫘.pdf",
+            "璇存槑锛氳繖浠借鏄庝功閲嶆柊缁熶竴浜嗘寚鏍囧彛寰勩€佹墽琛岃鍒欏拰鍥捐〃琛ㄧ幇锛屽洜姝ゆ渶缁堟暟瀛椾互鏈鏄庝功鍒楀嚭鐨勫畼鏂?clean 鏃ュ織涓哄噯銆?,
         ],
     )
 

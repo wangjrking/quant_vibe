@@ -10,8 +10,8 @@ from stock_pool_module import build_all_a_stock_pool, write_stock_pool
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Export a local all-A-share stock pool from stock_basic_data.parquet.")
-    parser.add_argument("--data-dir", default="../data_file")
-    parser.add_argument("--output", default="../data_file/stock_pool_all_a.csv")
+    parser.add_argument("--data-dir", default="data_file")
+    parser.add_argument("--output", default="data_file/stock_pool_all_a.csv")
     parser.add_argument("--exclude-bj", action="store_true")
     return parser.parse_args(argv)
 

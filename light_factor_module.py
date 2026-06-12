@@ -208,7 +208,10 @@ def split_light_factor_data(
 ):
     frame = factor_data[factor_data["trade_date"].astype(str) >= train_start].copy()
     frame = frame[frame["name"].notna()]
-    frame = frame[~frame["name"].astype(str).str.contains("ST", na=False)]
+    names = frame["name"].astype(str)
+    frame = frame[~names.str.contains("ST", na=False)]
+    frame = frame[~names.str.contains("\u9000\u5e02", na=False)]
+    frame = frame[~names.str.startswith("\u9000", na=False)]
     if "st_type" in frame.columns:
         frame = frame[frame["st_type"].fillna("").astype(str) != "ST"]
     if "limit_times" in frame.columns:

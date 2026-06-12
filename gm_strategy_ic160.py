@@ -14,7 +14,7 @@ from pathlib import Path
 from gm.api import *  # noqa: F403
 
 
-DEFAULT_SIGNAL_FILE = str((Path(__file__).resolve().parent / "../data_file/gm_signals_2y_ic160.csv").resolve())
+DEFAULT_SIGNAL_FILE = str((Path(__file__).resolve().parent / "data_file/gm_signals_2y_ic160.csv").resolve())
 SIGNAL_FILE = os.environ.get("GM_SIGNAL_FILE", DEFAULT_SIGNAL_FILE)
 MAX_POSITIONS = 10
 HOLDING_DAYS = 10

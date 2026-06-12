@@ -10,7 +10,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Export gm signals from a prediction table, then run the official Juejin backtest and save the log."
     )
-    parser.add_argument("--db", default="../data_file/odb.db")
+    parser.add_argument("--db", default="data_file/odb.db")
     parser.add_argument("--table", required=True)
     parser.add_argument("--start", required=True)
     parser.add_argument("--end", required=True)

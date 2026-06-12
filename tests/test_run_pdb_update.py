@@ -9,13 +9,13 @@ class RunPdbUpdateTests(unittest.TestCase):
         args = run_pdb_update.parse_args(
             [
                 "--stock-pool",
-                "../data_file/stock_pool_hs300_zz500.csv",
+                "data_file/stock_pool_hs300_zz500.csv",
                 "--model-backend",
                 "mlp",
             ]
         )
 
-        self.assertEqual(args.stock_pool, "../data_file/stock_pool_hs300_zz500.csv")
+        self.assertEqual(args.stock_pool, "data_file/stock_pool_hs300_zz500.csv")
         self.assertEqual(args.model_backend, "mlp")
 
     @patch("run_pdb_update.model_assess")
@@ -46,13 +46,13 @@ class RunPdbUpdateTests(unittest.TestCase):
             run_pdb_update.main(
                 [
                     "--stock-pool",
-                    "../data_file/stock_pool_hs300_zz500.csv",
+                    "data_file/stock_pool_hs300_zz500.csv",
                     "--output-table",
                     "dummy",
                 ]
             )
 
-        self.assertEqual(fake_get_factor_data.call_args.args[-1], "../data_file/stock_pool_hs300_zz500.csv")
+        self.assertEqual(fake_get_factor_data.call_args.args[-1], "data_file/stock_pool_hs300_zz500.csv")
 
 
 if __name__ == "__main__":

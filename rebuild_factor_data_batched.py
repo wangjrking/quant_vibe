@@ -117,7 +117,7 @@ def rebuild(data_dir: Path, batch_size: int, resume: bool, end_date: str | None 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Rebuild stock_factor_data.parquet in resumable stock batches.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--batch-size", type=int, default=25)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--end-date", help="Optional YYYYMMDD cutoff applied when merging factor parts.")

@@ -8,7 +8,7 @@
     "url": "sqlite:///data_file/odb.db"
   },
   "datasource": {
-    "tushare_token": "0332bac5e1f60e47195eb60e64e285d1dc1f40a34b0f7ea933998326"
+    "tushare_token": ""
   },
   "filecatalog": {
     "file_url": "."

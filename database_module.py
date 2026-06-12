@@ -6,19 +6,19 @@ import sqlite3
 
 
 # def get_sql_engine(schemas):
-# 	engine = create_engine('mysql+pymysql://root:password@localhost:3306/'+schemas,connect_args={'client_flag': CLIENT.MULTI_STATEMENTS}, )# pool_pre_ping=True, pool_size = 20,max_overflow=10,pool_recycle=3600,)
+# 	engine = create_engine('sqlite:///data_file/odb.db',connect_args={'client_flag': CLIENT.MULTI_STATEMENTS}, )# pool_pre_ping=True, pool_size = 20,max_overflow=10,pool_recycle=3600,)
 # 	return engine
 
 # def get_integ_data(engine):
-	
+
 # 	first_chunk = True
 # 	with engine.connect() as connection:
 # 		chunks = []
 # 		query = text("SELECT * FROM CDB.STOCK_DAILY_DATA")
 # 		for chunk in pd.read_sql(query, connection, chunksize=100000):  # 每次读取10万行
 # 			# chunks.append(chunk)
-# 			# chunk.to_parquet('D:/办公/量化交易/quant_project/data_file/cdb/stock_daily_data.parquet')
-# 			output_file = 'D:/办公/量化交易/quant_project/data_file/cdb/stock_daily_data.parquet'
+# 			# chunk.to_parquet('data_file/stock_daily_data.parquet')
+# 			output_file = 'data_file/stock_daily_data.parquet'
 # 			if first_chunk:
 # 				chunk.to_parquet(output_file, index=False)
 # 				first_chunk = False
@@ -27,270 +27,270 @@ import sqlite3
 # 				# chunk.to_parquet(output_file, index=False, mode='append')
 # 		# integ_data =  pd.concat(chunks, ignore_index=True)
 
-	
+
 
 
 
 	# return integ_data
 
 # DROP TABLE IF EXISTS CDB.STOCK_DAILY_DATA;
-# SET GLOBAL innodb_buffer_pool_size = 60 * 1024 * 1024 * 1024; 
+# SET GLOBAL innodb_buffer_pool_size = 60 * 1024 * 1024 * 1024;
 # SET GLOBAL innodb_strict_mode = 0;
 # SET SESSION innodb_strict_mode = 0;
 # SET GLOBAL innodb_file_per_table = 1;
 sql = """
 DROP TABLE IF EXISTS STOCK_DAILY_DATA;
-CREATE TABLE STOCK_DAILY_DATA as 
-SELECT 
+CREATE TABLE STOCK_DAILY_DATA as
+SELECT
     T1.ts_code as stock_code,
     T1.trade_date,
-    t3.name, 
-    T1.open*T7.adj_factor/T8.adj_factor AS open, 
+    t3.name,
+    T1.open*T7.adj_factor/T8.adj_factor AS open,
     T1.close*T7.adj_factor/T8.adj_factor AS close,
-    T1.high*T7.adj_factor/T8.adj_factor AS high, 
-    T1.low*T7.adj_factor/T8.adj_factor AS low, 
-    T1.pre_close, 
-    T1.change, 
-    T1.pct_chg, 
-    T1.vol, 
-    T1.amount, 
-    T2.turnover_rate, 
-    T2.turnover_rate_f, 
-    T2.volume_ratio, 
-    T2.pe, 
-    T2.pe_ttm, 
-    T2.pb, 
-    T2.ps, 
-    T2.ps_ttm, 
-    T2.dv_ratio, 
-    T2.dv_ttm, 
-    T2.total_share, 
-    T2.float_share, 
-    T2.free_share, 
-    T2.total_mv, 
+    T1.high*T7.adj_factor/T8.adj_factor AS high,
+    T1.low*T7.adj_factor/T8.adj_factor AS low,
+    T1.pre_close,
+    T1.change,
+    T1.pct_chg,
+    T1.vol,
+    T1.amount,
+    T2.turnover_rate,
+    T2.turnover_rate_f,
+    T2.volume_ratio,
+    T2.pe,
+    T2.pe_ttm,
+    T2.pb,
+    T2.ps,
+    T2.ps_ttm,
+    T2.dv_ratio,
+    T2.dv_ttm,
+    T2.total_share,
+    T2.float_share,
+    T2.free_share,
+    T2.total_mv,
     T2.circ_mv,
-    t3.symbol, 
-    t3.area, 
-    t3.industry, 
-    t3.cnspell, 
-    t3.market, 
-    t3.list_date, 
+    t3.symbol,
+    t3.area,
+    t3.industry,
+    t3.cnspell,
+    t3.market,
+    t3.list_date,
     t3.act_ent_type,
-    T4.ann_date AS season_ann_date, 
-    T4.end_date AS season_end_date, 
-    T4.eps AS season_eps, 
-    T4.dt_eps AS season_dt_eps, 
+    T4.ann_date AS season_ann_date,
+    T4.end_date AS season_end_date,
+    T4.eps AS season_eps,
+    T4.dt_eps AS season_dt_eps,
     T4.total_revenue_ps AS season_total_revenue_ps,
     T4.revenue_ps AS season_revenue_ps,
-    T4.capital_rese_ps AS season_capital_rese_ps, 
-    T4.surplus_rese_ps AS season_surplus_rese_ps, 
-    T4.undist_profit_ps AS season_undist_profit_ps, 
-    T4.extra_item AS season_extra_item, 
-    T4.profit_dedt AS season_profit_dedt, 
-    T4.gross_margin AS season_gross_margin, 
-    T4.current_ratio AS season_current_ratio, 
-    T4.quick_ratio AS season_quick_ratio, 
-    T4.cash_ratio AS season_cash_ratio, 
-    T4.ar_turn AS season_ar_turn, 
-    T4.ca_turn AS season_ca_turn, 
-    T4.fa_turn AS season_fa_turn, 
-    T4.assets_turn AS season_assets_turn, 
-    T4.op_income AS season_op_income, 
-    T4.ebit AS season_ebit, 
-    T4.ebitda AS season_ebitda, 
-    T4.fcff AS season_fcff, 
-    T4.fcfe AS season_fcfe, 
-    T4.current_exint AS season_current_exint, 
-    T4.noncurrent_exint AS season_noncurrent_exint, 
-    T4.interestdebt AS season_interestdebt, 
-    T4.netdebt AS season_netdebt, 
-    T4.tangible_asset AS season_tangible_asset, 
-    T4.working_capital AS season_working_capital, 
-    T4.networking_capital AS season_networking_capital, 
-    T4.invest_capital AS season_invest_capital, 
-    T4.retained_earnings AS season_retained_earnings, 
-    T4.diluted2_eps AS season_diluted2_eps, 
-    T4.bps AS season_bps, 
-    T4.ocfps AS season_ocfps, 
-    T4.retainedps AS season_retainedps, 
-    T4.cfps AS season_cfps, 
-    T4.ebit_ps AS season_ebit_ps, 
-    T4.fcff_ps AS season_fcff_ps, 
-    T4.fcfe_ps AS season_fcfe_ps, 
-    T4.netprofit_margin AS season_netprofit_margin, 
-    T4.grossprofit_margin AS season_grossprofit_margin, 
-    T4.cogs_of_sales AS season_cogs_of_sales, 
-    T4.expense_of_sales AS season_expense_of_sales, 
-    T4.profit_to_gr AS season_profit_to_gr, 
-    T4.saleexp_to_gr AS season_saleexp_to_gr, 
-    T4.adminexp_of_gr AS season_adminexp_of_gr, 
-    T4.finaexp_of_gr AS season_finaexp_of_gr, 
-    T4.impai_ttm AS season_impai_ttm, 
-    T4.gc_of_gr AS season_gc_of_gr, 
-    T4.op_of_gr AS season_op_of_gr, 
-    T4.ebit_of_gr AS season_ebit_of_gr, 
-    T4.roe AS season_roe, 
-    T4.roe_waa AS season_roe_waa, 
-    T4.roe_dt AS season_roe_dt, 
-    T4.roa AS season_roa, 
-    T4.npta AS season_npta, 
-    T4.roic AS season_roic, 
-    T4.roe_yearly AS season_roe_yearly, 
-    T4.roa2_yearly AS season_roa2_yearly, 
-    T4.debt_to_assets AS season_debt_to_assets, 
-    T4.assets_to_eqt AS season_assets_to_eqt, 
-    T4.dp_assets_to_eqt AS season_dp_assets_to_eqt, 
-    T4.ca_to_assets AS season_ca_to_assets, 
-    T4.nca_to_assets AS season_nca_to_assets, 
-    T4.tbassets_to_totalassets AS season_tbassets_to_totalassets, 
-    T4.int_to_talcap AS season_int_to_talcap, 
-    T4.eqt_to_talcapital AS season_eqt_to_talcapital, 
-    T4.currentdebt_to_debt AS season_currentdebt_to_debt, 
-    T4.longdeb_to_debt AS season_longdeb_to_debt, 
-    T4.ocf_to_shortdebt AS season_ocf_to_shortdebt, 
-    T4.debt_to_eqt AS season_debt_to_eqt, 
-    T4.eqt_to_debt AS season_eqt_to_debt, 
-    T4.eqt_to_interestdebt AS season_eqt_to_interestdebt, 
-    T4.tangibleasset_to_debt AS season_tangibleasset_to_debt, 
-    T4.tangasset_to_intdebt AS season_tangasset_to_intdebt, 
-    T4.tangibleasset_to_netdebt AS season_tangibleasset_to_netdebt, 
-    T4.ocf_to_debt AS season_ocf_to_debt, 
-    T4.turn_days AS season_turn_days, 
-    T4.roa_yearly AS season_roa_yearly, 
-    T4.roa_dp AS season_roa_dp, 
-    T4.fixed_assets AS season_fixed_assets, 
-    T4.profit_to_op AS season_profit_to_op, 
-    T4.q_saleexp_to_gr AS season_q_saleexp_to_gr, 
-    T4.q_gc_to_gr AS season_q_gc_to_gr, 
-    T4.q_roe AS season_q_roe, 
-    T4.q_dt_roe AS season_q_dt_roe, 
-    T4.q_npta AS season_q_npta, 
-    T4.q_ocf_to_sales AS season_q_ocf_to_sales, 
-    T4.basic_eps_yoy AS season_basic_eps_yoy, 
-    T4.dt_eps_yoy AS season_dt_eps_yoy, 
-    T4.cfps_yoy AS season_cfps_yoy, 
-    T4.op_yoy AS season_op_yoy, 
-    T4.ebt_yoy AS season_ebt_yoy, 
-    T4.netprofit_yoy AS season_netprofit_yoy, 
-    T4.dt_netprofit_yoy AS season_dt_netprofit_yoy, 
-    T4.ocf_yoy AS season_ocf_yoy, 
-    T4.roe_yoy AS season_roe_yoy, 
-    T4.bps_yoy AS season_bps_yoy, 
-    T4.assets_yoy AS season_assets_yoy, 
-    T4.eqt_yoy AS season_eqt_yoy, 
-    T4.tr_yoy AS season_tr_yoy, 
-    T4.or_yoy AS season_or_yoy, 
-    T4.q_sales_yoy AS season_q_sales_yoy, 
-    T4.q_op_qoq AS season_q_op_qoq, 
-    T4.equity_yoy AS season_equity_yoy, 
+    T4.capital_rese_ps AS season_capital_rese_ps,
+    T4.surplus_rese_ps AS season_surplus_rese_ps,
+    T4.undist_profit_ps AS season_undist_profit_ps,
+    T4.extra_item AS season_extra_item,
+    T4.profit_dedt AS season_profit_dedt,
+    T4.gross_margin AS season_gross_margin,
+    T4.current_ratio AS season_current_ratio,
+    T4.quick_ratio AS season_quick_ratio,
+    T4.cash_ratio AS season_cash_ratio,
+    T4.ar_turn AS season_ar_turn,
+    T4.ca_turn AS season_ca_turn,
+    T4.fa_turn AS season_fa_turn,
+    T4.assets_turn AS season_assets_turn,
+    T4.op_income AS season_op_income,
+    T4.ebit AS season_ebit,
+    T4.ebitda AS season_ebitda,
+    T4.fcff AS season_fcff,
+    T4.fcfe AS season_fcfe,
+    T4.current_exint AS season_current_exint,
+    T4.noncurrent_exint AS season_noncurrent_exint,
+    T4.interestdebt AS season_interestdebt,
+    T4.netdebt AS season_netdebt,
+    T4.tangible_asset AS season_tangible_asset,
+    T4.working_capital AS season_working_capital,
+    T4.networking_capital AS season_networking_capital,
+    T4.invest_capital AS season_invest_capital,
+    T4.retained_earnings AS season_retained_earnings,
+    T4.diluted2_eps AS season_diluted2_eps,
+    T4.bps AS season_bps,
+    T4.ocfps AS season_ocfps,
+    T4.retainedps AS season_retainedps,
+    T4.cfps AS season_cfps,
+    T4.ebit_ps AS season_ebit_ps,
+    T4.fcff_ps AS season_fcff_ps,
+    T4.fcfe_ps AS season_fcfe_ps,
+    T4.netprofit_margin AS season_netprofit_margin,
+    T4.grossprofit_margin AS season_grossprofit_margin,
+    T4.cogs_of_sales AS season_cogs_of_sales,
+    T4.expense_of_sales AS season_expense_of_sales,
+    T4.profit_to_gr AS season_profit_to_gr,
+    T4.saleexp_to_gr AS season_saleexp_to_gr,
+    T4.adminexp_of_gr AS season_adminexp_of_gr,
+    T4.finaexp_of_gr AS season_finaexp_of_gr,
+    T4.impai_ttm AS season_impai_ttm,
+    T4.gc_of_gr AS season_gc_of_gr,
+    T4.op_of_gr AS season_op_of_gr,
+    T4.ebit_of_gr AS season_ebit_of_gr,
+    T4.roe AS season_roe,
+    T4.roe_waa AS season_roe_waa,
+    T4.roe_dt AS season_roe_dt,
+    T4.roa AS season_roa,
+    T4.npta AS season_npta,
+    T4.roic AS season_roic,
+    T4.roe_yearly AS season_roe_yearly,
+    T4.roa2_yearly AS season_roa2_yearly,
+    T4.debt_to_assets AS season_debt_to_assets,
+    T4.assets_to_eqt AS season_assets_to_eqt,
+    T4.dp_assets_to_eqt AS season_dp_assets_to_eqt,
+    T4.ca_to_assets AS season_ca_to_assets,
+    T4.nca_to_assets AS season_nca_to_assets,
+    T4.tbassets_to_totalassets AS season_tbassets_to_totalassets,
+    T4.int_to_talcap AS season_int_to_talcap,
+    T4.eqt_to_talcapital AS season_eqt_to_talcapital,
+    T4.currentdebt_to_debt AS season_currentdebt_to_debt,
+    T4.longdeb_to_debt AS season_longdeb_to_debt,
+    T4.ocf_to_shortdebt AS season_ocf_to_shortdebt,
+    T4.debt_to_eqt AS season_debt_to_eqt,
+    T4.eqt_to_debt AS season_eqt_to_debt,
+    T4.eqt_to_interestdebt AS season_eqt_to_interestdebt,
+    T4.tangibleasset_to_debt AS season_tangibleasset_to_debt,
+    T4.tangasset_to_intdebt AS season_tangasset_to_intdebt,
+    T4.tangibleasset_to_netdebt AS season_tangibleasset_to_netdebt,
+    T4.ocf_to_debt AS season_ocf_to_debt,
+    T4.turn_days AS season_turn_days,
+    T4.roa_yearly AS season_roa_yearly,
+    T4.roa_dp AS season_roa_dp,
+    T4.fixed_assets AS season_fixed_assets,
+    T4.profit_to_op AS season_profit_to_op,
+    T4.q_saleexp_to_gr AS season_q_saleexp_to_gr,
+    T4.q_gc_to_gr AS season_q_gc_to_gr,
+    T4.q_roe AS season_q_roe,
+    T4.q_dt_roe AS season_q_dt_roe,
+    T4.q_npta AS season_q_npta,
+    T4.q_ocf_to_sales AS season_q_ocf_to_sales,
+    T4.basic_eps_yoy AS season_basic_eps_yoy,
+    T4.dt_eps_yoy AS season_dt_eps_yoy,
+    T4.cfps_yoy AS season_cfps_yoy,
+    T4.op_yoy AS season_op_yoy,
+    T4.ebt_yoy AS season_ebt_yoy,
+    T4.netprofit_yoy AS season_netprofit_yoy,
+    T4.dt_netprofit_yoy AS season_dt_netprofit_yoy,
+    T4.ocf_yoy AS season_ocf_yoy,
+    T4.roe_yoy AS season_roe_yoy,
+    T4.bps_yoy AS season_bps_yoy,
+    T4.assets_yoy AS season_assets_yoy,
+    T4.eqt_yoy AS season_eqt_yoy,
+    T4.tr_yoy AS season_tr_yoy,
+    T4.or_yoy AS season_or_yoy,
+    T4.q_sales_yoy AS season_q_sales_yoy,
+    T4.q_op_qoq AS season_q_op_qoq,
+    T4.equity_yoy AS season_equity_yoy,
     T4.update_flag AS season_update_flag,
-    T5.ann_date AS year_ann_date, 
-    T5.end_date AS year_end_date, 
-    T5.eps AS year_eps, 
-    T5.dt_eps AS year_dt_eps, 
+    T5.ann_date AS year_ann_date,
+    T5.end_date AS year_end_date,
+    T5.eps AS year_eps,
+    T5.dt_eps AS year_dt_eps,
     T5.total_revenue_ps AS year_total_revenue_ps,
     T5.revenue_ps AS year_revenue_ps,
-    T5.capital_rese_ps AS year_capital_rese_ps, 
-    T5.surplus_rese_ps AS year_surplus_rese_ps, 
-    T5.undist_profit_ps AS year_undist_profit_ps, 
-    T5.extra_item AS year_extra_item, 
-    T5.profit_dedt AS year_profit_dedt, 
-    T5.gross_margin AS year_gross_margin, 
-    T5.current_ratio AS year_current_ratio, 
-    T5.quick_ratio AS year_quick_ratio, 
-    T5.cash_ratio AS year_cash_ratio, 
-    T5.ar_turn AS year_ar_turn, 
-    T5.ca_turn AS year_ca_turn, 
-    T5.fa_turn AS year_fa_turn, 
-    T5.assets_turn AS year_assets_turn, 
-    T5.op_income AS year_op_income, 
-    T5.ebit AS year_ebit, 
-    T5.ebitda AS year_ebitda, 
-    T5.fcff AS year_fcff, 
-    T5.fcfe AS year_fcfe, 
-    T5.current_exint AS year_current_exint, 
-    T5.noncurrent_exint AS year_noncurrent_exint, 
-    T5.interestdebt AS year_interestdebt, 
-    T5.netdebt AS year_netdebt, 
-    T5.tangible_asset AS year_tangible_asset, 
-    T5.working_capital AS year_working_capital, 
-    T5.networking_capital AS year_networking_capital, 
-    T5.invest_capital AS year_invest_capital, 
-    T5.retained_earnings AS year_retained_earnings, 
-    T5.diluted2_eps AS year_diluted2_eps, 
-    T5.bps AS year_bps, 
-    T5.ocfps AS year_ocfps, 
-    T5.retainedps AS year_retainedps, 
-    T5.cfps AS year_cfps, 
-    T5.ebit_ps AS year_ebit_ps, 
-    T5.fcff_ps AS year_fcff_ps, 
-    T5.fcfe_ps AS year_fcfe_ps, 
-    T5.netprofit_margin AS year_netprofit_margin, 
-    T5.grossprofit_margin AS year_grossprofit_margin, 
-    T5.cogs_of_sales AS year_cogs_of_sales, 
-    T5.expense_of_sales AS year_expense_of_sales, 
-    T5.profit_to_gr AS year_profit_to_gr, 
-    T5.saleexp_to_gr AS year_saleexp_to_gr, 
-    T5.adminexp_of_gr AS year_adminexp_of_gr, 
-    T5.finaexp_of_gr AS year_finaexp_of_gr, 
-    T5.impai_ttm AS year_impai_ttm, 
-    T5.gc_of_gr AS year_gc_of_gr, 
-    T5.op_of_gr AS year_op_of_gr, 
-    T5.ebit_of_gr AS year_ebit_of_gr, 
-    T5.roe AS year_roe, 
-    T5.roe_waa AS year_roe_waa, 
-    T5.roe_dt AS year_roe_dt, 
-    T5.roa AS year_roa, 
-    T5.npta AS year_npta, 
-    T5.roic AS year_roic, 
-    T5.roe_yearly AS year_roe_yearly, 
-    T5.roa2_yearly AS year_roa2_yearly, 
-    T5.debt_to_assets AS year_debt_to_assets, 
-    T5.assets_to_eqt AS year_assets_to_eqt, 
-    T5.dp_assets_to_eqt AS year_dp_assets_to_eqt, 
-    T5.ca_to_assets AS year_ca_to_assets, 
-    T5.nca_to_assets AS year_nca_to_assets, 
-    T5.tbassets_to_totalassets AS year_tbassets_to_totalassets, 
-    T5.int_to_talcap AS year_int_to_talcap, 
-    T5.eqt_to_talcapital AS year_eqt_to_talcapital, 
-    T5.currentdebt_to_debt AS year_currentdebt_to_debt, 
-    T5.longdeb_to_debt AS year_longdeb_to_debt, 
-    T5.ocf_to_shortdebt AS year_ocf_to_shortdebt, 
-    T5.debt_to_eqt AS year_debt_to_eqt, 
-    T5.eqt_to_debt AS year_eqt_to_debt, 
-    T5.eqt_to_interestdebt AS year_eqt_to_interestdebt, 
-    T5.tangibleasset_to_debt AS year_tangibleasset_to_debt, 
-    T5.tangasset_to_intdebt AS year_tangasset_to_intdebt, 
-    T5.tangibleasset_to_netdebt AS year_tangibleasset_to_netdebt, 
-    T5.ocf_to_debt AS year_ocf_to_debt, 
-    T5.turn_days AS year_turn_days, 
-    T5.roa_yearly AS year_roa_yearly, 
-    T5.roa_dp AS year_roa_dp, 
-    T5.fixed_assets AS year_fixed_assets, 
-    T5.profit_to_op AS year_profit_to_op, 
-    T5.q_saleexp_to_gr AS year_q_saleexp_to_gr, 
-    T5.q_gc_to_gr AS year_q_gc_to_gr, 
-    T5.q_roe AS year_q_roe, 
-    T5.q_dt_roe AS year_q_dt_roe, 
-    T5.q_npta AS year_q_npta, 
-    T5.q_ocf_to_sales AS year_q_ocf_to_sales, 
-    T5.basic_eps_yoy AS year_basic_eps_yoy, 
-    T5.dt_eps_yoy AS year_dt_eps_yoy, 
-    T5.cfps_yoy AS year_cfps_yoy, 
-    T5.op_yoy AS year_op_yoy, 
-    T5.ebt_yoy AS year_ebt_yoy, 
-    T5.netprofit_yoy AS year_netprofit_yoy, 
-    T5.dt_netprofit_yoy AS year_dt_netprofit_yoy, 
-    T5.ocf_yoy AS year_ocf_yoy, 
-    T5.roe_yoy AS year_roe_yoy, 
-    T5.bps_yoy AS year_bps_yoy, 
-    T5.assets_yoy AS year_assets_yoy, 
-    T5.eqt_yoy AS year_eqt_yoy, 
-    T5.tr_yoy AS year_tr_yoy, 
-    T5.or_yoy AS year_or_yoy, 
-    T5.q_sales_yoy AS year_q_sales_yoy, 
-    T5.q_op_qoq AS year_q_op_qoq, 
-    T5.equity_yoy AS year_equity_yoy, 
+    T5.capital_rese_ps AS year_capital_rese_ps,
+    T5.surplus_rese_ps AS year_surplus_rese_ps,
+    T5.undist_profit_ps AS year_undist_profit_ps,
+    T5.extra_item AS year_extra_item,
+    T5.profit_dedt AS year_profit_dedt,
+    T5.gross_margin AS year_gross_margin,
+    T5.current_ratio AS year_current_ratio,
+    T5.quick_ratio AS year_quick_ratio,
+    T5.cash_ratio AS year_cash_ratio,
+    T5.ar_turn AS year_ar_turn,
+    T5.ca_turn AS year_ca_turn,
+    T5.fa_turn AS year_fa_turn,
+    T5.assets_turn AS year_assets_turn,
+    T5.op_income AS year_op_income,
+    T5.ebit AS year_ebit,
+    T5.ebitda AS year_ebitda,
+    T5.fcff AS year_fcff,
+    T5.fcfe AS year_fcfe,
+    T5.current_exint AS year_current_exint,
+    T5.noncurrent_exint AS year_noncurrent_exint,
+    T5.interestdebt AS year_interestdebt,
+    T5.netdebt AS year_netdebt,
+    T5.tangible_asset AS year_tangible_asset,
+    T5.working_capital AS year_working_capital,
+    T5.networking_capital AS year_networking_capital,
+    T5.invest_capital AS year_invest_capital,
+    T5.retained_earnings AS year_retained_earnings,
+    T5.diluted2_eps AS year_diluted2_eps,
+    T5.bps AS year_bps,
+    T5.ocfps AS year_ocfps,
+    T5.retainedps AS year_retainedps,
+    T5.cfps AS year_cfps,
+    T5.ebit_ps AS year_ebit_ps,
+    T5.fcff_ps AS year_fcff_ps,
+    T5.fcfe_ps AS year_fcfe_ps,
+    T5.netprofit_margin AS year_netprofit_margin,
+    T5.grossprofit_margin AS year_grossprofit_margin,
+    T5.cogs_of_sales AS year_cogs_of_sales,
+    T5.expense_of_sales AS year_expense_of_sales,
+    T5.profit_to_gr AS year_profit_to_gr,
+    T5.saleexp_to_gr AS year_saleexp_to_gr,
+    T5.adminexp_of_gr AS year_adminexp_of_gr,
+    T5.finaexp_of_gr AS year_finaexp_of_gr,
+    T5.impai_ttm AS year_impai_ttm,
+    T5.gc_of_gr AS year_gc_of_gr,
+    T5.op_of_gr AS year_op_of_gr,
+    T5.ebit_of_gr AS year_ebit_of_gr,
+    T5.roe AS year_roe,
+    T5.roe_waa AS year_roe_waa,
+    T5.roe_dt AS year_roe_dt,
+    T5.roa AS year_roa,
+    T5.npta AS year_npta,
+    T5.roic AS year_roic,
+    T5.roe_yearly AS year_roe_yearly,
+    T5.roa2_yearly AS year_roa2_yearly,
+    T5.debt_to_assets AS year_debt_to_assets,
+    T5.assets_to_eqt AS year_assets_to_eqt,
+    T5.dp_assets_to_eqt AS year_dp_assets_to_eqt,
+    T5.ca_to_assets AS year_ca_to_assets,
+    T5.nca_to_assets AS year_nca_to_assets,
+    T5.tbassets_to_totalassets AS year_tbassets_to_totalassets,
+    T5.int_to_talcap AS year_int_to_talcap,
+    T5.eqt_to_talcapital AS year_eqt_to_talcapital,
+    T5.currentdebt_to_debt AS year_currentdebt_to_debt,
+    T5.longdeb_to_debt AS year_longdeb_to_debt,
+    T5.ocf_to_shortdebt AS year_ocf_to_shortdebt,
+    T5.debt_to_eqt AS year_debt_to_eqt,
+    T5.eqt_to_debt AS year_eqt_to_debt,
+    T5.eqt_to_interestdebt AS year_eqt_to_interestdebt,
+    T5.tangibleasset_to_debt AS year_tangibleasset_to_debt,
+    T5.tangasset_to_intdebt AS year_tangasset_to_intdebt,
+    T5.tangibleasset_to_netdebt AS year_tangibleasset_to_netdebt,
+    T5.ocf_to_debt AS year_ocf_to_debt,
+    T5.turn_days AS year_turn_days,
+    T5.roa_yearly AS year_roa_yearly,
+    T5.roa_dp AS year_roa_dp,
+    T5.fixed_assets AS year_fixed_assets,
+    T5.profit_to_op AS year_profit_to_op,
+    T5.q_saleexp_to_gr AS year_q_saleexp_to_gr,
+    T5.q_gc_to_gr AS year_q_gc_to_gr,
+    T5.q_roe AS year_q_roe,
+    T5.q_dt_roe AS year_q_dt_roe,
+    T5.q_npta AS year_q_npta,
+    T5.q_ocf_to_sales AS year_q_ocf_to_sales,
+    T5.basic_eps_yoy AS year_basic_eps_yoy,
+    T5.dt_eps_yoy AS year_dt_eps_yoy,
+    T5.cfps_yoy AS year_cfps_yoy,
+    T5.op_yoy AS year_op_yoy,
+    T5.ebt_yoy AS year_ebt_yoy,
+    T5.netprofit_yoy AS year_netprofit_yoy,
+    T5.dt_netprofit_yoy AS year_dt_netprofit_yoy,
+    T5.ocf_yoy AS year_ocf_yoy,
+    T5.roe_yoy AS year_roe_yoy,
+    T5.bps_yoy AS year_bps_yoy,
+    T5.assets_yoy AS year_assets_yoy,
+    T5.eqt_yoy AS year_eqt_yoy,
+    T5.tr_yoy AS year_tr_yoy,
+    T5.or_yoy AS year_or_yoy,
+    T5.q_sales_yoy AS year_q_sales_yoy,
+    T5.q_op_qoq AS year_q_op_qoq,
+    T5.equity_yoy AS year_equity_yoy,
     T5.update_flag AS year_update_flag,
     T6.limit_amount,
 	T6.fd_amount,
@@ -571,67 +571,67 @@ SELECT
     T18.low AS index_2000_low,
     T18.vol AS index_2000_vol,
     T18.amount AS index_2000_amount
-FROM 
+FROM
     daily_data AS T1
-LEFT JOIN 
-    daily_index_data AS T2 
+LEFT JOIN
+    daily_index_data AS T2
     ON T1.ts_code=T2.ts_code
     AND T1.trade_date=T2.trade_date
-LEFT JOIN 
+LEFT JOIN
     STOCK_BASIC_DATA AS T3
-    ON T1.ts_code=T3.ts_code 
-LEFT JOIN 
+    ON T1.ts_code=T3.ts_code
+LEFT JOIN
     (SELECT *, LEAD(ann_date, 1, '30001231') OVER (partition by ts_code ORDER BY ann_date) AS next_date FROM FINAN_DATA_SEASON) AS T4
     ON T1.ts_code = T4.ts_code
     AND T1.trade_date>=T4.ann_date
     AND T1.trade_date < T4.next_date
-LEFT JOIN 
+LEFT JOIN
     (SELECT *, LEAD(ann_date, 1, '30001231') OVER (partition by ts_code ORDER BY ann_date) AS next_date FROM FINAN_DATA_YEAR) AS T5
     ON T1.ts_code = T5.ts_code
     AND T1.trade_date>=T5.ann_date
     AND T1.trade_date<T5.next_date
-LEFT JOIN 
+LEFT JOIN
     limit_list_data AS T6
     ON T1.ts_code=T6.ts_code
     AND T1.trade_date=T6.trade_date
-LEFT JOIN 
+LEFT JOIN
     adj_factor AS T7
 	ON T1.ts_code=T7.ts_code
 	AND T1.trade_date=T7.trade_date
 LEFT JOIN (
     select ts_code,adj_factor ,row_number() over (partition by ts_code order by trade_date desc) as rn from adj_factor
 ) AS T8
-    ON T1.ts_code=T8.ts_code 
+    ON T1.ts_code=T8.ts_code
 	AND T8.RN=1
-LEFT JOIN 
+LEFT JOIN
     moneyflow AS T9
 	ON T1.ts_code=T9.ts_code
 	AND T1.trade_date=T9.trade_date
-LEFT JOIN 
+LEFT JOIN
     stk_factor AS T10
 	ON T1.ts_code=T10.ts_code
 	AND T1.trade_date=T10.trade_date
-LEFT JOIN 
+LEFT JOIN
     top_list AS T13
 	ON T1.TS_CODE = T13.TS_CODE
 	AND T1.trade_date=T13.trade_date
-LEFT JOIN 
+LEFT JOIN
     THS_HOT AS T14
 	ON T1.TS_CODE = T14.TS_CODE
 	AND T1.trade_date=T14.trade_date
-LEFT JOIN 
+LEFT JOIN
     THS_HOT AS T15
 	ON T1.TS_CODE = T15.TS_CODE
 	AND T1.trade_date=T15.trade_date
-LEFT JOIN 
+LEFT JOIN
     CYQ_PERF AS T16
 	ON T1.TS_CODE = T16.TS_CODE
 	AND T1.trade_date=T16.trade_date
-LEFT JOIN 
+LEFT JOIN
     stock_st AS T17
 	ON T1.TS_CODE = T17.TS_CODE
 	AND T1.trade_date=T17.trade_date
-LEFT JOIN 
+LEFT JOIN
     index_daily AS T18
 	ON T18.ts_code = '932000.CSI'
 	AND T1.trade_date=T18.trade_date
@@ -639,18 +639,17 @@ LEFT JOIN
 """
 
 def run_sql(sql, data_file_url):
-	
+
 	logging.info(f'#--------------------------------------------数据仓库模块启动--------------------------------------------#')
-    
+
 	conn = sqlite3.connect(data_file_url + '/odb.db')
 	cursor = conn.cursor()
 	cursor.executescript(sql)
 	conn.commit()
 	conn.close()
 	logging.info('#--------------------------------------------数据入仓完成--------------------------------------------#')
-	# stock_daily_data.to_parquet('D:/办公/量化交易/quant_project/data_file/cdb/stock_daily_data.parquet')
+	# stock_daily_data.to_parquet('data_file/stock_daily_data.parquet')
 	# logging.info(sql)
 	logging.info(f'#--------------------------------------------数据仓库模块完成--------------------------------------------#')
 if __name__ == '__main__':
 	run_sql(sql)
-

@@ -530,7 +530,7 @@ def search_window_validation_params(
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Walk-forward rolling training for stock prediction.")
-    parser.add_argument("--data-file-url", default="../data_file")
+    parser.add_argument("--data-file-url", default="data_file")
     parser.add_argument("--data-start", required=True)
     parser.add_argument("--first-test", required=True)
     parser.add_argument("--final-test", required=True)

@@ -32,6 +32,7 @@ def parse_args(argv=None):
     parser.add_argument("--score-stop-loss-day-drop-ratio", type=float)
     parser.add_argument("--score-take-profit-day-drop-ratio", type=float)
     parser.add_argument("--score-exit-entry-ratio", type=float)
+    parser.add_argument("--score-exit-rank", type=float)
     parser.add_argument("--min-holding-days-before-score-exit", type=int)
     parser.add_argument("--score-continue-entry-ratio", type=float)
     parser.add_argument("--max-holding-days", type=int)
@@ -40,6 +41,8 @@ def parse_args(argv=None):
     parser.add_argument("--backtest-start")
     parser.add_argument("--backtest-end")
     parser.add_argument("--backtest-adjust")
+    parser.add_argument("--backtest-initial-cash", type=float)
+    parser.add_argument("--backtest-slippage-ratio", type=float)
     return parser.parse_args(argv)
 
 
@@ -117,6 +120,8 @@ def main(argv=None):
         env["GM_SCORE_TAKE_PROFIT_DAY_DROP_RATIO"] = str(args.score_take_profit_day_drop_ratio)
     if args.score_exit_entry_ratio is not None:
         env["GM_SCORE_EXIT_ENTRY_RATIO"] = str(args.score_exit_entry_ratio)
+    if args.score_exit_rank is not None:
+        env["GM_SCORE_EXIT_RANK"] = str(args.score_exit_rank)
     if args.min_holding_days_before_score_exit is not None:
         env["GM_MIN_HOLDING_DAYS_BEFORE_SCORE_EXIT"] = str(args.min_holding_days_before_score_exit)
     if args.score_continue_entry_ratio is not None:
@@ -136,6 +141,10 @@ def main(argv=None):
     env["GM_BACKTEST_END"] = backtest_end
     if args.backtest_adjust:
         env["GM_BACKTEST_ADJUST"] = str(args.backtest_adjust)
+    if args.backtest_initial_cash is not None:
+        env["GM_BACKTEST_INITIAL_CASH"] = str(args.backtest_initial_cash)
+    if args.backtest_slippage_ratio is not None:
+        env["GM_BACKTEST_SLIPPAGE_RATIO"] = str(args.backtest_slippage_ratio)
 
     python_exe = sys.executable
     log_file.parent.mkdir(parents=True, exist_ok=True)

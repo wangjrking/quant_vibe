@@ -5,13 +5,14 @@ from pathlib import Path
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import font_manager
 from matplotlib.font_manager import FontProperties
 
 from backtest_module import BacktestConfig, read_prediction_rows, run_backtest
 
 
 ROOT = Path(__file__).resolve().parent
-DATA = ROOT.parent / "data_file"
+DATA = ROOT / "data_file"
 REPORT_DIR = DATA / "reports"
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -21,17 +22,16 @@ END = "20260604"
 
 
 def configure_fonts():
-    for font_path in [
-        Path("C:/Windows/Fonts/msyh.ttc"),
-        Path("C:/Windows/Fonts/simhei.ttf"),
-        Path("C:/Windows/Fonts/simsun.ttc"),
-    ]:
-        if font_path.exists():
-            font = FontProperties(fname=str(font_path))
+    for family in ["Microsoft YaHei", "SimHei", "SimSun", "PingFang SC", "WenQuanYi Micro Hei"]:
+        try:
+            path = font_manager.findfont(family, fallback_to_default=False)
+            font = FontProperties(fname=path)
             plt.rcParams["font.family"] = font.get_name()
             plt.rcParams["font.sans-serif"] = [font.get_name(), "Microsoft YaHei", "SimHei"]
             plt.rcParams["axes.unicode_minus"] = False
-            return font, FontProperties(fname=str(font_path))
+            return font, FontProperties(fname=path)
+        except ValueError:
+            continue
     return None, None
 
 

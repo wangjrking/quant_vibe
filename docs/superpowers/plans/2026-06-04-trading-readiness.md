@@ -29,7 +29,7 @@
 
 - [ ] Write tests for limit-up buy blocking and transaction-cost-adjusted returns.
 - [ ] Implement row filtering, daily top-k selection, return calculation, equity curve, drawdown, and RankIC.
-- [ ] Add a CLI that can read `../data_file/odb.db` and print metrics.
+- [ ] Add a CLI that can read `data_file/odb.db` and print metrics.
 
 ### Task 3: Daily Selection
 

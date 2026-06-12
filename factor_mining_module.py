@@ -1,4 +1,4 @@
-import pandas as pd 
+import pandas as pd
 import tushare as ts
 import xgboost as xgb
 from sklearn.metrics import roc_auc_score,accuracy_score, mean_squared_error
@@ -10,6 +10,7 @@ from gplearn.functions import make_function
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
+from project_paths import resolve_data_dir
 
 from database_module import get_sql_engine
 
@@ -17,7 +18,7 @@ from database_module import get_sql_engine
 
 def get_pro(ts_token):
     ts_pro = ts.pro_api(ts_token)
-    return ts_pro 
+    return ts_pro
 # ========== 1. 自定义函数扩展（时间序列函数示例） ==========
 def _ts_mean(x, window=5):
     """计算滚动均值"""
@@ -28,7 +29,7 @@ def _ts_std(x, window=5):
     return pd.Series(x.flatten()).rolling(window).std().values.reshape(-1, 1)
 
 def get_model(function_lst):
-    
+
     function_set = ['add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg', 'inv', 'max', 'min', 'sin', 'cos', 'tan']
     # function_set = function_set + function_lst
     gp_transformer = SymbolicTransformer(
@@ -56,25 +57,25 @@ def get_model(function_lst):
 
 def get_factor_data(data_test_dt, engine, label):
 
-    factor_data = pd.read_parquet('D:/办公\量化交易/quant_project/data_file/cdb/factor_data.parquet')
+    factor_data = pd.read_parquet(resolve_data_dir() / 'factor_data.parquet')
     factor_data = factor_data[~factor_data['name'].str.contains('ST')]
-    
+
 
     # 使用 np.select 计算收益率
 
     train_data = factor_data[factor_data['trade_date'] < data_test_dt]
-    
+
 
     test_data = factor_data[factor_data['trade_date'] >= data_test_dt]
-    train_data = train_data.dropna(subset=[label]) 
+    train_data = train_data.dropna(subset=[label])
 
     factor_list = [
     'close','open','high','low','vol','amount',
     'turnover_rate', 'turnover_rate_f', 'volume_ratio', 'pe', 'pe_ttm', 'pb', 'ps', 'ps_ttm', 'dv_ratio',
     'dv_ttm', 'total_share', 'float_share', 'free_share', 'total_mv', 'circ_mv',  label
     ]
-    
-    
+
+
     train_factor_data = train_data[factor_list]
     test_factor_data = test_data[factor_list]
     train_factor_data = train_factor_data.dropna()
@@ -82,30 +83,30 @@ def get_factor_data(data_test_dt, engine, label):
 
     train_factor_data = train_factor_data.apply(pd.to_numeric, errors='coerce')
     test_factor_data = test_factor_data.apply(pd.to_numeric, errors='coerce')
-    
-    
+
+
     train_y = train_factor_data.loc[:, label]
-    train_x = train_factor_data.drop(columns=[label]) 
+    train_x = train_factor_data.drop(columns=[label])
     test_y = test_factor_data.loc[:, label]
-    test_x = test_factor_data.drop(columns=[label]) 
-    
+    test_x = test_factor_data.drop(columns=[label])
+
     return train_x, train_y, test_x, test_y, train_data, test_data
-    
-def download_pred_data(data, engine, label): 
+
+def download_pred_data(data, engine, label):
     data.to_sql('stock_predict_data_'+label, engine, if_exists='replace', index=False)
-    data.to_parquet('D:/办公\量化交易/quant_project/data_file/cdb/stock_predict_data_'+label+'.parquet')
+    data.to_parquet(resolve_data_dir() / ('stock_predict_data_' + label + '.parquet'))
 
 def download_pdb_data( data_test_dt, label, type):
-    
+
     print(f'#--------------------------------------------AI模块启动--------------------------------------------#')
-    
+
     engine = get_sql_engine('pdb')
-    
+
     print(f'AI模块：1.MYSQL数据库连接成功')
     train_x, train_y, test_x, test_y, train_data, test_data = get_factor_data( data_test_dt, engine, label)
-    
+
     function_lst = [_ts_mean,_ts_std]
-    
+
     model = get_model(function_lst)
     print(train_x,train_y)
     x_new = model.fit_transform(train_x, train_y)  # 再转换
@@ -116,9 +117,9 @@ def download_pdb_data( data_test_dt, label, type):
             print(f"特征 {i+1}: {str(program)}")
 
     # ========== 5. 可视化结果 ==========
-    
+
     print(f'AI模块：3.模型建立完成')
-    
+
     print(f'#--------------------------------------------AI模块完成--------------------------------------------#')
 
 
@@ -127,7 +128,3 @@ if __name__ == '__main__':
     download_pdb_data(data_test_dt, label='yield_rate', type='reg')
 
     # download_pdb_data( data_test_dt, label='tag', type='class')
-
-
-    
-    

@@ -495,7 +495,7 @@ def run_strict_walkforward(args) -> dict[str, Any]:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Strict walk-forward training with validation-only parameter search.")
-    parser.add_argument("--data-dir", default="../data_file")
+    parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--stock-pool", default=None)
     parser.add_argument("--label", default="10d_yield_rate")
     parser.add_argument("--model-type", default="reg", choices=["reg", "class"])
