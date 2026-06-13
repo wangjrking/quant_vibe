@@ -1,0 +1,63 @@
+{
+  "model_type": "XGBoost",
+  "task": "regression",
+  "label": "executable_5d_open_return",
+  "training_window": {
+    "mode": "rolling / expanding rebuild aligned",
+    "start": "20100101",
+    "archived_folds": [
+      {
+        "fold": 1,
+        "train_start": "20100101",
+        "train_end": "20220524",
+        "test_start": "20220604",
+        "test_end": "20220903",
+        "train_rows": 1607170,
+        "test_rows": 48465,
+        "selected_feature_count": 84
+      },
+      {
+        "fold": 8,
+        "train_start": "20100101",
+        "train_end": "20240222",
+        "test_start": "20240304",
+        "test_end": "20240603",
+        "train_rows": 1931020,
+        "test_rows": 47376,
+        "selected_feature_count": 83
+      }
+    ]
+  },
+  "candidate_fast800_params": {
+    "n_estimators": 800,
+    "learning_rate": 0.01,
+    "max_depth": null,
+    "reg_lambda": null,
+    "subsample": null,
+    "colsample_bytree": null
+  },
+  "ai_module_runtime_defaults": {
+    "source": "ai_module.get_model('reg')",
+    "n_estimators": 14000,
+    "learning_rate": 0.003,
+    "max_depth": 3,
+    "subsample": 1.0,
+    "colsample_bytree": 1.0,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "random_state": 42,
+    "device": "cuda",
+    "objective": "reg:squarederror",
+    "eval_metric": "custom_mae"
+  },
+  "environment_overrides_supported": [
+    "XGB_N_ESTIMATORS",
+    "XGB_LEARNING_RATE",
+    "XGB_MAX_DEPTH",
+    "XGB_SUBSAMPLE",
+    "XGB_COLSAMPLE_BYTREE",
+    "XGB_REG_ALPHA",
+    "XGB_REG_LAMBDA"
+  ],
+  "parameter_note": "该投产信号归档来自 prod_aligned 4y liquidity enhanced 版本；日志明确使用 XGBoost 预测表和 foldfs120 因子筛选。当前证据文件没有单独记录该次训练是否覆盖过 ai_module 默认 XGBoost 环境变量，因此同时归档候选 fast800 参数和 ai_module 运行时默认参数。复现实盘版本时应以训练日志或环境快照进一步固化最终覆盖值。"
+}

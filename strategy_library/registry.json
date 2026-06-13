@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-06-13",
+  "production": {
+    "current": "prod_liq_prime_one_v20260612",
+    "strategies": [
+      {
+        "strategy_id": "prod_liq_prime_one_v20260612",
+        "name": "流动性精选一号",
+        "status": "production",
+        "version": "v20260612",
+        "path": "strategy_library/production/prod_liq_prime_one_v20260612",
+        "definition": "基于 executable_5d_open_return 预测标签，使用 2010 年以来滚动/扩展训练集训练 XGBoost 模型，每期按 IC 筛选 Top120 因子，并在预测结果中按 q95 分位、成交额不低于 80 万、换手率不低于 2、总市值不高于 100 万口径筛选后选取预测分最高的 1 只股票作为交易信号。"
+      }
+    ]
+  },
+  "exploration": {
+    "root": "strategy_library/exploration",
+    "rule": "未完成投产归档、未登记为 current production 的参数搜索、回测候选和临时信号均归入探索策略。"
+  }
+}

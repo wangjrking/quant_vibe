@@ -1,0 +1,39 @@
+{
+  "strategy_id": "prod_liq_prime_one_v20260612",
+  "validation_type": "gm_backtest",
+  "source_log": "data_file/reports/open_daily_tuning_20260612/juejin_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_slip0015_cash60w.log",
+  "signal_source": "data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
+  "daily_score_source": "data_file/odb.db / stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+  "gm_strategy_runtime_name": "open_daily_nomarket_top1_q95_hold5_score095_mh2",
+  "gm_sdk_version": "3.0.183",
+  "gm_c_sdk_version": "3.8.15",
+  "metrics": {
+    "pnl_ratio": 11.520864465431202,
+    "pnl_ratio_annual": 3.8508383973281948,
+    "sharp_ratio": 1.3057659678025164,
+    "max_drawdown": 0.2863755650848838,
+    "risk_ratio": 0.9816485957446798,
+    "open_count": 102,
+    "close_count": 101,
+    "win_count": 62,
+    "lose_count": 39,
+    "win_ratio": 0.6138613861386139,
+    "calmar_ratio": 13.446812042734086
+  },
+  "local_liquidity_grid_same_rule": {
+    "source_file": "data_file/reports/open_daily_tuning_20260612/liquidity_filter_grid_dynamic_slippage_top1.json",
+    "cum_return": 8.29775765132383,
+    "annual_return": 2.1553063954265292,
+    "sharpe": 1.9025924317958125,
+    "max_drawdown": 0.7616615223846305,
+    "trade_count": 110,
+    "win_ratio": 0.5181818181818182,
+    "avg_slippage": 0.0010339366515837113,
+    "max_slippage": 0.0015,
+    "min_amount": 800000,
+    "min_turnover": 2.0,
+    "max_mv": 1000000,
+    "signal_days": 216
+  },
+  "summary_text": "掘金回测累计收益约 1152.09%，年化收益约 385.08%，最大回撤约 28.64%，夏普比率 1.31，Calmar 比率 13.45；开仓 102 次、平仓 101 次，胜率约 61.39%。本地同规则流动性网格累计收益约 829.78%，年化收益约 215.53%，夏普约 1.90。"
+}
