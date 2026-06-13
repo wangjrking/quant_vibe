@@ -18,7 +18,11 @@ def parse_args(argv=None):
     parser.add_argument("--stock-pool")
     parser.add_argument("--top-k", type=int, default=defaults.top_k)
     parser.add_argument("--min-pred", default=str(defaults.min_pred_prob))
-    parser.add_argument("--max-atr-ratio", type=float, default=defaults.max_atr_ratio)
+    parser.add_argument("--min-pred-quantile", type=float, default=defaults.min_pred_quantile)
+    parser.add_argument("--max-atr-ratio", default=str(defaults.max_atr_ratio))
+    parser.add_argument("--min-amount", type=float)
+    parser.add_argument("--min-turnover-rate", type=float)
+    parser.add_argument("--max-total-mv", type=float)
     parser.add_argument("--max-per-industry", type=int, default=defaults.max_per_industry)
     parser.add_argument("--weight-mode", default="equal", choices=["equal", "rank", "score"])
     parser.add_argument("--target-total-pct", type=float)
@@ -36,6 +40,7 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     min_pred = None if str(args.min_pred).strip().lower() in {"none", "null", ""} else float(args.min_pred)
+    max_atr = None if str(args.max_atr_ratio).strip().lower() in {"none", "null", ""} else float(args.max_atr_ratio)
     rows = read_prediction_rows(args.db, args.table, args.start, args.end, stock_pool_path=args.stock_pool)
     market_rows_by_trade_date = load_market_rows_by_trade_date(args.db, args.start, args.end)
     signals = build_gm_signal_rows(
@@ -43,7 +48,11 @@ def main(argv=None):
         SelectionConfig(
             top_k=args.top_k,
             min_pred_prob=min_pred,
-            max_atr_ratio=args.max_atr_ratio,
+            min_pred_quantile=args.min_pred_quantile,
+            max_atr_ratio=max_atr,
+            min_amount=args.min_amount,
+            min_turnover_rate=args.min_turnover_rate,
+            max_total_mv=args.max_total_mv,
             max_per_industry=args.max_per_industry,
         ),
         market_rows_by_trade_date=market_rows_by_trade_date,

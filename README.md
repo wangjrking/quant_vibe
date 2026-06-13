@@ -119,6 +119,12 @@ python run_pdb_update.py
 # Daily incremental flow on Windows PowerShell
 .\run_daily_strategy.ps1
 
+# Run registered production strategy automation tasks
+python run_production_tasks.py --config config/production_tasks.example.json
+
+# Install Windows scheduled task for daily 24:00 production strategy automation
+.\install_production_scheduled_task.ps1
+
 # Export stock pool
 python export_stock_pool.py
 
@@ -138,6 +144,9 @@ GM-related scripts read relative paths under `juejin_strategies/` by default. Pu
 | `Dockerfile` | Reproducible runtime image |
 | `docker-compose.yml` | Local container runner with mounted data/log folders |
 | `.dockerignore` | Keeps data/cache/git files out of Docker build context |
+| `config/production_tasks.example.json` | Example automation config for registered production strategies |
+| `run_production_tasks.py` | Runs automation tasks for strategies registered as production |
+| `install_production_scheduled_task.ps1` | Installs a Windows scheduled task for daily 24:00 production automation |
 | `data_file/` | Local data, SQLite DB, signals, and reports; not committed |
 | `log/`, `logs/` | Runtime logs; not committed |
 | `juejin_strategies/` | Local GM strategies; not committed |

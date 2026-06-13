@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +16,7 @@ class SelectionConfig:
     trade_date: str | None = None
     pred_col: str = "pred_prob"
     min_pred_prob: float = 0.01
+    min_pred_quantile: float | None = None
     max_atr_ratio: float = 0.10
     min_amount: float | None = None
     min_turnover_rate: float | None = None
@@ -72,11 +74,30 @@ def latest_trade_date(rows):
     return max(dates)
 
 
+def _quantile_threshold(values: list[float], quantile: float | None) -> float | None:
+    if quantile is None or not values:
+        return None
+    if quantile < 0 or quantile > 1:
+        raise ValueError("min_pred_quantile must be between 0 and 1.")
+    ordered = sorted(values)
+    index = math.ceil((len(ordered) - 1) * quantile)
+    return ordered[index]
+
+
 def select_candidates(rows, config=None):
     config = config or SelectionConfig()
     target_date = config.trade_date or latest_trade_date(rows)
     if not target_date:
         return []
+
+    pred_values = [
+        pred
+        for row in rows
+        if str(_value(row, "trade_date", "")) == target_date
+        for pred in [_to_float(_value(row, config.pred_col))]
+        if pred is not None
+    ]
+    quantile_threshold = _quantile_threshold(pred_values, config.min_pred_quantile)
 
     candidates = []
     for row in rows:
@@ -87,6 +108,8 @@ def select_candidates(rows, config=None):
             continue
         if config.min_pred_prob is not None and pred < config.min_pred_prob:
             continue
+        if quantile_threshold is not None and pred < quantile_threshold:
+            continue
         if config.exclude_st and _is_st(row):
             continue
         if config.exclude_delisting and _is_delisting(row):
@@ -94,7 +117,7 @@ def select_candidates(rows, config=None):
         if config.exclude_current_limit and _is_current_limit(row):
             continue
         ratio = _atr_ratio(row)
-        if ratio is None or ratio > config.max_atr_ratio:
+        if config.max_atr_ratio is not None and (ratio is None or ratio > config.max_atr_ratio):
             continue
         amount = _to_float(_value(row, "amount"))
         if config.min_amount is not None and (amount is None or amount < config.min_amount):
@@ -109,7 +132,13 @@ def select_candidates(rows, config=None):
         enriched["atr_ratio"] = ratio
         candidates.append(enriched)
 
-    candidates.sort(key=lambda row: (-float(row[config.pred_col]), row["atr_ratio"], str(row.get("stock_code", ""))))
+    candidates.sort(
+        key=lambda row: (
+            -float(row[config.pred_col]),
+            row["atr_ratio"] if row["atr_ratio"] is not None else 999999.0,
+            str(row.get("stock_code", "")),
+        )
+    )
     selected = []
     industry_counts = {}
     for row in candidates:
@@ -154,6 +183,7 @@ def parse_args(argv=None):
     parser.add_argument("--date", dest="trade_date")
     parser.add_argument("--top-k", type=int, default=defaults.top_k)
     parser.add_argument("--min-pred", type=float, default=defaults.min_pred_prob)
+    parser.add_argument("--min-pred-quantile", type=float, default=defaults.min_pred_quantile)
     parser.add_argument("--max-atr-ratio", type=float, default=defaults.max_atr_ratio)
     parser.add_argument("--max-per-industry", type=int, default=defaults.max_per_industry)
     parser.add_argument("--output")
@@ -168,6 +198,7 @@ def main():
         top_k=args.top_k,
         trade_date=trade_date,
         min_pred_prob=args.min_pred,
+        min_pred_quantile=args.min_pred_quantile,
         max_atr_ratio=args.max_atr_ratio,
         max_per_industry=args.max_per_industry,
     )

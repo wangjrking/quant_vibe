@@ -169,6 +169,50 @@ class GmSignalModuleTests(unittest.TestCase):
         self.assertEqual(len(signals), 2)
         self.assertTrue(all(signal["holding_days"] == 3 for signal in signals))
 
+    def test_build_gm_signal_rows_can_filter_by_prediction_quantile(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000002.SZ",
+                "name": "C",
+                "pred_prob": 0.90,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000003.SZ",
+                "name": "D",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+        ]
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=3, min_pred_prob=None, min_pred_quantile=0.95),
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["stock_code"], "000002.SZ")
+
     def test_build_gm_signal_rows_can_cap_target_pct_by_expected_concurrency(self):
         rows = [
             {

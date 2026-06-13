@@ -79,12 +79,20 @@ prod_liq_prime_one_v20260612
 
 初始化成功后，应只按照策略库中已投产策略生成每日自动化任务，不允许探索策略或临时实验策略进入自动任务。
 
+当前已投产策略清单：
+
+| 策略 ID | 策略名称 | 任务状态 | 规则来源 |
+| --- | --- | --- | --- |
+| `prod_liq_prime_one_v20260612` | 流动性精选一号 | 已投产 | `strategy_library/production/prod_liq_prime_one_v20260612/` |
+
 自动化任务目标：
 
 - 每日 24:00 执行已投产策略自动化流程，完成数据更新、因子更新、模型预测和信号生成。
 - 输出下一交易日的买入信号和卖出信号。
 - 信号文件应保存到 `data_file/`，并在日志中记录生成时间、策略 ID、信号日期和买入日期。
 - 自动任务必须默认读取 `strategy_library/registry.json` 中登记的已投产策略。
+- 自动任务配置保存在 `config/production_tasks.example.json`，本地使用时可复制为 `config/production_tasks.json` 后按机器环境调整。
+- 自动任务入口为 `run_production_tasks.py`，Windows 定时任务安装入口为 `install_production_scheduled_task.ps1`。
 
 建议每日任务流程：
 
