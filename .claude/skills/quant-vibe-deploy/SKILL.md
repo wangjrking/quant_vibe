@@ -39,8 +39,8 @@ D:\work\quant\quant_mcp\.venv\Scripts\python.exe .claude\skills\quant-vibe-deplo
 4. Run the bootstrap script without `--dry-run` only after the user confirms the target `--end-date` and expected runtime.
 5. Follow the current layered chain:
    - L1 raw data: `run_all_a_raw_update.py`
-   - L3 production features: `production_factor_parts`
-   - L3 labels: `prediction_label_parts`
+   - L3 production features: `production_factor_parts` when split-chain scripts are tracked, otherwise the tracked compatibility entry `run_incremental_cdb_update.py`
+   - L3 labels: `prediction_label_parts` when split-chain scripts are tracked, otherwise labels remain in the compatibility factor table consumed by `run_pdb_update.py`
    - L4 predictions and model evidence: `run_pdb_update.py` writes to `model_predictions`
    - L5 production task/signal entry: `run_production_tasks.py`
 6. If any step fails, stop at that layer and report the failed command, log path, and next recovery action. Do not skip ahead to model or strategy generation.
@@ -57,12 +57,12 @@ Use `scripts/bootstrap_quant_vibe.py` for deterministic setup. Important modes:
 | `--require-token` | Fail if `TUSHARE_TOKEN` is missing. Use before real downloads. |
 | `--limit-stocks N` | Smoke-test the raw data step on a small stock subset. |
 
-The script is intentionally conservative: it copies `config.example.json` to `config.json` only when missing, creates runtime directories, and emits every command it plans to run.
+The script is intentionally conservative: it copies `config.example.json` to `config.json` only when missing, creates runtime directories, emits every command it plans to run, and ignores local untracked Python entrypoints so a GitHub clone does not depend on files that were only present on the original machine.
 
 ## Reproduction Boundaries
 
-- Current production factor input is `production_factor_parts`, not legacy `stock_factor_data.parquet`.
-- Current training labels live in `prediction_label_parts` and must stay separate from production features.
+- Current production factor input is `production_factor_parts` when the split-chain scripts are committed. If those scripts are absent from Git, the bootstrap uses the tracked compatibility factor route instead of untracked local files.
+- Current training labels live in `prediction_label_parts` when the split-chain scripts are committed. If not, `run_pdb_update.py` uses the compatibility table produced by the tracked factor route.
 - Current prediction assets should be written under `model_predictions` or a strategy archive, not to legacy `odb.db` by default.
 - `run_production_tasks.py` requires an approved non-legacy prediction manifest for L5 production reads; if the clone has only placeholders, keep L5 disabled and report that model approval is still required.
 - Large `data_file/`, logs, caches, local GM strategies, and tokens are local runtime assets and must remain out of git.

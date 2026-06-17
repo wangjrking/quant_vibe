@@ -40,6 +40,21 @@ def command_text(command: list[str]) -> str:
     return " ".join(f'"{part}"' if " " in part else part for part in command)
 
 
+def is_tracked_script(name: str) -> bool:
+    path = REPO_ROOT / name
+    if not path.exists():
+        return False
+    result = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", name],
+        cwd=str(REPO_ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def run_step(label: str, command: list[str] | None, *, dry_run: bool, cwd: Path = REPO_ROOT) -> None:
     print(f"[step] {label}")
     if command:
@@ -109,28 +124,61 @@ def build_steps(args: argparse.Namespace, py: Path, data_dir: Path) -> list[tupl
     if args.limit_stocks is not None:
         raw_update.extend(["--limit-stocks", str(args.limit_stocks)])
 
-    return [
+    steps: list[tuple[str, list[str] | None]] = [
         ("create virtual environment", [sys.executable, "-m", "venv", str(args.venv)]),
         ("install requirements", [str(py), "-m", "pip", "install", "-r", "requirements.txt"]),
         ("copy config.example.json to config.json when needed", None),
         ("download/update raw data", raw_update),
-        (
-            "build production factors",
-            [str(py), "incremental_factor_update_target_date.py", "--target-date", target_date, "--data-dir", str(data_dir)],
-        ),
-        (
-            "build prediction labels",
-            [str(py), "build_prediction_label_parts.py", "--data-dir", str(data_dir)],
-        ),
-        (
-            "train/update model predictions",
-            [str(py), "run_pdb_update.py", "--data-dir", str(data_dir)],
-        ),
-        (
-            "generate strategy signals",
-            [str(py), "run_production_tasks.py", "--config", "config/production_tasks.example.json", "--dry-run"],
-        ),
     ]
+    if is_tracked_script("incremental_factor_update_target_date.py") and is_tracked_script(
+        "build_prediction_label_parts.py"
+    ):
+        steps.extend(
+            [
+                (
+                    "build production factors",
+                    [
+                        str(py),
+                        "incremental_factor_update_target_date.py",
+                        "--target-date",
+                        target_date,
+                        "--data-dir",
+                        str(data_dir),
+                    ],
+                ),
+                (
+                    "build prediction labels",
+                    [str(py), "build_prediction_label_parts.py", "--data-dir", str(data_dir)],
+                ),
+            ]
+        )
+    else:
+        factor_script = "run_cdb_update.py" if args.full_refresh else "run_incremental_cdb_update.py"
+        steps.extend(
+            [
+                (
+                    "build production factors",
+                    [str(py), factor_script],
+                ),
+                (
+                    "build prediction labels from compatibility factor table",
+                    None,
+                ),
+            ]
+        )
+    steps.extend(
+        [
+            (
+                "train/update model predictions",
+                [str(py), "run_pdb_update.py", "--data-dir", str(data_dir)],
+            ),
+            (
+                "generate strategy signals",
+                [str(py), "run_production_tasks.py", "--config", "config/production_tasks.example.json", "--dry-run"],
+            ),
+        ]
+    )
+    return steps
 
 
 def main(argv: list[str] | None = None) -> int:

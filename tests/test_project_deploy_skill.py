@@ -46,6 +46,37 @@ def test_deploy_bootstrap_dry_run_lists_install_data_model_and_strategy_steps():
     assert "generate strategy signals" in result.stdout
 
 
+def test_deploy_bootstrap_dry_run_uses_only_tracked_python_entrypoints():
+    result = subprocess.run(
+        [sys.executable, str(BOOTSTRAP), "--dry-run", "--skip-pip"],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    tracked_files = set(
+        subprocess.run(
+            ["git", "ls-files", "*.py"],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+        ).stdout.splitlines()
+    )
+    planned_scripts = {
+        token
+        for line in result.stdout.splitlines()
+        for token in line.split()
+        if token.endswith(".py")
+    }
+
+    assert planned_scripts <= tracked_files
+
+
 def test_deploy_bootstrap_check_reports_missing_private_token_without_secret_leak():
     env = os.environ.copy()
     env.pop("TUSHARE_TOKEN", None)
