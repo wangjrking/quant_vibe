@@ -56,8 +56,15 @@ Use `scripts/bootstrap_quant_vibe.py` for deterministic setup. Important modes:
 | `--skip-pip` | Do not install `requirements.txt`; useful inside an already prepared Codex environment. |
 | `--require-token` | Fail if `TUSHARE_TOKEN` is missing. Use before real downloads. |
 | `--limit-stocks N` | Smoke-test the raw data step on a small stock subset. |
+| `--skip-agent-session` | Skip local agent session JSON creation. |
 
 The script is intentionally conservative: it copies `config.example.json` to `config.json` only when missing, creates runtime directories, emits every command it plans to run, and ignores local untracked Python entrypoints so a GitHub clone does not depend on files that were only present on the original machine.
+
+By default it also creates local agent session state under `data_file/runtime/agent_sessions/`:
+
+- `bootstrap_<timestamp>_<id>.json` records the deployment session, role roster, paths, Python interpreter, and next actions.
+- `current_session.json` points to the latest bootstrap session.
+- These files are runtime state and must remain out of git.
 
 ## Reproduction Boundaries
 

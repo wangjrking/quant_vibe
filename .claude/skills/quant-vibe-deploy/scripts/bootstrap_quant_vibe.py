@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import os
 import shutil
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 
@@ -27,6 +29,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--venv", default=str(DEFAULT_VENV))
     parser.add_argument("--limit-stocks", type=int, default=None, help="Limit raw update stock count for smoke runs.")
     parser.add_argument("--full-refresh", action="store_true", help="Pass --full-refresh to raw data update.")
+    parser.add_argument("--skip-agent-session", action="store_true", help="Do not create local agent session files.")
     return parser.parse_args(argv)
 
 
@@ -82,6 +85,57 @@ def ensure_layout(data_dir: Path, *, dry_run: bool) -> None:
     print("[step] copy config.example.json to config.json when missing")
     if not dry_run and not config.exists() and example.exists():
         shutil.copy2(example, config)
+
+
+def write_agent_session(*, data_dir: Path, python_path: Path, dry_run: bool) -> Path:
+    sessions_dir = data_dir / "runtime" / "agent_sessions"
+    timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    session_id = f"bootstrap_{timestamp}_{uuid.uuid4().hex[:8]}"
+    session_path = sessions_dir / f"{session_id}.json"
+    current_path = sessions_dir / "current_session.json"
+    print("[step] initialize agent session")
+    print(f"       session_file={session_path}")
+    if dry_run:
+        return session_path
+
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    session = {
+        "session_id": session_id,
+        "created_at": dt.datetime.now().isoformat(timespec="seconds"),
+        "repo_root": str(REPO_ROOT),
+        "data_dir": str(data_dir),
+        "python": str(python_path),
+        "skill": "quant-vibe-deploy",
+        "deployment_phase": "initialized",
+        "agents": [
+            {"id": "commander", "role": "deployment orchestration and approvals"},
+            {"id": "data-agent", "role": "raw data download and data quality checks"},
+            {"id": "model-agent", "role": "factor, label, training, and prediction assets"},
+            {"id": "strategy-agent", "role": "strategy signal generation and production task handoff"},
+            {"id": "audit-agent", "role": "reproducibility, leakage, and deployment evidence checks"},
+        ],
+        "next_actions": [
+            "Verify TUSHARE_TOKEN is present before real data download.",
+            "Run raw data update.",
+            "Build factors and labels through the clone-safe tracked chain.",
+            "Train or update model predictions.",
+            "Generate strategy signals only after model assets are ready.",
+        ],
+    }
+    session_path.write_text(json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
+    current_path.write_text(
+        json.dumps(
+            {
+                "session_id": session_id,
+                "session_file": str(session_path),
+                "updated_at": session["created_at"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return session_path
 
 
 def check_prerequisites(args: argparse.Namespace, py: Path, data_dir: Path) -> int:
@@ -192,6 +246,8 @@ def main(argv: list[str] | None = None) -> int:
         return check_code
 
     ensure_layout(data_dir, dry_run=args.dry_run)
+    if not args.skip_agent_session:
+        write_agent_session(data_dir=data_dir, python_path=py, dry_run=args.dry_run)
     for label, command in build_steps(args, py, data_dir):
         if args.skip_pip and label == "install requirements":
             print("[step] install requirements")
