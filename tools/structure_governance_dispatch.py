@@ -17,6 +17,7 @@ from typing import Any
 AGENT_NAMES = {
     "architect-agent": "架构师智能体",
     "audit-agent": "审计智能体",
+    "data-warehouse-agent": "数仓智能体",
     "research-agent": "投研智能体",
     "strategy-agent": "策略智能体",
     "commander-agent": "指挥官智能体",

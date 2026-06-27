@@ -54,6 +54,8 @@
 | L7 | 交易交付层 | 交易智能体 |
 | L8 | 多智能体协同治理层 | 指挥官、架构师、审计 |
 
+数仓智能体属于 L0/L8 基础设施与治理支撑角色，负责远程数据库、对象存储、云端数仓、MCP 数据服务、权限、备份、同步和运维方案，不直接生产 L1-L7 业务资产。
+
 跨层任务必须由指挥官智能体分派；专业智能体不得越权推进下游正式链路。
 
 ## 标准资产入口
@@ -81,6 +83,7 @@
 | 智能体完整职责、技能、权限、工具、日志、监控 | `.codex/agent_packages/<agent-id>/` |
 | 工作流定义和指挥官调度 | `WORKFLOW.md`、`.codex/agent_packages/commander-agent/workflows.md` |
 | 资产分层、生产/实验资产、manifest、审计门禁 | `quant/main/docs/governance/` |
+| 远程数据库、对象存储、云端数仓和 MCP 数据服务 | `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` |
 | 策略生产准入、风格暴露、低路径依赖 | `.codex/agents/strategy-admission-standards.md` 或策略治理专题文档 |
 | 旧规则、历史补丁、事故经验 | `quant/main/docs/governance/history/` |
 | 工具和校验脚本说明 | `quant/main/tools/README.md` |

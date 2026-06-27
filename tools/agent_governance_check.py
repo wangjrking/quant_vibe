@@ -20,6 +20,7 @@ AGENTS = [
     "audit-agent",
     "data-ingestion-agent",
     "data-integration-agent",
+    "data-warehouse-agent",
     "factor-agent",
     "model-agent",
     "strategy-agent",
