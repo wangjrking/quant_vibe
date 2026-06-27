@@ -41,7 +41,7 @@
 | `quant/main/docs/governance/project-structure-guide.md` | 项目目录导航 | 说明阅读顺序和主要目录定位 |
 | `quant/main/docs/governance/project-structure-reorganization.md` | 项目结构整理方案 | 说明 Keep / Move / Archive / Move to recycle bin 规则 |
 | `quant/main/docs/governance/runtime-governance.md` | runtime 目录治理规则 | 说明运行态目录保留、归档和回收规则 |
-| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 远程数仓 MCP 中台方案 | 说明 PostgreSQL、对象存储、MCP 子服务、分层、权限、部署和验收 |
+| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 远程数仓 MCP 中台方案 | 说明 ClickHouse、PostgreSQL、对象存储、MCP 子服务、分层、权限、部署和验收 |
 | `quant/main/docs/governance/history/` | 历史治理快照 | 只保留迁移前规则快照 |
 | `quant/data_file/reports/` | 审计、模型、策略、数据报告 | 运行证据，不作为规则主入口 |
 | `quant/data_file/runtime/` | 运行状态、监控、记忆、回收站 | 运行态记录 |

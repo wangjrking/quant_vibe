@@ -27,7 +27,7 @@
 | `quant/main/research/` | 研究、调参、候选探索脚本 | research-only，不作为生产入口 |
 | `quant/main/legacy/` | 旧链路、回滚、历史复现入口 | 必须显式 legacy，默认不使用 |
 | `quant/main/docs/governance/` | 项目治理文档 | 新增或改写 Markdown 默认中文 |
-| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 远程数仓 MCP 中台方案 | 供另一台服务器部署 PostgreSQL、对象存储和 MCP 数据服务时使用 |
+| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 远程数仓 MCP 中台方案 | 供另一台服务器部署 ClickHouse、PostgreSQL、对象存储和 MCP 数据服务时使用 |
 | `quant/data_file/reports/` | 审计、模型、策略、数据报告 | 作为证据保留，不作为规则主入口 |
 | `quant/data_file/runtime/` | 运行态记忆、监控、回收站和临时留痕 | 按 runtime 治理规则处理 |
 
