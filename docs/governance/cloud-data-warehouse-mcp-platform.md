@@ -6,6 +6,14 @@
 
 本文档面向另一台服务器执行。服务器拉取本仓库后，可按本文档完成基础部署、目录初始化、schema 初始化、服务拆分和验收。
 
+当前可执行部署包位于：
+
+```text
+deploy/cloud-center/
+```
+
+该目录已包含 Docker Compose、环境变量模板、ClickHouse 初始化 SQL、PostgreSQL 初始化 SQL和健康检查脚本。
+
 ## 总体结论
 
 推荐架构为：
@@ -399,52 +407,20 @@ MCP_AUTH_TOKEN=<由主人在服务器本地填写>
 
 密钥不得提交到 Git。
 
-## Docker Compose 参考结构
+## Docker Compose 部署包
 
-建议后续在仓库中补充 `deploy/cloud-center/docker-compose.yml`。第一阶段可按以下结构落地：
+当前部署包：
 
-```yaml
-services:
-  clickhouse:
-    image: clickhouse/clickhouse-server:24
-    env_file:
-      - /opt/quant_mcp/env/warehouse.env
-    volumes:
-      - /opt/quant_mcp/volumes/clickhouse:/var/lib/clickhouse
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-
-  postgres:
-    image: postgres:16
-    env_file:
-      - /opt/quant_mcp/env/warehouse.env
-    volumes:
-      - /opt/quant_mcp/volumes/postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    env_file:
-      - /opt/quant_mcp/env/warehouse.env
-    volumes:
-      - /opt/quant_mcp/volumes/minio:/data
-    ports:
-      - "9100:9000"
-      - "9101:9001"
-
-  asset-registry-mcp:
-    build:
-      context: .
-      dockerfile: deploy/cloud-center/mcp.Dockerfile
-    env_file:
-      - /opt/quant_mcp/env/warehouse.env
-    command: ["python", "-m", "cloud_center_mcp.asset_registry"]
-    ports:
-      - "8101:8101"
+```text
+deploy/cloud-center/docker-compose.yml
+deploy/cloud-center/env.example
+deploy/cloud-center/sql/clickhouse_init.sql
+deploy/cloud-center/sql/postgres_init.sql
+deploy/cloud-center/scripts/health_check.sh
+deploy/cloud-center/scripts/health_check.ps1
 ```
+
+本阶段 Docker Compose 已可启动 ClickHouse、PostgreSQL 和 MinIO 三个基础服务。MCP 子服务在本阶段只定义服务拆分、权限和端口边界，真实 MCP 服务实现进入下一阶段。
 
 ## 初始化顺序
 
@@ -459,6 +435,24 @@ services:
 9. 启动 MCP 子服务。
 10. 执行健康检查。
 11. 由审计智能体复核部署证据后，再允许生产资产迁移。
+
+服务器命令示例：
+
+```bash
+sudo mkdir -p /opt/quant_mcp/{env,volumes/clickhouse,volumes/postgres,volumes/minio,volumes/mcp_logs,backups,runtime}
+sudo chown -R "$USER":"$USER" /opt/quant_mcp
+
+cd /opt/quant_mcp
+git clone https://github.com/wangjrking/quant_vibe.git repo
+cd repo
+git checkout cloud-center-mcp
+
+cp deploy/cloud-center/env.example /opt/quant_mcp/env/warehouse.env
+# 编辑 /opt/quant_mcp/env/warehouse.env，填入本机密钥
+
+docker compose --env-file /opt/quant_mcp/env/warehouse.env -f deploy/cloud-center/docker-compose.yml up -d
+bash deploy/cloud-center/scripts/health_check.sh
+```
 
 ## 健康检查
 
@@ -535,6 +529,7 @@ WHERE name IN ('l1_raw', 'l2_base', 'l3_feature', 'l4_model', 'l5_strategy', 'l6
 - 数仓智能体文档包。
 - 远程数仓 MCP 中台方案文档。
 - 可执行部署步骤和 schema 草案。
+- `deploy/cloud-center/` 基础部署包。
 - Git 分支提交，供另一台服务器拉取。
 
 本阶段不交付：
