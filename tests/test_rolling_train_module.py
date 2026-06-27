@@ -306,39 +306,57 @@ class RollingTrainModuleTests(unittest.TestCase):
 
     def test_build_fold_feature_selection_fn_filters_to_train_window(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            rows = []
+            feature_rows = []
+            label_rows = []
             for trade_date in ("20240101", "20240201"):
                 for idx in range(120):
-                    rows.append(
+                    feature_rows.append(
                         {
                             "trade_date": trade_date,
                             "stock_code": f"S{trade_date}_{idx:03d}",
                             "feature_keep": idx,
                             "feature_drop": 119 - idx,
+                        }
+                    )
+                    label_rows.append(
+                        {
+                            "trade_date": trade_date,
+                            "stock_code": f"S{trade_date}_{idx:03d}",
                             "10d_yield_rate": idx,
                         }
                     )
             for idx in range(120):
-                rows.append(
+                feature_rows.append(
                     {
                         "trade_date": "20240501",
                         "stock_code": f"FUT_{idx:03d}",
                         "feature_keep": 1000 - idx,
                         "feature_drop": idx,
+                    }
+                )
+                label_rows.append(
+                    {
+                        "trade_date": "20240501",
+                        "stock_code": f"FUT_{idx:03d}",
                         "10d_yield_rate": idx,
                     }
                 )
-            frame = __import__("pandas").DataFrame(rows)
+            feature_frame = __import__("pandas").DataFrame(feature_rows)
+            label_frame = __import__("pandas").DataFrame(label_rows)
             data_dir = tempfile.mkdtemp(dir=temp_dir)
-            __import__("pathlib").Path(data_dir, "stock_factor_data.parquet")
-            frame.to_parquet(__import__("pathlib").Path(data_dir) / "stock_factor_data.parquet")
+            production_dir = __import__("pathlib").Path(data_dir) / "production_factor_parts"
+            label_dir = __import__("pathlib").Path(data_dir) / "prediction_label_parts"
+            production_dir.mkdir()
+            label_dir.mkdir()
+            feature_frame.to_parquet(production_dir / "part-000.parquet", index=False)
+            label_frame.to_parquet(label_dir / "part-000.parquet", index=False)
 
             selector = build_fold_feature_selection_fn(
                 data_file_url=data_dir,
                 config=FoldFeatureSelectionConfig(label="10d_yield_rate", top_n=1, min_abs_ic=0.5),
             )
             selected = selector(RollingWindow(1, "20240101", "20240228", "20240301", "20240331"))
-            self.assertEqual(selected, ["feature_keep"])
+        self.assertEqual(selected, ["feature_keep"])
 
     def test_build_fold_feature_selection_fn_can_use_light_factor_data(self):
         captured = {}
@@ -425,6 +443,7 @@ class RollingTrainModuleTests(unittest.TestCase):
         self.assertEqual(selected, ["close_rate"])
         self.assertEqual(captured["read_raw_frame"]["stock_pool_path"], "all_a.csv")
         self.assertEqual(captured["build_light_factor_frame"]["label"], "executable_5d_open_return")
+        self.assertTrue(captured["read_raw_frame"]["db_path"].endswith("STOCK_DAILY_DATA.db"))
 
     def test_build_validation_window_carves_validation_slice_before_test(self):
         validation = build_validation_window(
@@ -478,6 +497,84 @@ class RollingTrainModuleTests(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertIn(("get_factor_data", ["feature_x"]), calls)
         self.assertIn(("model_assess", False), calls)
+
+    def test_train_one_fold_defaults_to_independent_prediction_db(self):
+        from rolling_train_module import train_one_fold_with_ai
+
+        fake_ai = types.ModuleType("ai_module")
+        pd = __import__("pandas")
+
+        train_x = pd.DataFrame({"feature_a": [1.0, 2.0]})
+        train_y = pd.Series([0.1, 0.2], name="10d_yield_rate")
+        test_x = pd.DataFrame({"feature_a": [3.0]})
+        test_y = pd.Series([0.3], name="10d_yield_rate")
+        train_data = pd.DataFrame({"stock_code": ["000001.SZ", "000002.SZ"], "trade_date": ["20200101", "20200102"]})
+        test_data = pd.DataFrame({"stock_code": ["000003.SZ"], "trade_date": ["20250604"]})
+
+        fake_ai.get_factor_data = lambda *args, **kwargs: (train_x, train_y, test_x, test_y, train_data, test_data)
+        fake_ai.model_assess = lambda *args, **kwargs: pd.DataFrame(
+            [{"stock_code": "000003.SZ", "trade_date": "20250604", "pred_prob": 0.9}]
+        )
+        previous_ai = sys.modules.get("ai_module")
+        sys.modules["ai_module"] = fake_ai
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                metrics = train_one_fold_with_ai(
+                    RollingWindow(1, "20200101", "20250524", "20250604", "20260603"),
+                    data_file_url=temp_dir,
+                    output_table="pred_default_route",
+                )
+                db_path = __import__("pathlib").Path(temp_dir) / "model_predictions" / "MODEL_PREDICTIONS.db"
+                manifest_path = __import__("pathlib").Path(temp_dir) / "model_predictions" / "pred_default_route" / "prediction_manifest.json"
+                self.assertTrue(db_path.exists())
+                self.assertTrue(manifest_path.exists())
+        finally:
+            if previous_ai is None:
+                sys.modules.pop("ai_module", None)
+            else:
+                sys.modules["ai_module"] = previous_ai
+
+        self.assertEqual(metrics["prediction_mode"], "independent")
+        self.assertEqual(metrics["prediction_db_path"], str(db_path))
+
+    def test_train_one_fold_marks_default_manifest_as_research_track(self):
+        from rolling_train_module import train_one_fold_with_ai
+
+        fake_ai = types.ModuleType("ai_module")
+        pd = __import__("pandas")
+
+        train_x = pd.DataFrame({"feature_a": [1.0, 2.0]})
+        train_y = pd.Series([0.1, 0.2], name="10d_yield_rate")
+        test_x = pd.DataFrame({"feature_a": [3.0]})
+        test_y = pd.Series([0.3], name="10d_yield_rate")
+        train_data = pd.DataFrame({"stock_code": ["000001.SZ", "000002.SZ"], "trade_date": ["20200101", "20200102"]})
+        test_data = pd.DataFrame({"stock_code": ["000003.SZ"], "trade_date": ["20250604"]})
+
+        fake_ai.get_factor_data = lambda *args, **kwargs: (train_x, train_y, test_x, test_y, train_data, test_data)
+        fake_ai.model_assess = lambda *args, **kwargs: pd.DataFrame(
+            [{"stock_code": "000003.SZ", "trade_date": "20250604", "pred_prob": 0.9}]
+        )
+        previous_ai = sys.modules.get("ai_module")
+        sys.modules["ai_module"] = fake_ai
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                train_one_fold_with_ai(
+                    RollingWindow(1, "20200101", "20250524", "20250604", "20260603"),
+                    data_file_url=temp_dir,
+                    output_table="pred_research_guard",
+                )
+                manifest_path = __import__("pathlib").Path(temp_dir) / "model_predictions" / "pred_research_guard" / "prediction_manifest.json"
+                manifest = __import__("json").loads(manifest_path.read_text(encoding="utf-8"))
+        finally:
+            if previous_ai is None:
+                sys.modules.pop("ai_module", None)
+            else:
+                sys.modules["ai_module"] = previous_ai
+
+        self.assertEqual(manifest["asset_role"], "l4_research_prediction_asset")
+        self.assertEqual(manifest["model_track"], "research")
+        self.assertEqual(manifest["approval_status"], "research_only_not_for_l5")
+        self.assertTrue(manifest["promotion_requires_user_confirmation"])
 
 
 if __name__ == "__main__":

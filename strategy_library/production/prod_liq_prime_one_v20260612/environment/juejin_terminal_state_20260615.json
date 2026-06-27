@@ -1,0 +1,17 @@
+{
+  "required_processes": [
+    "emgm3.exe",
+    "gmterm-serv.exe",
+    "ds-proxy.exe"
+  ],
+  "required_listen_ports": [
+    7001,
+    7002,
+    7003,
+    7004,
+    7050,
+    7051
+  ],
+  "observed_when_successful": "2026-06-15 10:52 Asia/Shanghai",
+  "failure_signature": "GmError status=1001 message=????????? means gmterm-serv is not listening or terminal is not logged in."
+}

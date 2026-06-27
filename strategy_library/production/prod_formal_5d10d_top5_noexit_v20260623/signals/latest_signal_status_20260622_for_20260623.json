@@ -1,0 +1,25 @@
+{
+  "strategy_id": "prod_formal_5d10d_top5_noexit_v20260623",
+  "source_strategy": "scale110_cap30_h5_noexit",
+  "generated_at": "2026-06-23T08:52:12",
+  "signal_date": "20260622",
+  "buy_date": "20260623",
+  "source_fusion_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\latest_formal_5d10d_stclean_refill\\fusion_5d10d_latest_20260622.db",
+  "source_fusion_table": "fusion_rank_base",
+  "market_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+  "filter_status": {
+    "signal_day_exclude_bj": true,
+    "signal_day_exclude_st_by_l2_fields": true,
+    "signal_day_exclude_limit_times_gt_0": true,
+    "buy_day_realtime_open_checks_required": true
+  },
+  "outputs": [
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_formal_5d10d_top5_noexit_v20260623\\signals\\latest_signal_20260622_for_20260623.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_formal_5d10d_top5_noexit_v20260623_latest.csv"
+  ],
+  "rows": 5,
+  "notes": [
+    "Local STOCK_DAILY_DATA.db max trade_date is 20260622, so 20260623 open tradability cannot be validated locally before market/open data arrives.",
+    "Trading-agent must recheck open limit-up, suspension, ST/risk-warning, and lot sizing immediately before order submission."
+  ]
+}

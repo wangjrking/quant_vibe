@@ -1,0 +1,39 @@
+{
+  "old_0019_log": {
+    "pnl_ratio": 50.0992912449378,
+    "pnl_ratio_annual": 23.872377681987334,
+    "sharp_ratio": 1.5466297275045484,
+    "max_drawdown": 0.27340701481476287,
+    "open_count": 94.0,
+    "close_count": 93.0,
+    "win_count": 57.0,
+    "lose_count": 36.0,
+    "win_ratio": 0.6129032258064516,
+    "calmar_ratio": 87.31443009302892
+  },
+  "current_rerun_explicit_defaults": {
+    "pnl_ratio": 44.713564539035545,
+    "pnl_ratio_annual": 22.114432326216768,
+    "sharp_ratio": 1.446980026361173,
+    "max_drawdown": 0.27340701481476287,
+    "open_count": 94.0,
+    "close_count": 93.0,
+    "win_count": 57.0,
+    "lose_count": 36.0,
+    "win_ratio": 0.6129032258064516,
+    "calmar_ratio": 80.88465594490913
+  },
+  "diff": {
+    "pnl_ratio": -5.3857267059022575,
+    "pnl_ratio_annual": -1.7579453557705662,
+    "sharp_ratio": -0.09964970114337546,
+    "max_drawdown": 0.0,
+    "open_count": 0.0,
+    "close_count": 0.0,
+    "win_count": 0.0,
+    "lose_count": 0.0,
+    "win_ratio": 0.0,
+    "calmar_ratio": -6.42977414811979
+  },
+  "conclusion": "current Juejin terminal reproduces same trade counts/win/loss/max_drawdown but lower pnl/annual/sharpe than the 00:19 archived run; signal/script hashes unchanged, likely Juejin local market/corporate-action/cache/accounting state difference or missing unlogged environment from original run."
+}

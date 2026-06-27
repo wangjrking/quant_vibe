@@ -1,0 +1,29 @@
+{
+  "log_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\backtests\\gm_backtest_20260615_1054_current_rerun_4471pct.log",
+  "log_sha256": "CDCB6EE4E2C09EE086A5B076C0527DB62B3362F929E802C2D94BB22790B120FE",
+  "metrics_raw": {
+    "pnl_ratio": 44.713564539035545,
+    "pnl_ratio_annual": 22.114432326216768,
+    "sharp_ratio": 1.446980026361173,
+    "max_drawdown": 0.27340701481476287,
+    "risk_ratio": 0.9817298758027239,
+    "open_count": 94,
+    "close_count": 93,
+    "win_count": 57,
+    "lose_count": 36,
+    "win_ratio": 0.6129032258064516,
+    "calmar_ratio": 80.88465594490913
+  },
+  "metrics_percent": {
+    "cumulative_return_pct": 4471.36,
+    "annual_return_pct": 2211.44,
+    "max_drawdown_pct": 27.34,
+    "sharpe": 1.447,
+    "open_count": 94,
+    "close_count": 93,
+    "win_count": 57,
+    "lose_count": 36,
+    "win_ratio_pct": 61.29,
+    "calmar": 80.8847
+  }
+}

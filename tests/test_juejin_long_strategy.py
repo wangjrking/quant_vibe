@@ -61,6 +61,21 @@ class JuejinLongStrategyTests(unittest.TestCase):
     def setUp(self):
         self.module = _load_strategy_module()
 
+    def test_defaults_bind_to_current_production_signal_file(self):
+        signal_file = Path(self.module.SIGNAL_FILE)
+        self.assertEqual(
+            signal_file,
+            Path(self.module.DATA_DIR)
+            / "production_signals"
+            / f"{self.module.RUNTIME_PROFILE['production_strategy_id']}_latest.csv",
+        )
+
+    def test_defaults_bind_to_latest_formal_prediction_table(self):
+        self.assertEqual(
+            self.module.SCORE_TABLE,
+            str(self.module.RUNTIME_PROFILE["prediction_table"]),
+        )
+
     def test_trade_daily_exits_on_stop_loss_before_holding_period(self):
         context = SimpleNamespace(
             now=datetime(2026, 6, 8, 9, 35, 0),
@@ -125,7 +140,7 @@ class JuejinLongStrategyTests(unittest.TestCase):
 
         order_volume.assert_called_once()
         self.assertEqual(order_volume.call_args.kwargs["symbol"], "SZSE.000001")
-        self.assertEqual(order_volume.call_args.kwargs["volume"], 24700)
+        self.assertEqual(order_volume.call_args.kwargs["volume"], 24500)
         self.assertEqual(order_volume.call_args.kwargs["price"], 10.0)
 
     def test_resolve_backtest_adjust_prefers_none_mode(self):
@@ -181,11 +196,68 @@ class JuejinLongStrategyTests(unittest.TestCase):
         context = SimpleNamespace()
         with patch.object(self.module, "SIGNAL_FILE", str(STRATEGY_PATH)), patch.object(
             self.module, "_load_signals", return_value={"20260608": [{"stock_code": "000001.SZ", "symbol": "SZSE.000001"}]}
-        ), patch.object(self.module, "_preload_market_rows") as preload_market_rows:
+        ), patch.object(self.module, "_load_daily_scores", return_value=({}, {})), patch.object(
+            self.module, "_preload_market_rows"
+        ) as preload_market_rows:
             self.module.init(context)
 
         preload_market_rows.assert_called_once_with(context)
         self.assertEqual(context.trade_index, -1)
+
+    def test_sell_daily_reloads_latest_signal_snapshot_when_signal_file_changes(self):
+        context = SimpleNamespace(
+            now=datetime(2026, 6, 8, 9, 35, 0),
+            account=lambda: _FakeAccount([]),
+        )
+        initial_signals = {"20260608": []}
+        refreshed_signals = {"20260609": [{"stock_code": "000001.SZ", "symbol": "SZSE.000001"}]}
+        base_profile = dict(self.module.RUNTIME_PROFILE)
+        signal_mtimes = iter([100.0, 200.0])
+
+        def fake_mtime(path):
+            if str(path) == self.module.SIGNAL_FILE:
+                return next(signal_mtimes, 200.0)
+            if str(path) == self.module.SCORE_DB:
+                return 10.0
+            return 1.0
+
+        with patch.object(self.module, "_load_runtime_profile", return_value=base_profile), patch.object(
+            self.module, "_load_signals", side_effect=[initial_signals, refreshed_signals]
+        ), patch.object(self.module, "_load_daily_scores", return_value=({}, {})), patch.object(
+            self.module, "_get_file_mtime", side_effect=fake_mtime
+        ), patch.object(self.module, "_preload_market_rows") as preload_market_rows, patch.object(
+            self.module.Path, "exists", return_value=True
+        ), patch.object(self.module.Path, "is_file", return_value=True):
+            self.module.init(context)
+            self.module.sell_daily(context)
+
+        self.assertEqual(context.signals_by_buy_date, refreshed_signals)
+        self.assertEqual(preload_market_rows.call_count, 2)
+
+    def test_sell_daily_blocks_when_production_strategy_binding_changes(self):
+        context = SimpleNamespace(
+            now=datetime(2026, 6, 8, 9, 35, 0),
+            account=lambda: _FakeAccount([]),
+        )
+        base_profile = dict(self.module.RUNTIME_PROFILE)
+        changed_profile = dict(base_profile)
+        changed_profile["production_strategy_id"] = "prod_other_strategy"
+        changed_profile["production_strategy_name"] = "other"
+        changed_profile["signal_file"] = str(Path(self.module.SIGNAL_FILE).with_name("prod_other_strategy_latest.csv"))
+
+        with patch.object(self.module, "_load_runtime_profile", side_effect=[base_profile, changed_profile]), patch.object(
+            self.module, "_load_signals", return_value={}
+        ), patch.object(self.module, "_load_daily_scores", return_value=({}, {})), patch.object(
+            self.module, "_get_file_mtime", return_value=100.0
+        ), patch.object(self.module, "_preload_market_rows"), patch.object(
+            self.module.Path, "exists", return_value=True
+        ), patch.object(self.module.Path, "is_file", return_value=True):
+            self.module.init(context)
+            self.module.sell_daily(context)
+
+        self.assertTrue(context.runtime_refresh_blocked)
+        self.assertIn("strategy changed", context.runtime_refresh_block_reason)
+        self.assertIsNone(context.last_trade_date)
 
     def test_extract_position_return_prefers_fpnl_ratio(self):
         position = {"symbol": "SZSE.000001", "fpnl_ratio": 0.123}

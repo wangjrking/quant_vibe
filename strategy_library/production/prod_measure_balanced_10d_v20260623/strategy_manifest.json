@@ -1,0 +1,76 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_measure_balanced_10d_v20260623",
+  "name": "稳健均衡10D",
+  "code_name": "balanced_10d_sharpe",
+  "status": "blocked",
+  "production_version": "v20260623",
+  "published_at": "2026-06-23",
+  "published_by": "strategy-agent",
+  "definition": "基于 repro_current_best 历史信号与掘金复跑验证的 L5 分层融合/弱日池/风险重加权策略；因历史信号触发 ST/风险警示硬门禁，当前不得作为可交易生产策略。",
+  "source_research": {
+    "run_name": "formal_10d_current_best_exit_grid_20260622",
+    "candidate": "repro_current_best",
+    "summary": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_measure_balanced_10d_v20260623/backtests/summary_by_objective.csv",
+    "gm_log": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_measure_balanced_10d_v20260623/backtests/repro_current_best.log",
+    "historical_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\historical_repro_current_best.csv"
+  },
+  "validation": {
+    "platform": "juejin",
+    "annual_return": 4.129590018727238,
+    "sharpe": 3.110333718654759,
+    "max_drawdown": 0.20113614694900914,
+    "avg_invested_pct": 0.8011204765784119,
+    "win_ratio": 0.6102941176470589,
+    "open_count": 417,
+    "close_count": 408
+  },
+  "input_contract": {
+    "source_mode": "formal_l4_only",
+    "forbidden_by_default": [
+      "data_file/odb.db",
+      "unapproved research prediction asset",
+      "1D model score"
+    ],
+    "legacy_odb_forbidden_by_default": true
+  },
+  "governance": {
+    "production_measurement": true,
+    "formal_performance_requires_juejin": true,
+    "other_strategies_removed_from_current_production_registry": true,
+    "production": false,
+    "current_l5_strategy": false,
+    "latest_signal_requires_same_contract_exporter": true
+  },
+  "production_promoted_at": "2026-06-23",
+  "promoted_by": "strategy-agent",
+  "validation_scope": {
+    "signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\historical_repro_current_best.csv",
+    "signal_date_min": "20240604",
+    "signal_date_max": "20260617",
+    "buy_date_min": "20240605",
+    "buy_date_max": "20260618",
+    "note": "412.96% 年化、3.11 夏普、20.11% 最大回撤仅对该历史归档信号和对应掘金运行环境成立。"
+  },
+  "current_signal_status": {
+    "status": "blocked_until_same_contract_exporter_restored",
+    "reason": "balanced_10d_formal_l4_20240604_20260622.csv 与 historical_repro_current_best.csv 在历史窗口交集为 0，不能作为旧最优策略的同口径延展信号。",
+    "invalidated_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\balanced_10d_formal_l4_20240604_20260622.csv",
+    "invalidated_backtest_log": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_l5_replay_20260623\\logs\\balanced_10d_formal_l4_20240604_20260622_repro_env.log"
+  },
+  "blocking_audit": {
+    "status": "blocked_by_st_risk_warning_gate",
+    "audited_at": "2026-06-23",
+    "audited_by": "strategy-agent",
+    "signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\historical_repro_current_best.csv",
+    "signal_rows": 1910,
+    "bj_rows": 0,
+    "missing_signal_market_rows": 0,
+    "missing_buy_market_rows": 0,
+    "signal_st_or_risk_warning_rows": 627,
+    "buy_st_or_risk_warning_rows": 627,
+    "buy_limit_times_gt0_rows": 0,
+    "source_of_truth": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db::STOCK_DAILY_DATA",
+    "blocking_reason": "历史信号在 signal_date 和 buy_date 均存在 ST_TYPE='ST' / ST_TYPE_name='风险警示板' 命中，按项目硬门禁不得称为当前最优、可投产或适合交易交付。"
+  }
+}

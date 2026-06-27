@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+  "source_strategy_id": "candidate_dynamic_h2m3_sl06dd0712_pos8975_c975_tp070_scale7555_v20260625",
+  "published_at": "2026-06-25",
+  "publisher": "strategy-agent",
+  "script": "D:\\work\\quant\\quant_mcp\\quant\\main\\publish_pos8975_scale7555_to_l5_and_signal_20260625.py",
+  "signal_date": "20260624",
+  "buy_date": "20260625",
+  "production_archive": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+  "latest_signal": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dynamic_h2m3_pos8975_scale7555_v20260625_latest.csv",
+  "validation_source": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\exploration\\candidate_dynamic_h2m3_sl06dd0712_pos8975_c975_tp070_scale7555_v20260625",
+  "notes": [
+    "Only formal L4 approved_for_l5 assets are used.",
+    "The latest 20260625 signal is pending buy-day hard-gate completion until 20260625 market data is available locally."
+  ]
+}

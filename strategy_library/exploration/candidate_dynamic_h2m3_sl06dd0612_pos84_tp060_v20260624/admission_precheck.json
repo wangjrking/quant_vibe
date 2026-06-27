@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0612_pos84_tp060_v20260624",
+  "checked_at": "2026-06-24",
+  "checked_by": "strategy-agent",
+  "status": "production_candidate_pending_audit_not_published",
+  "current_registry_unchanged": true,
+  "production_current_after_precheck": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "strong_gate_precheck": {
+    "formal_l4_only": {
+      "status": "pass",
+      "evidence": "predictions/prediction_table_meta.json"
+    },
+    "legacy_odb_forbidden_by_default": {
+      "status": "pass",
+      "evidence": "strategy_manifest.json"
+    },
+    "hard_filter_audit": {
+      "status": "pass",
+      "bj_rows": 0,
+      "buy_st_rows": 0,
+      "buy_delist_rows": 0,
+      "open_limit_up_buy_rows": 0,
+      "evidence": "research/hard_gate_audit.json"
+    },
+    "juejin_validation": {
+      "status": "pass",
+      "annual_return": 5.865558892972139,
+      "sharpe": 1.9274288725019693,
+      "max_drawdown": 0.39702989546550477,
+      "evidence": "validation.json"
+    },
+    "takeprofit_neighborhood": {
+      "status": "pass_with_recent60_tradeoff",
+      "best_case": "tp060_pos84",
+      "evidence": "research/position_report.md"
+    },
+    "time_slice_continuity": {
+      "status": "pass_with_recent60_tradeoff",
+      "evidence": "research/time_slices.csv"
+    },
+    "low_path_dependency": {
+      "status": "pass",
+      "evidence": "research/nearby_summary.csv"
+    },
+    "contribution_stress": {
+      "status": "pass",
+      "drop_top_1pct_annual_return": "5.208407510655286",
+      "evidence": "research/stress_summary.csv"
+    },
+    "production_archive_contract": {
+      "status": "partial",
+      "reason": "已生成探索区候选归档，但未移入 production，未更新 registry，未完成审计复核。"
+    },
+    "latest_signal_contract": {
+      "status": "partial",
+      "latest_signal_date": "20260622",
+      "latest_buy_date": "20260623",
+      "reason": "候选信号不是生产信号，且尚未生成 20260623->20260624 信号。"
+    }
+  },
+  "required_before_production_publish": [
+    "审计智能体复核本候选归档和证据路径。",
+    "用户明确批准发布为生产策略。",
+    "按生产目录规范生成 production 归档目录，不覆盖旧生产结果。",
+    "更新 registry.json，使 production.current 指向新生产策略。",
+    "使用批准生产入口生成最新生产信号，并记录信号状态。"
+  ]
+}

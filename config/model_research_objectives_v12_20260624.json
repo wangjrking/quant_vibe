@@ -1,0 +1,209 @@
+{
+  "objective_config_id": "model_research_objectives_v12_20260624",
+  "generated_at": "2026-06-24T15:20:00+08:00",
+  "actor": "model-agent",
+  "asset_role": "research_objective_config_not_formal",
+  "approval_status": "research_only_not_approved_for_l4_or_l5",
+  "purpose": "Define the next controlled model tuning objectives after V11 balanced TopN snapshot.",
+  "standard_chain": {
+    "feature_input": "quant/data_file/production_factor_parts/",
+    "label_input": "quant/data_file/prediction_label_parts/",
+    "prediction_db": "quant/data_file/model_predictions/MODEL_PREDICTIONS.db",
+    "forbidden_default_inputs": [
+      "quant/data_file/stock_factor_data.parquet",
+      "quant/data_file/standard_factor_by_date_parts/",
+      "quant/data_file/standard_factor_by_date_parts_fast40/",
+      "quant/data_file/odb.db stock_predict_data_*"
+    ]
+  },
+  "basis": {
+    "current_best_snapshot": "quant/data_file/reports/model_agent_current_best_research_snapshot_20260624_v11_balanced_topn/current_best_research_snapshot_20260624_v11_balanced_topn.json",
+    "residual_gap_report": "quant/data_file/reports/model_agent_residual_gap_analysis_20260624/model_research_residual_gap_analysis_20260624.json",
+    "residual_gap_backlog": "quant/data_file/reports/model_agent_residual_gap_analysis_20260624/next_model_optimization_backlog.csv",
+    "formal_incremental_l4_report": "quant/data_file/reports/model_agent_formal_incremental_l4_20260623/formal_incremental_l4_20260623_report.json"
+  },
+  "common_evaluation_windows": {
+    "full": {
+      "description": "All mature-label dates available in the current 20240604+ standard-chain evaluation window."
+    },
+    "recent126": {
+      "trade_days": 126
+    },
+    "recent63": {
+      "trade_days": 63
+    },
+    "recent20": {
+      "trade_days": 20
+    }
+  },
+  "common_metrics": [
+    "daily_rank_ic_mean",
+    "rank_ic_positive_ratio",
+    "top1_mean_return",
+    "top5_mean_return",
+    "top10_mean_return",
+    "top_minus_bottom_mean",
+    "coverage_rows",
+    "latest_day_rows",
+    "null_pred_prob",
+    "duplicate_key_groups"
+  ],
+  "hard_gates": {
+    "coverage": {
+      "required_min_trade_date": "20240604",
+      "required_latest_day": "current_production_factor_latest_trade_date",
+      "latest_day_rows_must_match_production_factor_rows": true,
+      "null_pred_prob_must_equal": 0,
+      "duplicate_key_groups_must_equal": 0
+    },
+    "governance": {
+      "no_production_manifest_change_without_user_approval": true,
+      "no_l5_approval_without_audit_review": true,
+      "no_signal": true,
+      "no_backtest_conclusion": true,
+      "saved_model_files_required_for_any_train_candidate": true,
+      "research_outputs_must_use_research_only_status": true
+    },
+    "model_quality": {
+      "reject_if_full_rank_ic_delta_below": -0.005,
+      "reject_if_recent63_top5_delta_below": 0.0,
+      "reject_if_recent20_top5_delta_below": 0.0
+    }
+  },
+  "horizon_objectives": {
+    "1d": {
+      "label": "executable_1d_open_return",
+      "priority": "P2",
+      "current_best_research_table": "stock_predict_data_model_agent_1d_narrow_balanced_grid_20260624_executable_1d_open_return_research",
+      "main_gap": "recent20 RankIC remains negative while TopN is positive.",
+      "optimization_style": "dual_objective_rankic_plus_topn",
+      "score_weights": {
+        "full.daily_rank_ic_mean_delta": 0.30,
+        "full.top1_delta": 0.10,
+        "full.top5_delta": 0.10,
+        "full.top10_delta": 0.05,
+        "recent63.top1_delta": 0.15,
+        "recent63.top5_delta": 0.15,
+        "recent20.daily_rank_ic_mean_delta": 0.10,
+        "recent20.top5_delta": 0.05
+      },
+      "additional_constraints": {
+        "recent20_daily_rank_ic_delta_floor": -0.003,
+        "full_top5_delta_floor": 0.0,
+        "recent63_top5_delta_floor": 0.0
+      },
+      "search_recommendation": [
+        "Prefer low-depth XGBoost regression with stronger regularization.",
+        "Test feature selection sizes around the V11 selected-feature count rather than expanding blindly.",
+        "Keep saved fold model files and selected features for every accepted candidate."
+      ]
+    },
+    "3d": {
+      "label": "executable_3d_open_return",
+      "priority": "P1",
+      "current_best_research_table": "stock_predict_data_model_agent_3d_stability_anchor_fast_20260624_executable_3d_open_return_research",
+      "main_gap": "Full RankIC and recent20 RankIC are negative despite strong TopN gains.",
+      "optimization_style": "rankic_constrained_topn_objective",
+      "score_weights": {
+        "full.daily_rank_ic_mean_delta": 0.40,
+        "full.rank_ic_positive_ratio_delta": 0.10,
+        "full.top5_delta": 0.10,
+        "recent126.daily_rank_ic_mean_delta": 0.10,
+        "recent63.daily_rank_ic_mean_delta": 0.10,
+        "recent63.top5_delta": 0.10,
+        "recent20.daily_rank_ic_mean_delta": 0.05,
+        "recent20.top5_delta": 0.05
+      },
+      "additional_constraints": {
+        "full_daily_rank_ic_delta_floor": -0.002,
+        "recent63_daily_rank_ic_delta_floor": 0.0,
+        "recent63_top5_delta_floor": 0.0,
+        "topn_gain_cannot_compensate_rankic_gate_failure": true
+      },
+      "search_recommendation": [
+        "Move back to model training and feature selection instead of another simple rank blend.",
+        "Reject candidates that improve Top1 only by sacrificing full-window RankIC.",
+        "Evaluate feature subsets with explicit RankIC stability gate per fold."
+      ]
+    },
+    "5d": {
+      "label": "executable_5d_open_return",
+      "priority": "P2",
+      "current_best_research_table": "stock_predict_data_model_agent_5d_stability_anchor_fast_20260624_executable_5d_open_return_research",
+      "main_gap": "Full Top10 delta is still negative while most other windows improve.",
+      "optimization_style": "top10_constrained_stability_objective",
+      "score_weights": {
+        "full.daily_rank_ic_mean_delta": 0.20,
+        "full.top1_delta": 0.10,
+        "full.top5_delta": 0.15,
+        "full.top10_delta": 0.25,
+        "recent63.daily_rank_ic_mean_delta": 0.10,
+        "recent63.top5_delta": 0.10,
+        "recent20.top5_delta": 0.05,
+        "recent20.top10_delta": 0.05
+      },
+      "additional_constraints": {
+        "full_top10_delta_floor": 0.0,
+        "full_daily_rank_ic_delta_floor": 0.0,
+        "recent63_top10_delta_floor": 0.0
+      },
+      "search_recommendation": [
+        "Prioritize candidates that repair Full Top10 without losing Full RankIC.",
+        "Simple blend candidates already failed; next pass should change objective or model training, not only post-ranking.",
+        "Keep Top1 improvement secondary to Top5 and Top10 stability."
+      ]
+    },
+    "10d": {
+      "label": "executable_10d_open_return",
+      "priority": "P1",
+      "current_best_research_table": "stock_predict_data_model_agent_10d_blend_v9_v10_constrained_20260624_executable_10d_open_return_research",
+      "main_gap": "Only recent20 RankIC is slightly negative; Full and recent TopN are materially improved.",
+      "optimization_style": "preserve_v11_constrained_blend_then_validate",
+      "score_weights": {
+        "full.daily_rank_ic_mean_delta": 0.25,
+        "full.top5_delta": 0.20,
+        "full.top10_delta": 0.15,
+        "recent63.top1_delta": 0.15,
+        "recent63.top5_delta": 0.15,
+        "recent20.daily_rank_ic_mean_delta": 0.05,
+        "recent20.top5_delta": 0.05
+      },
+      "additional_constraints": {
+        "full_top5_delta_floor": 0.0,
+        "full_top10_delta_floor": 0.0,
+        "recent63_top5_delta_floor": 0.0,
+        "do_not_replace_v11_with_simple_blend_without_audit": true
+      },
+      "search_recommendation": [
+        "Treat V11 constrained blend as the current 10D model-side anchor.",
+        "Prioritize audit and strategy-side research validation before more simple combinations.",
+        "If retraining is approved later, use V11 as the baseline and require no Full Top5 or Top10 regression."
+      ]
+    }
+  },
+  "candidate_output_policy": {
+    "prediction_table_suffix": "_research",
+    "manifest_approval_status": "research_only_not_approved_for_l4_or_l5",
+    "required_report_fields": [
+      "label",
+      "training_window",
+      "feature_source",
+      "label_source",
+      "selected_features",
+      "model_params",
+      "fold_model_files",
+      "evaluation_windows",
+      "baseline_comparison",
+      "coverage",
+      "governance_boundaries"
+    ]
+  },
+  "boundaries": {
+    "no_training_executed_by_this_config_creation": true,
+    "no_prediction_generated_by_this_config_creation": true,
+    "no_production_manifest_change": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "no_strategy_rule_change": true
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_gap_v20260622",
+  "source_strategy": "gap_t0p03_g1p08_b0p88",
+  "reproduction_level": "L5 production archive",
+  "inputs": {
+    "base_signal": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_formal_5d10d_best_v20260621/signals/backtest_signals_best_noncal_avgpred205_rw2121201919.csv",
+    "formal_5d_manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_10d_manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "fusion_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_l5_candidate_grid_20260621/fusion_5d10d.db",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+    "market_db": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db"
+  },
+  "candidate_generation": {
+    "script": "D:/work/quant/quant_mcp/quant/main/research_formal_5d10d_gap_threshold_refine_20260622.py",
+    "selected_candidate": "gap_t0p03_g1p08_b0p88",
+    "rules": [
+      {
+        "condition": "pred_gap < 0.03",
+        "scale": 1.08
+      },
+      {
+        "condition": "0.05 <= pred_gap < 0.10",
+        "scale": 0.88
+      }
+    ]
+  },
+  "gm_backtest": {
+    "runner": "D:/work/quant/quant_mcp/quant/main/run_juejin_signal_backtest.py",
+    "strategy_dir": "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517",
+    "signal_file": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_formal_5d10d_gap_v20260622/signals/backtest_signals_gap_t0p03_g1p08_b0p88.csv",
+    "log_file": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_formal_5d10d_gap_v20260622/backtests/gm_backtest_gap_t0p03_g1p08_b0p88.log",
+    "backtest_start": "2024-06-05 09:00:00",
+    "backtest_end": "2026-06-30 15:30:00",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015
+  },
+  "publication_note": "??????? L5 ???????????????????????????????????????"
+}

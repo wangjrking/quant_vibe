@@ -1,0 +1,15 @@
+{
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "strategy_name": "aggressive Top1 90D10 no-delist",
+  "status": "published_current_production_user_override_not_admission_passed",
+  "latest_archived_signal_date": "20260622",
+  "latest_archived_buy_date": "20260623",
+  "latest_archived_signal_file": "signals/latest_signal_20260622_for_20260623.csv",
+  "latest_file": "signals/latest_signal.csv",
+  "note": "?????????????????? 20260622->20260623?20260623->20260624 ?????????/?????????????????",
+  "buy_day_realtime_checks_required": true,
+  "exclude_bj": true,
+  "exclude_st": true,
+  "exclude_delisting": true,
+  "skip_open_limit_up_buy": true
+}

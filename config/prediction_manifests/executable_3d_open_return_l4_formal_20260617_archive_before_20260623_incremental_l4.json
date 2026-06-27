@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "asset_role": "l4_formal_prediction_asset",
+  "label": "executable_3d_open_return",
+  "approval_status": "approved_for_l5",
+  "source_type": "sqlite_table",
+  "db_path": "../../../data_file/model_predictions/MODEL_PREDICTIONS.db",
+  "table": "stock_predict_data_model_agent_best_full_20260623_executable_3d_open_return_formal",
+  "market_db_path": "../../../data_file/STOCK_DAILY_DATA.db",
+  "generated_at": "2026-06-23T23:09:09+08:00",
+  "row_count": 2671741,
+  "trade_days": 496,
+  "stock_count": 5530,
+  "min_trade_date": "20240604",
+  "max_trade_date": "20260622",
+  "latest_day_rows": 5510,
+  "latest_day_stock_count": 5510,
+  "duplicate_keys": 0,
+  "null_pred_prob": 0,
+  "pred_prob_sha256": "9bf315c736e92142ae6ab0fd0db8d5645b5929860077510fcecbeb68958963a4",
+  "candidate_id": "model_agent_best_full_coverage_20260623_executable_3d_open_return",
+  "model_track": "formal_l5_consumable_strategy_score_asset",
+  "score_formula": "score = 0.88 * daily_rank(current_full_10d) + 0.12 * daily_rank(current_full_5d)",
+  "formula_sources": [
+    "stock_predict_data_model_agent_10d_topgate_fusion_20260622_executable_10d_open_return_research",
+    "stock_predict_data_model_agent_5d_gate6_balanced_bonus_20260622_executable_5d_open_return_research"
+  ],
+  "full_coverage_release_report": "../../../data_file/reports/model_agent_research_best_full_coverage_release_20260623/release_report.json",
+  "previous_formal_manifest_archive": "executable_3d_open_return_l4_formal_20260617_archive_before_20260623_best_full_publish.json",
+  "rollback_manifest_path": "executable_3d_open_return_l4_formal_20260617_archive_before_20260623_best_full_publish.json",
+  "governance_status": "approved_l5_consumable_user_authorized_best_full_coverage_publish_20260623",
+  "l5_approved_at": "2026-06-23T23:09:09+08:00",
+  "l5_approval_basis": "user_authorized_publish_all_best_models_after_full_coverage_completion_20260623",
+  "coverage_completion_method": "deterministic full-coverage rebuild of selected score formulas using current full-coverage upstream formal components; no model training and no strategy backtest",
+  "release_boundary": {
+    "no_training": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "no_strategy_rule_change": true
+  },
+  "notes": "用户授权将四个当前最优模型/评分公式补齐到当前标准链路最新日期后发布为生产模型。模型侧按全覆盖 upstream formal 分数重算确定性评分公式，未训练模型、未生成交易信号、未运行回测。",
+  "rollback_note": "如需回滚，恢复 previous_formal_manifest_archive 指向的归档 manifest；旧 DB 表和旧 manifest 未删除。"
+}

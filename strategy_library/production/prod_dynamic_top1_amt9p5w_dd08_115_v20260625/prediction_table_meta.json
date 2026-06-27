@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+  "created_at": "2026-06-25",
+  "formal_l4_assets": {
+    "3d": {
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+      "approval_status": "approved_for_l5",
+      "source_type": "sqlite_table",
+      "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_best_full_20260623_executable_3d_open_return_formal",
+      "summary": {
+        "row_count": 2682766,
+        "trade_days": 498,
+        "stock_count": 5531,
+        "min_trade_date": "20240604",
+        "max_trade_date": "20260624",
+        "latest_day_rows": 5512,
+        "null_pred_prob": 0,
+        "duplicate_key_groups": 0
+      }
+    },
+    "5d": {
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+      "approval_status": "approved_for_l5",
+      "source_type": "sqlite_table",
+      "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_best_full_20260623_executable_5d_open_return_formal",
+      "summary": {
+        "row_count": 2682766,
+        "trade_days": 498,
+        "stock_count": 5531,
+        "min_trade_date": "20240604",
+        "max_trade_date": "20260624",
+        "latest_day_rows": 5512,
+        "null_pred_prob": 0,
+        "duplicate_key_groups": 0
+      }
+    },
+    "10d": {
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+      "approval_status": "approved_for_l5",
+      "source_type": "sqlite_table",
+      "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_best_full_20260623_executable_10d_open_return_formal",
+      "summary": {
+        "row_count": 2682766,
+        "trade_days": 498,
+        "stock_count": 5531,
+        "min_trade_date": "20240604",
+        "max_trade_date": "20260624",
+        "latest_day_rows": 5512,
+        "null_pred_prob": 0,
+        "duplicate_key_groups": 0
+      }
+    }
+  },
+  "legacy_odb_allowed": false
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0509_pos86_tp060_v20260624",
+  "checked_at": "2026-06-24",
+  "checked_by": "strategy-agent",
+  "status": "exploration_candidate_pending_audit_not_published",
+  "current_registry_unchanged": true,
+  "production_current_after_precheck": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "weak_admission_metrics": {
+    "annual_return": 4.558365195146958,
+    "sharpe": 1.9124285440529118,
+    "max_drawdown": 0.3689226441618959,
+    "note": "收益指标是弱准入，不能单独决定生产发布。"
+  },
+  "strong_gate_precheck": {
+    "formal_l4_only": {
+      "status": "pass",
+      "evidence": "predictions/prediction_table_meta.json"
+    },
+    "legacy_odb_forbidden_by_default": {
+      "status": "pass",
+      "evidence": "strategy_manifest.json"
+    },
+    "hard_filter_audit": {
+      "status": "pass",
+      "bj_rows": 0,
+      "buy_st_rows": 0,
+      "buy_delist_rows": 0,
+      "open_limit_up_buy_rows": 0,
+      "evidence": "research/hard_gate_audit.json"
+    },
+    "time_slice_continuity": {
+      "status": "pass",
+      "recent60_annual": 0.5565653243136334,
+      "recent120_annual": 2.3060891627867206,
+      "evidence": "research/time_slices.csv"
+    },
+    "low_path_dependency": {
+      "status": "pass",
+      "evidence": "research/nearby_summary.csv"
+    },
+    "contribution_stress": {
+      "status": "pass",
+      "drop_top_1pct_annual_return": "4.061336583532057",
+      "evidence": "research/stress_summary.csv"
+    },
+    "parameter_sensitivity": {
+      "status": "pass_with_drawdown_edge_risk",
+      "chosen_case": "tp060_pos86_dd0509_s7050",
+      "evidence": "research/dd_neighborhood_summary.csv",
+      "reason": "dd0714 年化更高但最大回撤 39.94% 贴近 40% 红线；dd0509 将最大回撤降至 36.89%，recent60 也更好，更接近强准入口径。"
+    },
+    "production_archive_contract": {
+      "status": "partial",
+      "reason": "已生成 exploration 候选归档；未移入 production，未更新 registry，未生成生产信号。"
+    }
+  },
+  "production_publish_blockers": [
+    "需要审计智能体复核强准入证据，尤其是收益下降换取回撤安全边际的取舍是否符合生产策略口径。",
+    "需要用户明确批准生产发布和 registry 切换。",
+    "需要按生产目录规范生成 production 归档，不覆盖旧生产业务结果。",
+    "需要使用批准后的生产入口生成最新生产信号。"
+  ]
+}

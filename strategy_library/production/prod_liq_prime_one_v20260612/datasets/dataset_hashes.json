@@ -1,0 +1,5 @@
+{
+  "strict_reproduction_status": "partial",
+  "reason": "Historical training samples and per-fold universe hashes were not archived for the original production model. Frozen reproduction uses archived prediction-table component hashes instead.",
+  "available_evidence": "predictions/prediction_table_meta.json contains row counts, date ranges, stock counts, and key+pred_prob SHA256 for production prediction tables."
+}

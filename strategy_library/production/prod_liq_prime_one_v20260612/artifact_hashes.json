@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-06-15",
+  "files": [
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\code_snapshot\\juejin_main.py",
+      "sha256": "8EA26534569CA66806A8819C421849AE0419683D3B9D888A6DF21C4341A24DCE",
+      "bytes": 33026
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\code_snapshot\\run_juejin_signal_backtest.py",
+      "sha256": "86E6213C51BBA9B2FC265439C2B1FF9F27A6435C3C43F7410B8830D54E1AF001",
+      "bytes": 8135
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\signals\\production_signals.csv",
+      "sha256": "2628A6B76412436ED4CBD30A51D658D705CA05C94A952BF83841544E9334E742",
+      "bytes": 22407
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\signals\\signals_latest.csv",
+      "sha256": "DE7297F8B9828C05DB006AB46C2F3F97F96F0AF5A61583EB638B840843C505ED",
+      "bytes": 305
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\backtests\\gm_backtest_20260615_0019_5009pct.log",
+      "sha256": "6CCFCA023665006A6EFC38AC4B4AC68AF9DC041D35C5E5F47D6DEE03C42A6C62",
+      "bytes": 1545
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\backtests\\gm_backtest_20260615_1054_current_rerun_4471pct.log",
+      "sha256": "CDCB6EE4E2C09EE086A5B076C0527DB62B3362F929E802C2D94BB22790B120FE",
+      "bytes": 1547
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\predictions\\prediction_table_meta.json",
+      "sha256": "F13653965080911BF1E91A5808FD2E9E1F6D9C419260084650023086B04E12DB",
+      "bytes": 8191
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\production_notes.md",
+      "sha256": "2F2AA1871E75013DF6AE2583BA239430BB7398366F71E6A6B6988D267E2F070D",
+      "bytes": 9667
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\strategy_manifest.json",
+      "sha256": "11BC92CA791A2B734E828D4CD354B88BFA8351FF79BD48A83F2AD354AC14852E",
+      "bytes": 2552
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\trading_rules.json",
+      "sha256": "6BDCF15DD3CE49CB1297CC7EC24315264EED20140828CE11D85D4B2D0053635A",
+      "bytes": 4033
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\reproduction_v1_0.json",
+      "sha256": "AEC6FBEFD54B99AD0A3554C9D6B90D91982C3C6D5FEDE0B3D5CAC9B8C6356AF3",
+      "bytes": 3925
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\validation.json",
+      "sha256": "DD5BFC27202CBBE6ADCB007EEEBE3A3F69818EAF0D185E9BF43E711704CB61AD",
+      "bytes": 4420
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\model_params.json",
+      "sha256": "1DE987558A22353E268715AA74005D77C43E64E7E45590C5EE3FC9853D29C1F8",
+      "bytes": 1950
+    },
+    {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_liq_prime_one_v20260612\\factors.json",
+      "sha256": "99169B1757FA5562BA26E61168D3CC34AE7DFEAF0287EBD7D9F83FE7C3636BFE",
+      "bytes": 1947
+    }
+  ]
+}

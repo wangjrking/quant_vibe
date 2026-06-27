@@ -1,0 +1,77 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_top3_stclean_v20260623",
+  "name": "formal 5D10D Top3 ST-clean",
+  "code_name": "top3_10d80_full_h3_nodd",
+  "status": "production",
+  "production_version": "v20260623",
+  "published_at": "2026-06-23",
+  "published_by": "strategy-agent",
+  "definition": "基于当前 approved_for_l5 formal L4 5D 与 10D 预测资产的 L5 Top3 选股策略。策略不使用行业过滤、月份/日期过滤或 1D 独立模型分数；生产硬门禁排除北交所、ST/风险警示、退市风险与开盘涨停不可买入。",
+  "source_research": {
+    "run_name": "latest_formal_5d10d_stclean_refill",
+    "candidate": "top3_10d80_full_h3_nodd",
+    "summary": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/latest_formal_5d10d_stclean_refill/summary_by_annual.csv",
+    "gm_log": "backtests/gm_backtest_top3_10d80_full_h3_nodd.log",
+    "historical_signal_file": "signals/historical_top3_10d80_full_h3_nodd.csv",
+    "audit_file": "validation_audit.json"
+  },
+  "input_contract": {
+    "source_mode": "formal_l4_5d10d_only",
+    "formal_manifest_5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "approval_required": "approved_for_l5",
+    "legacy_odb_forbidden_by_default": true,
+    "forbidden_inputs": [
+      "data_file/odb.db",
+      "stock_predict_data_* legacy table",
+      "unapproved research prediction asset",
+      "1D model score as independent strategy input"
+    ]
+  },
+  "prediction_assets": {
+    "fusion_manifest_file": "predictions/fusion_manifest.json",
+    "fusion_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/latest_formal_5d10d_stclean_refill/fusion_5d10d_latest_20260622.db",
+    "fusion_table": "fusion_rank_base",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/latest_formal_5d10d_stclean_refill/latest_pool_scores.db",
+    "score_table": "latest_stclean_top3_10d80_full_h3_nodd",
+    "data_range": {
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260622"
+    }
+  },
+  "validation": {
+    "platform": "juejin",
+    "selected_candidate": "top3_10d80_full_h3_nodd",
+    "annual_return": 0.8783061116837276,
+    "sharpe": 1.4874943991945495,
+    "max_drawdown": 0.33785648115000755,
+    "avg_invested_pct": 0.4948310892494929,
+    "signal_count": 1471,
+    "buy_days": 494,
+    "gm_backtest_log": "backtests/gm_backtest_top3_10d80_full_h3_nodd.log"
+  },
+  "audit": {
+    "bj_rows": 0,
+    "signal_st_or_risk_warning": 0,
+    "buy_st_or_risk_warning": 0,
+    "buy_limit_times_gt0": 0,
+    "missing_signal_market": 0,
+    "missing_buy_market": 6,
+    "source_of_truth": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA"
+  },
+  "automation": {
+    "production_entry": "run_production_tasks.py",
+    "signal_export_entry": "export_formal_5d10d_l5_signals.py",
+    "production_task_config": "config/production_tasks.json"
+  },
+  "governance": {
+    "is_current_l5": true,
+    "is_only_registered_l5_production_strategy": true,
+    "formal_performance_requires_juejin": true,
+    "no_calendar_filter": true,
+    "no_industry_filter": true,
+    "no_1d_model": true,
+    "production": true
+  }
+}

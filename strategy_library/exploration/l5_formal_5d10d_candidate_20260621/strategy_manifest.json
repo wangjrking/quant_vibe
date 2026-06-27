@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "strategy_id": "l5_formal_5d10d_candidate_20260621",
+  "name": "formal L4 5D+10D ??? L5 ????",
+  "status": "l5_candidate_not_production",
+  "version": "v1.6-research-noncalendar-postfilter-avgpred",
+  "created_at": "2026-06-21T11:15:00+08:00",
+  "updated_at": "2026-06-21T20:09:00+08:00",
+  "owner_agent": "strategy-agent",
+  "input_contract": {
+    "source_mode": "latest_formal_l4_5d10d_only",
+    "labels": [
+      "executable_5d_open_return",
+      "executable_10d_open_return"
+    ],
+    "formal_manifest_5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "fusion_manifest": "predictions/fusion_5d10d_manifest.json",
+    "tiered_score_manifest": "predictions/tiered_score_manifest.json",
+    "forbidden_inputs": [
+      "1D ????",
+      "odb.db.stock_predict_data_* ????????"
+    ]
+  },
+  "selected_candidate": {
+    "name": "best_noncal_avgpred205",
+    "score_asset": "formal_5d10d_noncalendar_quality_refine",
+    "top_k_after_concentration": 5,
+    "rank_max": 5,
+    "primary_count_min": 2,
+    "min_pred_10d": 0.0,
+    "post_filter_avg_pred_min": 2.05,
+    "holding_days": 7,
+    "max_holding_days": 10,
+    "max_positions": 5,
+    "weight_mode": "rank_target_pct",
+    "rank_target_pct": {
+      "1": 0.207,
+      "2": 0.207,
+      "3": 0.2,
+      "4": 0.193,
+      "5": 0.193
+    },
+    "target_total_pct_reference": 1.0,
+    "max_single_position_pct": 0.207,
+    "max_daily_sells": 1,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 1.0,
+    "min_holding_days_before_score_exit": 3,
+    "score_continue_entry_ratio": 1.02,
+    "cash_buffer": 0.99,
+    "risk_overlay": {
+      "equity_drawdown_risk_mode": true,
+      "soft_trigger": 0.12,
+      "hard_trigger": 0.22,
+      "recover_trigger": 0.05,
+      "soft_scale": 0.9,
+      "hard_scale": 0.7,
+      "resize_existing": false
+    }
+  },
+  "validation_summary": {
+    "platform": "juejin",
+    "annual_return": 2.5411407000126363,
+    "sharpe": 3.0065551191497746,
+    "avg_invested_pct": 0.5889173433734941,
+    "ge80_ratio": 0.17269076305220885,
+    "max_drawdown": 0.23601175083620143,
+    "open_count": 349,
+    "close_count": 345,
+    "signal_count": 1879,
+    "buy_days": 382,
+    "max_active_positions": 5,
+    "target_annual_return": 2.0,
+    "target_sharpe": 3.0,
+    "target_avg_invested_pct": "best_effort_near_0.80_not_hard_gate",
+    "target_status": "annual_and_sharpe_met_avg_invested_below_preference",
+    "win_ratio": 0.6057971014492753
+  },
+  "promotion_policy": {
+    "registered_as_current_production": false,
+    "may_enter_production": false,
+    "reason": "???? L5 ???????????? Sharpe ????????????????????????????????"
+  },
+  "method_guardrail": {
+    "calendar_filters_rejected": true,
+    "rejection_reason": "???????????????????????????",
+    "valid_candidate_source": "summary_noncalendar_quality_refine_by_sharpe.csv",
+    "no_industry_filter": true
+  },
+  "sensitivity_summary": {
+    "nearby_avg_pred_thresholds": [
+      {
+        "name": "best_noncal_avgpred205",
+        "threshold": "2.05",
+        "annual_return": 2.5411407000126363,
+        "sharpe": 3.0065551191497746
+      },
+      {
+        "name": "best_noncal_avgpred210",
+        "threshold": "2.1",
+        "annual_return": 2.5411407000126363,
+        "sharpe": 3.0065551191497746
+      },
+      {
+        "name": "best_noncal_avgpred212",
+        "threshold": "2.12",
+        "annual_return": 2.5411407000126363,
+        "sharpe": 3.006555119149775
+      },
+      {
+        "name": "best_noncal_avgpred215",
+        "threshold": "2.15",
+        "annual_return": 2.411691513082667,
+        "sharpe": 2.912634567910256
+      },
+      {
+        "name": "best_noncal_avgpred218",
+        "threshold": "2.18",
+        "annual_return": 2.32882912382958,
+        "sharpe": 2.84566014968008
+      },
+      {
+        "name": "best_noncal_avgpred220",
+        "threshold": "2.2",
+        "annual_return": 2.32882912382958,
+        "sharpe": 2.84566014968008
+      }
+    ],
+    "qualified_count": 6
+  },
+  "evidence": {
+    "signal_file": "signals/candidate_signals.csv",
+    "gm_backtest_log": "backtests/gm_backtest_candidate.log",
+    "selected_score_manifest": "predictions/tiered_score_manifest.json",
+    "noncalendar_quality_summary": "research/summary_noncalendar_quality_refine.csv",
+    "noncalendar_quality_summary_by_annual": "research/summary_noncalendar_quality_refine_by_annual.csv",
+    "noncalendar_quality_summary_by_sharpe": "research/summary_noncalendar_quality_refine_by_sharpe.csv",
+    "noncalendar_quality_summary_qualified": "research/summary_noncalendar_quality_refine_qualified.csv",
+    "research_script_noncalendar_quality_refine": "D:/work/quant/quant_mcp/quant/main/research_formal_5d10d_noncalendar_quality_refine_20260621.py"
+  }
+}

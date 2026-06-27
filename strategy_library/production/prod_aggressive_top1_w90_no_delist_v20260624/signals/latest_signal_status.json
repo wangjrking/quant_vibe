@@ -1,0 +1,37 @@
+{
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "strategy_name": "aggressive Top1 90D10 no-delist",
+  "status": "production_user_override_not_admission_passed",
+  "signal_date": "20260623",
+  "buy_date": "20260624",
+  "generated_at": "2026-06-24T08:42:45",
+  "generated_by": "trading-agent",
+  "source_snapshot": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_aggressive_top1_w90_no_delist_v20260624\\code_snapshot\\tune_top1_soft_rank_latest_formal_20260623.py",
+  "source_score_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\scores_latest_formal_top1.db",
+  "source_score_table": "score_no_delist_latest_w90_5d10_h5_g200_e098",
+  "weights": {
+    "10d": 0.9,
+    "5d": 0.1
+  },
+  "target_pct": 0.99,
+  "holding_days": 5,
+  "score_exit_entry_ratio": 0.98,
+  "min_holding_days_before_score_exit": 1,
+  "selection_note": "?? signal_date=20260623 ? formal L4 10D/5D rank ?? Top1???????????? signal-day ??? base?",
+  "buy_day_realtime_checks_required": true,
+  "buy_day_realtime_checks_status": "pending_pre_open",
+  "hard_checks_pending": [
+    "20260624 ???????",
+    "??",
+    "ST/????",
+    "??????? 0",
+    "????",
+    "??????"
+  ],
+  "outputs": [
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_aggressive_top1_w90_no_delist_v20260624\\signals\\latest_signal_20260623_for_20260624.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_aggressive_top1_w90_no_delist_v20260624\\signals\\latest_signal.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_aggressive_top1_w90_no_delist_v20260624_signal_20260623_for_20260624.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_aggressive_top1_w90_no_delist_v20260624_latest.csv"
+  ]
+}

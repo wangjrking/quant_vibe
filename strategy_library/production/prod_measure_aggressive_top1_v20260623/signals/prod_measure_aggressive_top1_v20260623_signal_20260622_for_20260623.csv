@@ -1,0 +1,2 @@
+﻿signal_date,buy_date,symbol,stock_code,name,rank,pred_prob,atr_ratio,holding_days,target_pct,source_manifest,source_table,note
+20260622,20260623,SHSE.688170,688170.SH,德龙激光,1,0.9950998185117967,0.09953908984830805,5,0.98,D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/prod_liq_prime_one_v20260612_l4_formal.json,stock_predict_data_model_agent_5d_topgate_fusion_20260622_executable_5d_open_return_research,??L4 formal???????????20260623????????????????????

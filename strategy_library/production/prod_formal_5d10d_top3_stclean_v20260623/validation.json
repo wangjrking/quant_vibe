@@ -1,0 +1,20 @@
+{
+  "platform": "juejin",
+  "candidate": "top3_10d80_full_h3_nodd",
+  "annual_return": 0.8783061116837276,
+  "sharpe": 1.4874943991945495,
+  "max_drawdown": 0.33785648115000755,
+  "avg_invested_pct": 0.4948310892494929,
+  "signal_count": 1471,
+  "buy_days": 494,
+  "gm_backtest_log": "backtests/gm_backtest_top3_10d80_full_h3_nodd.log",
+  "audit": {
+    "bj_rows": 0,
+    "signal_st_or_risk_warning": 0,
+    "buy_st_or_risk_warning": 0,
+    "buy_limit_times_gt0": 0,
+    "missing_signal_market": 0,
+    "missing_buy_market": 6
+  },
+  "status": "production_accepted_by_user_on_2026-06-23"
+}

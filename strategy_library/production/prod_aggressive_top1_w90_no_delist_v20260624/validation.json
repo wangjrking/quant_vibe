@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "validation_platform": "juejin",
+  "validated_at": "2026-06-24",
+  "backtest_window": {
+    "start": "2024-06-05 09:00:00",
+    "end": "2026-06-23 15:30:00"
+  },
+  "metrics": {
+    "pnl_ratio": 10.451834162844634,
+    "annual_return": 5.09335042648637,
+    "sharpe": 2.1242037354810757,
+    "max_drawdown": 0.47957543328038005,
+    "win_ratio": 0.5170068027210885,
+    "open_count": 149,
+    "close_count": 147,
+    "calmar_ratio": 10.620540738809241
+  },
+  "hard_gate_audit": {
+    "signal_delisting_name_hits": 0,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "skip_open_limit_up_buy": true
+  },
+  "strict_admission": {
+    "passed": false,
+    "required_annual_return": 5.0,
+    "required_sharpe": 3.0,
+    "reason": "年化达到目标，但夏普未达到 3，且存在路径依赖和参数尖峰风险。"
+  },
+  "evidence": {
+    "gm_backtest_log": "backtests/gm_backtest_no_delist_latest_w90_5d10_h5_g200_e098_full_20240605.log",
+    "historical_signals": "signals/historical_no_delist_latest_w90_5d10_h5_g200_e098.csv",
+    "source_report_dir": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/top1_no_delist_rerun_20260624"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+  "signal_date": "20260624",
+  "buy_date": "20260625",
+  "latest_market_date": "20260625",
+  "buy_day_market_available": true,
+  "buy_day_hard_gate_complete": true,
+  "candidate_count_after_filters": 3109,
+  "skipped_candidates": [],
+  "selected_stock_code": "688059.SH",
+  "selected_name": "华锐精密"
+}

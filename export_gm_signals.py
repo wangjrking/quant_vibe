@@ -5,14 +5,18 @@ from pathlib import Path
 
 from backtest_module import read_prediction_rows
 from gm_signal_module import build_gm_signal_rows, load_market_rows_by_trade_date, write_gm_signals_csv
+from prediction_manifest import resolve_market_db_path, resolve_prediction_source
 from selection_module import SelectionConfig
 
 
 def parse_args(argv=None):
     defaults = SelectionConfig()
     parser = argparse.ArgumentParser(description="Export next-day gm.api signals from prediction rows.")
-    parser.add_argument("--db", default="data_file/odb.db")
-    parser.add_argument("--table", default="stock_predict_data_10d_yield_rate_oos_2y_ic160")
+    parser.add_argument("--prediction-manifest")
+    parser.add_argument("--legacy-reproduction", action="store_true")
+    parser.add_argument("--db")
+    parser.add_argument("--table")
+    parser.add_argument("--market-db")
     parser.add_argument("--start", default="20240604")
     parser.add_argument("--end", default="20260604")
     parser.add_argument("--stock-pool")
@@ -37,12 +41,53 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
+def enrich_prediction_rows_with_market_rows(rows, market_rows_by_trade_date):
+    if not rows or not market_rows_by_trade_date:
+        return rows
+    enriched_rows = []
+    market_fields = (
+        "name",
+        "pre_close",
+        "open",
+        "amount",
+        "turnover_rate",
+        "total_mv",
+        "st_type",
+        "limit_times",
+    )
+    for row in rows:
+        enriched = dict(row)
+        market_row = (market_rows_by_trade_date.get(str(row.get("trade_date") or ""), {}) or {}).get(
+            str(row.get("stock_code") or "")
+        )
+        if market_row:
+            for field in market_fields:
+                if enriched.get(field) in (None, "", "None"):
+                    enriched[field] = market_row.get(field)
+        enriched_rows.append(enriched)
+    return enriched_rows
+
+
 def main(argv=None):
     args = parse_args(argv)
     min_pred = None if str(args.min_pred).strip().lower() in {"none", "null", ""} else float(args.min_pred)
     max_atr = None if str(args.max_atr_ratio).strip().lower() in {"none", "null", ""} else float(args.max_atr_ratio)
-    rows = read_prediction_rows(args.db, args.table, args.start, args.end, stock_pool_path=args.stock_pool)
-    market_rows_by_trade_date = load_market_rows_by_trade_date(args.db, args.start, args.end)
+    source = resolve_prediction_source(
+        prediction_manifest=args.prediction_manifest,
+        legacy_reproduction=bool(args.legacy_reproduction),
+        db_path=args.db,
+        table=args.table,
+    )
+    market_db = resolve_market_db_path(source, args.market_db)
+    rows = read_prediction_rows(
+        source["db_path"],
+        source["table"],
+        args.start,
+        args.end,
+        stock_pool_path=args.stock_pool,
+    )
+    market_rows_by_trade_date = load_market_rows_by_trade_date(market_db, args.start, args.end)
+    rows = enrich_prediction_rows_with_market_rows(rows, market_rows_by_trade_date)
     signals = build_gm_signal_rows(
         rows,
         SelectionConfig(

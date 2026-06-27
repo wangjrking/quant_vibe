@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
+  "strategy_name": "单票动态Top1 量额90k warmup60",
+  "status": "production",
+  "created_at": "2026-06-26",
+  "published_at": "2026-06-26",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+  "validation_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_publish_dynamic_top1_amt9w_warmup60_20260626",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_latest_formal_prod_dynamic_top1_opt_round3_20260626\\signals\\w84_09_07_amt90_mv20__exec_c097_pos90_dd12.csv",
+  "input_contract": {
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+    "allow_legacy": false
+  },
+  "startup_rule": {
+    "mode": "warmup_state_rebuild",
+    "warmup_trade_days": 60,
+    "admission_required": true,
+    "note": "正式接入默认先回放最近 60 个交易日信号以重建持仓状态，再从目标交易日开始进入正式策略。"
+  },
+  "current_signal": {
+    "signal_date": "20260625",
+    "buy_date": "",
+    "archive_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_top1_amt9w_warmup60_v20260626\\signals\\latest_signal_20260625_for_pending.csv",
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dynamic_top1_amt9w_warmup60_v20260626_latest.csv",
+    "status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_top1_amt9w_warmup60_v20260626\\signals\\latest_signal_20260625_for_pending_status.json",
+    "buy_day_hard_gate_complete": false,
+    "buy_day_realtime_checks_required": true
+  }
+}

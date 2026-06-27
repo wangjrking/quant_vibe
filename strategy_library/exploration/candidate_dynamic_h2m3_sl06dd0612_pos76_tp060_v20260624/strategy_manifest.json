@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0612_pos76_tp060_v20260624",
+  "name": "动态持有 Top1 三周期融合 pos76 6%止盈增强",
+  "code_name": "dynamic_h2_m3_c098_w78_5d12_3d10_pos76_e097_mh1_sl06_dd0612_tp060",
+  "status": "production_candidate_pending_audit_not_published",
+  "created_at": "2026-06-24",
+  "created_by": "strategy-agent",
+  "definition": "基于 formal L4 10D/5D/3D 资产，按 0.78*10D rank + 0.12*5D rank + 0.10*3D rank 选 Top1，目标仓位 76%，动态持有 2-3 日，日内 6% 止损，账户回撤缩放，并新增 6% 止盈。",
+  "input_contract": {
+    "source_mode": "formal_l4_3d5d10d_only",
+    "approval_required": "approved_for_l5",
+    "legacy_odb_forbidden_by_default": true
+  },
+  "validation": {
+    "platform": "juejin",
+    "annual_return": 5.0324642954765775,
+    "sharpe": 2.030804943890823,
+    "max_drawdown": 0.3613458332569928,
+    "pnl_ratio": 10.326892485786182,
+    "win_ratio": 0.5841584158415841,
+    "open_count": 203,
+    "close_count": 202
+  },
+  "admission_status": {
+    "strict_production_admission_passed": false,
+    "candidate_status": "production_candidate_pending_audit",
+    "reason": "策略侧已完成掘金验证、止盈邻域、低路径依赖、贡献压力和硬过滤审计，但尚未完成审计智能体复核与用户发布审批。",
+    "known_risks": [
+      "recent60 年化低于无止盈主线，属于持续性折中项，需要审计复核。",
+      "当前候选信号仅覆盖到 signal_date=20260622 / buy_date=20260623。",
+      "当前归档位于 exploration，不是 production.current。"
+    ]
+  },
+  "current_signal": {
+    "latest_signal_date": "20260622",
+    "latest_buy_date": "20260623",
+    "latest_candidate_signal": "signals/latest_candidate_signal.csv",
+    "status_file": "signals/latest_candidate_signal_status.json",
+    "status": "research_candidate_signal_not_production"
+  },
+  "governance": {
+    "is_current_l5": false,
+    "is_only_registered_l5_production_strategy": false,
+    "formal_performance_requires_juejin": true,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "skip_open_limit_up_buy": true,
+    "production": false,
+    "requires_audit_before_production": true,
+    "requires_user_approval_before_registry_update": true
+  }
+}

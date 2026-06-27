@@ -1,0 +1,15 @@
+{
+  "strategy_id": "prod_measure_aggressive_top1_v20260623",
+  "as_of": "2026-06-23",
+  "signal_date": "20260622",
+  "buy_date": "20260623",
+  "status": "generated_from_formal_l4",
+  "signal_count": 1,
+  "outputs": [
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_aggressive_top1_v20260623\\signals\\latest_20260623.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_aggressive_top1_v20260623\\signals\\prod_measure_aggressive_top1_v20260623_signal_20260622_for_20260623.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_measure_aggressive_top1_v20260623_signal_20260622_for_20260623.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_measure_aggressive_top1_v20260623_latest.csv"
+  ],
+  "caveat": "ST/??/???/??????20260622???????????20260623?????????????????????"
+}

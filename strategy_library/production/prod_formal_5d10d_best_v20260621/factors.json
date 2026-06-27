@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_formal_5d10d_best_v20260621",
+  "scope": "l5_factor_boundary",
+  "l5_factor_processing": false,
+  "description": "本 L5 策略不加工因子，不训练模型，只消费模型智能体发布并批准的 formal L4 预测分数。行情字段仅用于交易规则过滤、可交易性检查和复现。",
+  "formal_l4_feature_sources": [
+    "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+  ],
+  "l5_required_market_columns": [
+    "trade_date",
+    "stock_code",
+    "name",
+    "pre_close",
+    "open",
+    "close",
+    "amount",
+    "turnover_rate",
+    "total_mv",
+    "atr_qfq",
+    "limit_times"
+  ],
+  "forbidden_l5_actions": [
+    "新增或重算模型因子",
+    "训练模型",
+    "接入外部数据",
+    "从旧 odb.db 默认读取预测表"
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+  "strategy_name": "单票动态Top1 量额95k dd08_115",
+  "status": "production",
+  "model_input": {
+    "source": "formal L4 3D/5D/10D rank cache",
+    "weight_name": "w78_5d12_3d10",
+    "entry_weights": {
+      "10d": 0.78,
+      "5d": 0.12,
+      "3d": 0.1
+    },
+    "uses_1d": false
+  },
+  "selection_rule": {
+    "filter_name": "amt9p5w_mv20w_no_bj_st_delist",
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "no_industry_filter": true,
+    "no_month_or_date_exclusion": true,
+    "no_latest_state_backfill": true,
+    "amount_min": 95000.0,
+    "total_mv_min": 200000.0,
+    "total_mv_max": null,
+    "turnover_min": null
+  },
+  "position_rule": {
+    "max_positions": 1,
+    "target_position_pct": 0.8975,
+    "cash_buffer_mode": "gm_cash_buffer_0p99"
+  },
+  "holding_rule": {
+    "holding_name": "h2_m3_c0975",
+    "holding_days": 2,
+    "max_holding_days": 3,
+    "score_exit_entry_ratio": 0.97,
+    "score_continue_entry_ratio": 0.975,
+    "min_holding_days_before_score_exit": 1
+  },
+  "risk_rule": {
+    "intraday_stop_loss_pct": 0.06,
+    "take_profit_pct": 0.07,
+    "equity_drawdown_risk_mode": true,
+    "dd_soft_trigger": 0.08,
+    "dd_hard_trigger": 0.115,
+    "dd_recover_trigger": 0.03,
+    "dd_soft_scale": 0.75,
+    "dd_hard_scale": 0.55
+  },
+  "execution_rule": {
+    "signal_date_rule": "使用 T 日 formal L4 分数生成 T+1 开盘交易信号",
+    "force_sell_market_order": true,
+    "juejin_backtest_slippage_ratio": 0.0015,
+    "initial_cash": 600000,
+    "current_signal_status": "hard_gate_complete",
+    "signal_exporter": "export_dynamic_top1_formal_signals.py"
+  },
+  "governance_note": "不买北交所、不买 ST/风险警示、不买退市、不买开盘涨停；风格暴露与风格漂移仅作提示项。"
+}

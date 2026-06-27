@@ -14,6 +14,7 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 
 from project_paths import load_config, resolve_data_dir
+from raw_table_db_module import replace_raw_table_full
 
 
 
@@ -606,11 +607,10 @@ def download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data
 			result = f.result()
 			output_data +=  result
 
-		conn = sqlite3.connect(data_file_url + '/odb.db')
 		for db in tqdm(output_data, desc="多个数据任务录入数据库中"):
 			# print(key, value)
 			data = pd.read_parquet(data_file_url + '/'+ db +'.parquet')
-			data.to_sql(db, con=conn, if_exists='replace', index=False)
+			replace_raw_table_full(data_file_url, db, data)
 
 
 	'''
@@ -643,11 +643,4 @@ def download_odb_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data
 
 
 if __name__ == '__main__':
-    ts_token = os.environ.get('TUSHARE_TOKEN', '')
-    data_dir = resolve_data_dir()
-    data_start_dt = '20200101'
-    data_end_dt = datetime.now().strftime("%Y%m%d")
-    print(store_adj_factor(['000926.SZ'], data_start_dt=data_start_dt, data_end_dt=data_end_dt, ts_token=ts_token))
-    data = pd.read_parquet(data_dir / 'adj_factor.parquet')
-    with sqlite3.connect(data_dir / 'odb.db') as conn:
-        data.to_sql('adj_factor_test', con=conn, if_exists='replace', index=False)
+    raise SystemExit("Use run_all_a_raw_update.py or a dedicated backfill script for data ingestion.")

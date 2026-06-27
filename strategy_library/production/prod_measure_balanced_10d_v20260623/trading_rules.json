@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_measure_balanced_10d_v20260623",
+  "strategy_name": "稳健均衡10D",
+  "rule_summary": "使用 10D 评分构建分散组合，最多约 7 只，平均持仓约 80%，启用账户回撤缩仓和每日评分卖出。",
+  "selection_rule": {
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "exclude_current_limit": true,
+    "skip_open_limit_up_buy": true,
+    "industry_filter": false,
+    "calendar_or_month_filter": false
+  },
+  "position_rule": {
+    "max_positions": 7,
+    "target_position_pct": 0.42,
+    "cash_buffer": 0.99,
+    "position_style": "balanced_multi_position"
+  },
+  "holding_rule": {
+    "holding_days": 6,
+    "max_holding_days": 6,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 1.0,
+    "score_continue_entry_ratio": 1.02,
+    "min_holding_days_before_score_exit": 4,
+    "max_daily_sells": 1
+  },
+  "risk_rule": {
+    "account_drawdown_scale_enabled": true,
+    "soft_drawdown": 0.09,
+    "soft_scale": 0.82,
+    "hard_drawdown": 0.17,
+    "hard_scale": 0.58,
+    "recover_drawdown": 0.05
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015,
+    "skip_buy_when_open_limit_up": true
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "source_mode": "formal_l4_5d10d_only",
+  "manifests": {
+    "5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+  },
+  "score_asset": {
+    "db_path": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/top1_no_delist_rerun_20260624/scores_latest_formal_top1.db",
+    "table": "score_no_delist_latest_w90_5d10_h5_g200_e098",
+    "score_column": "pred_prob"
+  },
+  "legacy_odb_used": false,
+  "approved_for_l5_required": true
+}

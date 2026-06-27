@@ -1,0 +1,6 @@
+{
+  "strict_feature_files_available": false,
+  "summary": "factors.json preserves final effective factor list and selection method. Original per-fold feature IC files and selected feature JSONs are not fully copied into this production package.",
+  "final_factors_file": "factors.json",
+  "caveat": "Do not claim strict model retraining reproduction without per-fold feature files and sample hashes."
+}

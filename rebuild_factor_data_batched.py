@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import gc
-import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import numpy as np
@@ -11,13 +11,15 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from data_process_module import get_factor_data
+from gtja_alpha_workflow import read_gtja_audit_frame, rebuild_full_market_gtja, write_gtja_rank_audit
+from stock_daily_data_route import connect_stock_daily_readonly, resolve_stock_daily_db_path
 
 
 TEXT_COLUMNS = {"stock_code", "trade_date", "name", "industry", "act_ent_type"}
 
 
 def _stock_codes(db_path: Path) -> list[str]:
-    with sqlite3.connect(db_path) as conn:
+    with closing(connect_stock_daily_readonly(db_path=db_path)) as conn:
         rows = conn.execute(
             'SELECT DISTINCT stock_code FROM STOCK_DAILY_DATA ORDER BY stock_code'
         ).fetchall()
@@ -26,7 +28,7 @@ def _stock_codes(db_path: Path) -> list[str]:
 
 def _load_batch(db_path: Path, codes: list[str]) -> pd.DataFrame:
     placeholders = ",".join(["?"] * len(codes))
-    with sqlite3.connect(db_path) as conn:
+    with closing(connect_stock_daily_readonly(db_path=db_path)) as conn:
         frame = pd.read_sql(
             f"""
             SELECT *
@@ -60,14 +62,28 @@ def _chunks(values: list[str], size: int):
         yield start // size, values[start : start + size]
 
 
-def rebuild(data_dir: Path, batch_size: int, resume: bool, end_date: str | None = None) -> Path:
-    db_path = data_dir / "odb.db"
+def rebuild(
+    data_dir: Path,
+    batch_size: int,
+    resume: bool,
+    end_date: str | None = None,
+    start_batch: int | None = None,
+    end_batch: int | None = None,
+    no_merge: bool = False,
+    global_gtja: bool = True,
+    gtja_audit_path: Path | None = None,
+) -> Path:
+    db_path = resolve_stock_daily_db_path(data_dir=data_dir)
     output_dir = data_dir / "factor_rebuild_parts"
     output_dir.mkdir(parents=True, exist_ok=True)
     codes = _stock_codes(db_path)
     print(f"rebuild_start stocks={len(codes)} batch_size={batch_size}", flush=True)
 
     for batch_idx, batch_codes in _chunks(codes, batch_size):
+        if start_batch is not None and batch_idx < start_batch:
+            continue
+        if end_batch is not None and batch_idx > end_batch:
+            continue
         part_path = output_dir / f"part_{batch_idx:04d}.parquet"
         if resume and part_path.exists():
             print(f"batch_skip index={batch_idx} path={part_path}", flush=True)
@@ -82,6 +98,9 @@ def rebuild(data_dir: Path, batch_size: int, resume: bool, end_date: str | None 
         gc.collect()
 
     final_path = data_dir / "stock_factor_data.parquet"
+    if no_merge:
+        print(f"no_merge output_dir={output_dir}", flush=True)
+        return final_path
     part_paths = sorted(output_dir.glob("part_*.parquet"))
     print(f"merge_start parts={len(part_paths)}", flush=True)
     temp_path = final_path.with_suffix(".tmp.parquet")
@@ -112,6 +131,21 @@ def rebuild(data_dir: Path, batch_size: int, resume: bool, end_date: str | None 
             writer.close()
     temp_path.replace(final_path)
     print(f"merge_done rows={total_rows} max={max_date} output={final_path}", flush=True)
+
+    if global_gtja:
+        print("global_gtja_start mode=full_market_recompute", flush=True)
+        final_path = rebuild_full_market_gtja(data_dir, final_path, end_date=end_date, source_parquet=final_path)
+        print(f"global_gtja_done output={final_path}", flush=True)
+    else:
+        print("global_gtja_skipped warning=gtja_alpha_rank_may_be_batch_scoped", flush=True)
+
+    audit_path = gtja_audit_path or data_dir / "reports" / "gtja_alpha_rank_audit.json"
+    audit_frame = read_gtja_audit_frame(final_path)
+    audit = write_gtja_rank_audit(audit_frame, audit_path)
+    print(
+        f"global_gtja_audit passed={audit['passed']} issue_count={audit.get('issue_count', 0)} path={audit_path}",
+        flush=True,
+    )
     return final_path
 
 
@@ -121,12 +155,31 @@ def parse_args(argv=None):
     parser.add_argument("--batch-size", type=int, default=25)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--end-date", help="Optional YYYYMMDD cutoff applied when merging factor parts.")
+    parser.add_argument("--start-batch", type=int)
+    parser.add_argument("--end-batch", type=int)
+    parser.add_argument("--no-merge", action="store_true")
+    parser.add_argument(
+        "--skip-global-gtja",
+        action="store_true",
+        help="Skip full-market GTJA recompute. Unsafe for production because cross-sectional ranks stay batch-scoped.",
+    )
+    parser.add_argument("--gtja-audit-path")
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
-    rebuild(Path(args.data_dir), batch_size=args.batch_size, resume=args.resume, end_date=args.end_date)
+    rebuild(
+        Path(args.data_dir),
+        batch_size=args.batch_size,
+        resume=args.resume,
+        end_date=args.end_date,
+        start_batch=args.start_batch,
+        end_batch=args.end_batch,
+        no_merge=args.no_merge,
+        global_gtja=not args.skip_global_gtja,
+        gtja_audit_path=Path(args.gtja_audit_path) if args.gtja_audit_path else None,
+    )
 
 
 if __name__ == "__main__":

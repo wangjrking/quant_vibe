@@ -1,33 +1,93 @@
 {
+  "schema_version": 2,
+  "strategy_id": "prod_liq_prime_one_v20260612",
   "strategy_name": "流动性精选一号",
+  "production_version": "V1.0",
   "source_strategy": "liq_enh_top1_q95_amt8e5_turn2_mv1e6",
-  "buy_signal": {
-    "description": "在每日预测结果中，股票的 executable_5d_open_return 预测分进入全市场前 5%（q95），且满足成交额不低于 80 万、换手率不低于 2、总市值不高于 100 万口径等流动性过滤条件后，选取预测分最高的 1 只股票，于下一交易日开盘买入。",
-    "prediction_quantile_min": 0.95,
-    "top_k": 1,
-    "min_amount": 800000,
-    "min_turnover_rate": 2.0,
-    "max_total_mv": 1000000,
-    "exclude_st": true,
-    "exclude_delisting": true,
-    "skip_untradable_open": true,
-    "buy_timing": "next_trading_day_open"
+  "rule_summary": "每日按 executable_5d_open_return 预测分筛选 q95 内满足流动性条件的 Top1 股票，次一交易日执行；盘中先 09:30 卖出旧仓，再 09:31 买入新信号；单票 98% 仓位，默认持有 5 个交易日，持仓满 2 个交易日后若评分跌破买入评分的 95% 则提前卖出。",
+  "signal_generation": {
+    "prediction_label": "executable_5d_open_return",
+    "prediction_table": "stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+    "signal_source": "data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
+    "signal_date_rule": "T 日收盘后使用 T 日预测表生成信号",
+    "buy_date_rule": "T+1 交易日执行买入",
+    "selection_order": [
+      "按 trade_date 分组读取当日预测结果",
+      "计算 pred_prob 的全市场 q95 分位阈值",
+      "保留 pred_prob >= q95 的股票",
+      "排除 ST、退市、当前涨停/不可交易股票",
+      "过滤成交额、换手率、总市值条件",
+      "按 pred_prob 从高到低排序，选择 Top1"
+    ],
+    "filters": {
+      "prediction_quantile_min": 0.95,
+      "top_k": 1,
+      "min_amount": 800000,
+      "min_turnover_rate": 2.0,
+      "max_total_mv": 1000000,
+      "exclude_st": true,
+      "exclude_delisting": true,
+      "exclude_current_limit": true,
+      "skip_untradable_open_at_order_time": true
+    }
   },
-  "sell_signal": {
-    "description": "买入后按 5 个交易日持有周期执行退出；掘金实盘/回测环境中同时遵循策略脚本内的持仓、风控和可交易性检查。",
-    "holding_days": 5,
-    "sell_timing": "scheduled_exit_after_holding_period",
-    "score_exit_enabled": true,
-    "score_exit_ratio": 0.95,
-    "min_holding_days_before_score_exit": 2
+  "execution": {
+    "platform": "掘金 gm.api",
+    "strategy_runtime_name": "open_daily_nomarket_top1_q95_hold5_score095_mh2",
+    "strategy_file": "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517/main.py",
+    "open_price_daily_mode": true,
+    "daily_schedule": {
+      "sell_time": "09:30:00",
+      "buy_time": "09:31:00",
+      "order_sequence": "先卖后买，卖出释放仓位后再检查并买入当日新信号"
+    },
+    "order_type": {
+      "buy": "OrderType_Limit at open price",
+      "sell": "OrderType_Limit at open price",
+      "force_market_order": false
+    },
+    "tradability_checks": {
+      "skip_buy_when_open_limit_up": true,
+      "skip_sell_when_open_limit_down": true,
+      "skip_buy_when_open_missing_or_zero": true,
+      "round_lot": 100
+    }
   },
   "position": {
-    "target_pct": 0.98,
     "max_positions": 1,
-    "position_weight_mode": "single_position"
+    "target_pct": 0.98,
+    "cash_buffer": 0.98,
+    "position_weight_mode": "single_position",
+    "sync_positions_before_buy": true
+  },
+  "sell_signal": {
+    "holding_days": 5,
+    "scheduled_exit": {
+      "enabled": true,
+      "rule": "持仓满 5 个交易日后卖出；若 allow_continue 条件未满足，不继续持有"
+    },
+    "score_exit": {
+      "enabled": true,
+      "score_exit_ratio": 0.95,
+      "min_holding_days_before_score_exit": 2,
+      "rule": "持仓满 2 个交易日后，若当前决策日评分 <= 买入评分 * 0.95，则提前卖出"
+    },
+    "score_continue": {
+      "enabled": true,
+      "score_continue_entry_ratio": 1.0,
+      "max_holding_days": 5,
+      "rule": "当前 V1.0 中 max_holding_days 等于 holding_days，因此不延长持仓"
+    }
   },
   "cost_assumption": {
+    "initial_cash": 600000,
     "slippage_ratio": 0.0015,
-    "initial_cash": 600000
-  }
+    "commission_and_tax": "由掘金回测环境按策略/账户设置计算；信号标签本身按 executable_5d_open_return 的训练成本口径构造"
+  },
+  "reproduction_notes": [
+    "V1.0 复现时必须使用同一 signal_source、prediction_table、strategy_file 和回测窗口。",
+    "信号 CSV 中 holding_days 字段必须保持为 5；否则会覆盖命令行 GM_HOLDING_DAYS。",
+    "同日内执行顺序必须为 sell_time=09:30:00、buy_time=09:31:00。",
+    "该版本为当前掘金策略脚本和当前数据环境下验证结果；原始 2026-06-13 归档回测指标保留在 validation.json 的 archived_gm_backtest 中。"
+  ]
 }

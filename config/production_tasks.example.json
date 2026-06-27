@@ -8,55 +8,30 @@
   "defaults": {
     "python": "python",
     "project_dir": ".",
-    "data_dir": "data_file",
+    "data_dir": "../data_file",
     "registry_file": "strategy_library/registry.json",
     "log_dir": "logs/production_tasks",
-    "signal_dir": "data_file/production_signals",
+    "signal_dir": "../data_file/production_signals",
     "stop_on_failure": true
   },
   "strategies": [
     {
-      "strategy_id": "prod_liq_prime_one_v20260612",
+      "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
       "enabled": true,
-      "description": "流动性精选一号：已投产策略，每日生成下一交易日买入/卖出信号。",
+      "prediction_manifest": "config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+      "description": "当前唯一 L5 生产策略：单票动态Top1 量额90k warmup60。只读取 approved_for_l5 formal L4 3D/5D/10D 资产；新账户默认先做 warm-up 60 状态重建。",
       "steps": [
         {
           "name": "export_signals",
           "command": [
             "{python}",
-            "export_gm_signals.py",
-            "--db",
-            "{data_dir}/odb.db",
-            "--table",
-            "stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
-            "--start",
-            "20220604",
-            "--end",
-            "20991231",
-            "--top-k",
-            "1",
-            "--min-pred",
-            "none",
-            "--min-pred-quantile",
-            "0.95",
-            "--max-atr-ratio",
-            "none",
-            "--min-amount",
-            "800000",
-            "--min-turnover-rate",
-            "2.0",
-            "--max-total-mv",
-            "1000000",
-            "--max-positions",
-            "1",
-            "--holding-days",
-            "5",
-            "--weight-mode",
-            "equal",
-            "--target-total-pct",
-            "0.98",
+            "export_dynamic_top1_formal_signals.py",
+            "--strategy-dir",
+            "strategy_library/production/{strategy_id}",
             "--output",
-            "{signal_dir}/{strategy_id}_latest.csv"
+            "{signal_dir}/{strategy_id}_latest.csv",
+            "--status-output",
+            "{signal_dir}/{strategy_id}_latest_status.json"
           ]
         }
       ]

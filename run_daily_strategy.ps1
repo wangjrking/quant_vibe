@@ -4,7 +4,8 @@ param(
     [string]$DataDir = (Join-Path $PSScriptRoot "data_file"),
     [string]$Label = "10d_yield_rate",
     [string]$SourceCommand = "",
-    [switch]$ForcePrediction
+    [switch]$ForcePrediction,
+    [switch]$AllowLegacyAssetChain
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,6 +25,10 @@ if ($SourceCommand) {
 
 if ($ForcePrediction) {
     $argsList += "--force-prediction"
+}
+
+if ($AllowLegacyAssetChain) {
+    $argsList += "--allow-legacy-asset-chain"
 }
 
 Push-Location $ProjectDir

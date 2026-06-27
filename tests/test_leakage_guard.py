@@ -13,6 +13,7 @@ class LeakageGuardTests(unittest.TestCase):
             "10d_yield_rate_rank",
             "open6_yield_rate_rank",
             "2d_tag",
+            "executable_5d_open_return",
             "gtja_alpha188",
         ]
 
@@ -20,7 +21,14 @@ class LeakageGuardTests(unittest.TestCase):
 
         self.assertEqual(
             leaky,
-            ["post_open", "post2_high", "10d_yield_rate_rank", "open6_yield_rate_rank", "2d_tag"],
+            [
+                "post_open",
+                "post2_high",
+                "10d_yield_rate_rank",
+                "open6_yield_rate_rank",
+                "2d_tag",
+                "executable_5d_open_return",
+            ],
         )
 
     def test_validate_raises_with_clear_message(self):

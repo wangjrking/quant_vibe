@@ -1,0 +1,144 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_top5_noexit_v20260623",
+  "strategy_name": "formal 5D10D Top5 no-exit",
+  "production_version": "v20260623",
+  "source_strategy": "scale110_cap30_h5_noexit",
+  "rule_summary": "使用当前 formal L4 10D 与 5D 分数，按 0.8 * 10D rank + 0.2 * 5D rank 生成候选，每日最多买入 Top5，持仓 5 个交易日，不启用每日分数卖出。基础仓位按 24%/22%/19%/16%/14% 乘 1.10，单票上限 30%。",
+  "score_rule": {
+    "score_asset": {
+      "db_path": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/current_formal_pool_filter_tune/pool_filter_scores.db",
+      "table": "pool_filter_all_w80_top5_h5_noexit",
+      "score_column": "pred_prob"
+    },
+    "fusion_asset": {
+      "db_path": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/latest_formal_5d10d_stclean_refill/fusion_5d10d_latest_20260622.db",
+      "table": "fusion_rank_base",
+      "required_columns": [
+        "trade_date",
+        "stock_code",
+        "pred_5d",
+        "pred_10d",
+        "rank_5d",
+        "rank_10d",
+        "amount",
+        "turnover_rate",
+        "total_mv",
+        "atr_qfq",
+        "limit_times",
+        "st_type",
+        "st_type_name"
+      ]
+    },
+    "base_pool": {
+      "primary_rank_weight_10d": 0.8,
+      "primary_rank_weight_5d": 0.19999999999999996,
+      "fallback_rank_weight_10d": 0.8,
+      "fallback_rank_weight_5d": 0.19999999999999996,
+      "primary_max_candidates_per_day": 5,
+      "primary_max_total_mv": 999999999.0,
+      "primary_min_amount": 0.0,
+      "primary_min_turnover_rate": 0.0,
+      "fallback_max_total_mv": 999999999.0,
+      "fallback_min_amount": 0.0,
+      "fallback_min_turnover_rate": 0.0,
+      "weak_day_rule": {
+        "mode": "none"
+      }
+    },
+    "pool_generation_rule": {
+      "base_target_pct": 0.10925,
+      "primary_tier_offset": 2.0,
+      "fallback_tier_offset": 1.0,
+      "primary_pool": {
+        "rank_weight_10d": 0.8,
+        "rank_weight_5d": 0.19999999999999996,
+        "limit": 5,
+        "max_total_mv": 999999999.0,
+        "min_amount": 0.0,
+        "min_turnover_rate": 0.0
+      },
+      "normal_fallback_pool": {
+        "rank_weight_10d": 0.8,
+        "rank_weight_5d": 0.19999999999999996,
+        "limit": 5,
+        "max_total_mv": 999999999.0,
+        "min_amount": 0.0,
+        "min_turnover_rate": 0.0
+      },
+      "weak_fallback_pool": {
+        "rank_weight_10d": 0.8,
+        "rank_weight_5d": 0.19999999999999996,
+        "limit": 5,
+        "max_total_mv": 999999999.0,
+        "min_amount": 0.0,
+        "min_turnover_rate": 0.0
+      },
+      "weak_day_rule": {
+        "mode": "none",
+        "reference": "not used"
+      }
+    }
+  },
+  "selection_rule": {
+    "top_k_after_base_pool": 5,
+    "primary_count_min": 1,
+    "rank_max": 5,
+    "min_pred_10d": 0.0,
+    "post_filter_avg_pred_min": 0.0,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "exclude_current_limit": true,
+    "skip_open_limit_up_buy": true,
+    "calendar_or_date_filter": false,
+    "industry_filter": false
+  },
+  "position_rule": {
+    "max_positions": 5,
+    "max_single_position_pct": 0.3,
+    "cash_buffer": 0.99,
+    "position_weight_mode": "rank_weighted_scaled",
+    "rank_target_pct": {
+      "1": 0.264,
+      "2": 0.242,
+      "3": 0.209,
+      "4": 0.176,
+      "5": 0.154
+    }
+  },
+  "holding_rule": {
+    "holding_days": 5,
+    "max_holding_days": 5,
+    "open_daily_score_exit": false,
+    "score_exit_entry_ratio": 1.0,
+    "min_holding_days_before_score_exit": 5,
+    "max_daily_sells": 5,
+    "score_continue_entry_ratio": 1.02
+  },
+  "risk_rule": {
+    "account_drawdown_scale_enabled": false,
+    "stop_loss_pct": 0.08,
+    "take_profit_pct": null,
+    "resize_existing_positions": false
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015,
+    "market_db_path": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db",
+    "signal_date_rule": "使用 T 日 formal L4 分数生成 T+1 开盘交易信号。",
+    "tradability_checks": {
+      "skip_buy_when_open_limit_up": true,
+      "skip_sell_when_open_limit_down": true,
+      "skip_buy_when_open_missing_or_zero": true,
+      "round_lot": 100
+    }
+  },
+  "reproduction_notes": [
+    "正式绩效以掘金回测日志为准。",
+    "不得读取 odb.db 或 legacy stock_predict_data_* 表。",
+    "不得使用行业过滤、月份/日期过滤或独立 1D 模型分数。",
+    "ST/风险警示以 signal_date 与 buy_date 的 STOCK_DAILY_DATA.ST_TYPE/ST_TYPE_name 复核为准。"
+  ]
+}

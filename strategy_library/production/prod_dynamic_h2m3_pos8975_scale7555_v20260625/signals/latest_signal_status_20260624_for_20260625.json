@@ -1,0 +1,9 @@
+{
+  "signal_date": "20260624",
+  "buy_date": "20260625",
+  "latest_market_date": "20260624",
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "signal_market_missing_rows_after_filter_input": 0,
+  "skipped_candidates": []
+}

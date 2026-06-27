@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 .env
+config.json
 config/production_tasks.json
 
 .pytest_cache/

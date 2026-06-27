@@ -1,0 +1,183 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_gap_v20260622",
+  "strategy_name": "??5D10D pred_gap ??????",
+  "production_version": "V1.1",
+  "source_strategy": "gap_t0p03_g1p08_b0p88",
+  "rule_summary": "?? formal L4 ? 5D ? 10D ???????????????????? L5 ??????????????????? pred_gap ?????5D ? 10D ?????? 0.03 ?????????? 0.05 ? 0.10 ???????????????ST???????????????????????",
+  "score_rule": {
+    "score_asset": {
+      "db_path": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+      "table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+      "score_column": "pred_prob"
+    },
+    "fusion_asset": {
+      "db_path": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_l5_candidate_grid_20260621/fusion_5d10d.db",
+      "table": "fusion_rank_base",
+      "required_columns": [
+        "trade_date",
+        "stock_code",
+        "pred_5d",
+        "pred_10d",
+        "rank_5d",
+        "rank_10d",
+        "amount",
+        "turnover_rate",
+        "total_mv",
+        "atr_qfq",
+        "limit_times"
+      ]
+    },
+    "base_pool": {
+      "primary_rank_weight_10d": 0.9,
+      "primary_rank_weight_5d": 0.1,
+      "fallback_rank_weight_10d": 0.6,
+      "fallback_rank_weight_5d": 0.4,
+      "primary_max_candidates_per_day": 2,
+      "primary_max_total_mv": 150000.0,
+      "primary_min_amount": 10000.0,
+      "primary_min_turnover_rate": 0.3,
+      "fallback_max_total_mv": 200000.0,
+      "fallback_min_amount": 20000.0,
+      "fallback_min_turnover_rate": 0.5,
+      "weak_day_rule": {
+        "mode": "primary_count_le1"
+      }
+    },
+    "target_adjustment": {
+      "field": "pred_gap_abs_10d_minus_5d",
+      "rules": [
+        {
+          "condition": "pred_gap < 0.03",
+          "scale": 1.08
+        },
+        {
+          "condition": "0.05 <= pred_gap < 0.10",
+          "scale": 0.88
+        }
+      ],
+      "max_single_position_pct_after_adjustment": 0.28,
+      "rules_structured": [
+        {
+          "field": "pred_gap",
+          "op": "lt",
+          "threshold": 0.03,
+          "scale": 1.08
+        },
+        {
+          "field": "pred_gap",
+          "op": "between",
+          "lower": 0.05,
+          "upper": 0.1,
+          "scale": 0.88
+        }
+      ]
+    },
+    "pool_generation_rule": {
+      "base_target_pct": 0.10925,
+      "primary_tier_offset": 2.0,
+      "fallback_tier_offset": 1.0,
+      "primary_pool": {
+        "rank_weight_10d": 0.9,
+        "rank_weight_5d": 0.1,
+        "limit": 2,
+        "max_total_mv": 150000.0,
+        "min_amount": 10000.0,
+        "min_turnover_rate": 0.3
+      },
+      "normal_fallback_pool": {
+        "rank_weight_10d": 0.6,
+        "rank_weight_5d": 0.4,
+        "limit": 5,
+        "max_total_mv": 200000.0,
+        "min_amount": 10000.0,
+        "min_turnover_rate": 0.3
+      },
+      "weak_fallback_pool": {
+        "rank_weight_10d": 0.6,
+        "rank_weight_5d": 0.4,
+        "limit": 5,
+        "max_total_mv": 200000.0,
+        "min_amount": 20000.0,
+        "min_turnover_rate": 0.5
+      },
+      "weak_day_rule": {
+        "mode": "primary_count_le1",
+        "reference": "baseline normal_fallback_pool signal primary_count"
+      }
+    }
+  },
+  "selection_rule": {
+    "top_k_after_base_pool": 5,
+    "primary_count_min": 2,
+    "rank_max": 5,
+    "min_pred_10d": 0.0,
+    "post_filter_avg_pred_min": 2.05,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "exclude_current_limit": true,
+    "skip_open_limit_up_buy": true,
+    "calendar_or_date_filter": false,
+    "industry_filter": false
+  },
+  "position_rule": {
+    "max_positions": 5,
+    "base_rank_target_pct": {
+      "1": 0.21,
+      "2": 0.21,
+      "3": 0.2,
+      "4": 0.19,
+      "5": 0.19
+    },
+    "target_adjustment_mode": "pred_gap_scaled",
+    "max_single_position_pct": 0.28,
+    "cash_buffer": 0.99,
+    "position_weight_mode": "rank_weighted_with_pred_gap_adjustment",
+    "rank_target_pct": {
+      "1": 0.21,
+      "2": 0.21,
+      "3": 0.2,
+      "4": 0.19,
+      "5": 0.19
+    }
+  },
+  "holding_rule": {
+    "holding_days": 7,
+    "max_holding_days": 10,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 1.0,
+    "min_holding_days_before_score_exit": 3,
+    "max_daily_sells": 1,
+    "score_continue_entry_ratio": 1.02
+  },
+  "risk_rule": {
+    "account_drawdown_scale_enabled": true,
+    "soft_drawdown": 0.12,
+    "soft_scale": 0.9,
+    "hard_drawdown": 0.22,
+    "hard_scale": 0.7,
+    "recover_drawdown": 0.05,
+    "resize_existing_positions": false
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015,
+    "market_db_path": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db",
+    "signal_date_rule": "T ?????? T ? formal L4 ???? T+1 ???????",
+    "order_sequence": "???????????????????",
+    "tradability_checks": {
+      "skip_buy_when_open_limit_up": true,
+      "skip_sell_when_open_limit_down": true,
+      "skip_buy_when_open_missing_or_zero": true,
+      "round_lot": 100
+    }
+  },
+  "reproduction_notes": [
+    "????????????????",
+    "??????? 1D ???? odb.db ?????????????",
+    "???????????????????",
+    "?????????????????? registry production.current?"
+  ]
+}

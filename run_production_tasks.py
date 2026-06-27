@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from prediction_manifest import load_prediction_source_manifest
 from project_paths import PROJECT_ROOT, resolve_project_path
 
 
@@ -45,6 +46,18 @@ def render_token(value: str, context: dict[str, str]) -> str:
 
 def render_command(command: list[str], context: dict[str, str]) -> list[str]:
     return [render_token(str(part), context) for part in command]
+
+
+def validate_task_prediction_manifest(task: dict[str, Any], context: dict[str, str]) -> dict[str, Any]:
+    raw_manifest_path = task.get("prediction_manifest")
+    if raw_manifest_path in (None, ""):
+        raise ValueError("production task requires prediction_manifest")
+    rendered_manifest_path = render_token(str(raw_manifest_path), context)
+    return load_prediction_source_manifest(
+        rendered_manifest_path,
+        require_approved=True,
+        allow_legacy=False,
+    )
 
 
 def run_step(command: list[str], cwd: Path, log_path: Path, dry_run: bool = False) -> dict[str, Any]:
@@ -142,6 +155,19 @@ def run_production_tasks(config_path: Path, dry_run: bool = False) -> dict[str, 
             "status": "ok",
             "steps": [],
         }
+        try:
+            prediction_source = validate_task_prediction_manifest(task, context)
+            context["prediction_manifest"] = str(prediction_source["manifest_path"])
+            context["prediction_db"] = str(prediction_source["db_path"])
+            context["prediction_table"] = str(prediction_source["table"])
+            context["market_db"] = str(prediction_source["market_db_path"] or "")
+        except ValueError as exc:
+            strategy_result["status"] = "failed"
+            strategy_result["detail"] = str(exc)
+            summary["results"].append(strategy_result)
+            if stop_on_failure:
+                break
+            continue
 
         for step in task.get("steps", []):
             step_name = str(step.get("name", "step"))

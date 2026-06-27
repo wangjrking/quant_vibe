@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_liq_prime_one_v20260612",
+  "strategy_name": "流动性精选一号",
+  "production_version": "V1.0",
+  "purpose": "固定当前投产策略在掘金平台的测量复现口径",
+  "workspace": {
+    "project_root": "D:/work/quant/quant_mcp/quant/main",
+    "data_dir": "D:/work/quant/quant_mcp/quant/data_file",
+    "python": "C:/Users/wangj/.conda/envs/my_quant/python.exe"
+  },
+  "inputs": {
+    "signal_file": "D:/work/quant/quant_mcp/quant/data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/odb.db",
+    "score_table": "stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+    "strategy_dir": "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517",
+    "strategy_main": "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517/main.py"
+  },
+  "backtest_window": {
+    "start": "2024-06-05 09:00:00",
+    "end": "2026-07-10 15:30:00",
+    "adjust": "none"
+  },
+  "environment": {
+    "GM_SELL_SCHEDULE_TIME": "09:30:00",
+    "GM_BUY_SCHEDULE_TIME": "09:31:00",
+    "GM_SYNC_POSITIONS": "1",
+    "GM_FORCE_MARKET_ORDER": "0",
+    "GM_VERBOSE_TRADES": "0",
+    "GM_MAX_POSITIONS": "1",
+    "GM_HOLDING_DAYS": "5",
+    "GM_SCORE_EXIT_ENTRY_RATIO": "0.95",
+    "GM_MIN_HOLDING_DAYS_BEFORE_SCORE_EXIT": "2",
+    "GM_MAX_HOLDING_DAYS": "5",
+    "GM_BACKTEST_INITIAL_CASH": "600000",
+    "GM_BACKTEST_SLIPPAGE_RATIO": "0.0015"
+  },
+  "command": [
+    "C:/Users/wangj/.conda/envs/my_quant/python.exe",
+    "run_juejin_signal_backtest.py",
+    "--strategy-dir",
+    "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517",
+    "--signal-file",
+    "D:/work/quant/quant_mcp/quant/data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
+    "--log-file",
+    "D:/work/quant/quant_mcp/quant/data_file/reports/prod_liq_prime_one_juejin_verify_20260615/prod_liq_prime_one_h5_score095_mh2_sell0930_buy0931_window20240605.log",
+    "--max-positions",
+    "1",
+    "--holding-days",
+    "5",
+    "--score-db",
+    "D:/work/quant/quant_mcp/quant/data_file/odb.db",
+    "--score-table",
+    "stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+    "--score-exit-entry-ratio",
+    "0.95",
+    "--min-holding-days-before-score-exit",
+    "2",
+    "--max-holding-days",
+    "5",
+    "--backtest-start",
+    "2024-06-05 09:00:00",
+    "--backtest-end",
+    "2026-07-10 15:30:00",
+    "--backtest-initial-cash",
+    "600000",
+    "--backtest-slippage-ratio",
+    "0.0015"
+  ],
+  "expected_metrics": {
+    "pnl_ratio": 50.0992912449378,
+    "pnl_ratio_percent": 5009.92912449378,
+    "pnl_ratio_annual": 23.872377681987334,
+    "pnl_ratio_annual_percent": 2387.2377681987335,
+    "sharp_ratio": 1.5466297275045484,
+    "max_drawdown": 0.27340701481476287,
+    "max_drawdown_percent": 27.340701481476287,
+    "risk_ratio": 0.9817298758027239,
+    "open_count": 94,
+    "close_count": 93,
+    "win_count": 57,
+    "lose_count": 36,
+    "win_ratio": 0.6129032258064516,
+    "calmar_ratio": 87.31443009302892
+  },
+  "evidence": {
+    "verified_at": "2026-06-15 00:19:38 Asia/Shanghai",
+    "log_file": "D:/work/quant/quant_mcp/quant/data_file/reports/prod_liq_prime_one_juejin_verify_20260615/prod_liq_prime_one_h5_score095_mh2_sell0930_buy0931_window20240605.log",
+    "gm_sdk_version": "3.0.183",
+    "gm_c_sdk_version": "3.8.15"
+  },
+  "caveats": [
+    "掘金策略目录不在当前 Git 仓库中，复现必须同时保留 strategy_main 文件快照。",
+    "该 V1.0 指标是当前掘金策略脚本和当前本地数据环境下的验证结果；和 2026-06-13 原始归档日志存在差异，因此 validation.json 同时保留 archived_gm_backtest 和 production_v1_0_gm_backtest。",
+    "本文件仅用于复现历史回测，不构成未来收益承诺。"
+  ]
+}

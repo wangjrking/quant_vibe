@@ -1,3 +1,10 @@
+"""Legacy mixed-db STOCK_DAILY_DATA builder.
+
+This module retains the historical `odb.db`-based build SQL for rollback or
+historical reproduction. It is not the default L2 route contract for new
+reads, and this file does not define the current standard layered workflow.
+"""
+
 # from sqlalchemy import text, create_engine
 import pandas as pd
 import logging

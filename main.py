@@ -1,3 +1,16 @@
+"""Legacy historical mixed-db pipeline entry.
+
+This file keeps the old all-in-one mixed-db workflow for rollback or historical
+reproduction only. It is not the current standard project entrypoint.
+
+Current layered workflow references:
+- WORKFLOW.md
+- quant/main/AGENTS.md
+
+To run this legacy entry intentionally, set:
+    QUANT_ALLOW_LEGACY_MAIN=1
+"""
+
 # 导入数据加载模块，用于下载基础数据和获取Tushare pro接口
 from data_load_module import download_odb_data, get_pro
 
@@ -21,8 +34,26 @@ import json
 # 导入Tushare金融数据接口
 import tushare as ts
 import os
+import sys
 from project_paths import config_base_dir, load_config
 from stock_pool_module import DEFAULT_INDEX_CODES, fetch_index_stock_pool
+
+
+LEGACY_ENTRY_NOTICE = """\
+main.py 已降级为 legacy / historical mixed-db 入口，默认不再作为当前标准主流程使用。
+当前标准分层口径请参见：
+- WORKFLOW.md
+- quant/main/AGENTS.md
+
+当前默认资产：
+- L1 raw split DB: quant/data_file/raw_table_dbs/[table].DB
+- L2: quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA
+- L3 features: quant/data_file/production_factor_parts/
+- L3 labels: quant/data_file/prediction_label_parts/
+- L4: 独立预测资产方案，非 odb.db.stock_predict_data_* 默认入口
+
+如需明确运行旧 mixed-db 历史链路，请设置环境变量 QUANT_ALLOW_LEGACY_MAIN=1 后再执行。
+"""
 
 
 class Run:
@@ -148,6 +179,9 @@ class Run:
 
 
 if __name__ == '__main__':
-	"""主程序入口"""
+	"""Legacy 主程序入口。"""
+	if os.environ.get("QUANT_ALLOW_LEGACY_MAIN") != "1":
+		print(LEGACY_ENTRY_NOTICE, file=sys.stderr)
+		raise SystemExit(2)
 	# 创建Run实例，启动整个项目
 	Run()

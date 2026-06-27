@@ -1,0 +1,98 @@
+{
+  "generated_from": {
+    "model_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+    "market_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+    "formal_5d": {
+      "label": "executable_5d_open_return",
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\prod_liq_prime_one_v20260612_l4_formal.json",
+      "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_5d_tune_20260620_executable_5d_open_return_d4_l4_fs160_gate1_score_20240604_20260618",
+      "max_trade_date": "20260618",
+      "row_count": 2666231,
+      "trade_days": 495
+    },
+    "formal_10d": {
+      "label": "executable_10d_open_return",
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+      "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_10d_tune_20260620_executable_10d_open_return_d4_l4_fs160_gate2_score_20240604_20260618",
+      "max_trade_date": "20260618",
+      "row_count": 2666231,
+      "trade_days": 495
+    },
+    "source_mode": "latest_formal_l4_5d10d_only"
+  },
+  "output_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_model_application_20260621\\formal_5d10d_l5_candidate_grid_20260621\\fusion_5d10d.db",
+  "combos": [
+    {
+      "combo_name": "rank_10d90_5d10",
+      "formula": "(rank_10d * 0.90) + (rank_5d * 0.10)",
+      "table": "rank_10d90_5d10",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    },
+    {
+      "combo_name": "rank_10d80_5d20",
+      "formula": "(rank_10d * 0.80) + (rank_5d * 0.20)",
+      "table": "rank_10d80_5d20",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    },
+    {
+      "combo_name": "rank_10d70_5d30",
+      "formula": "(rank_10d * 0.70) + (rank_5d * 0.30)",
+      "table": "rank_10d70_5d30",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    },
+    {
+      "combo_name": "rank_10d60_5d40",
+      "formula": "(rank_10d * 0.60) + (rank_5d * 0.40)",
+      "table": "rank_10d60_5d40",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    },
+    {
+      "combo_name": "rank_10d50_5d50",
+      "formula": "(rank_10d * 0.50) + (rank_5d * 0.50)",
+      "table": "rank_10d50_5d50",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    },
+    {
+      "combo_name": "rank_min_5d10d",
+      "formula": "MIN(rank_5d, rank_10d)",
+      "table": "rank_min_5d10d",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    },
+    {
+      "combo_name": "rank_max_5d10d",
+      "formula": "MAX(rank_5d, rank_10d)",
+      "table": "rank_max_5d10d",
+      "row_count": 2666231,
+      "trade_days": 495,
+      "stock_count": 5530,
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    }
+  ]
+}

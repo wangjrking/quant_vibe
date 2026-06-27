@@ -1,8 +1,10 @@
+import sqlite3
 import tempfile
 import unittest
+import csv
 from pathlib import Path
 
-from gm_signal_module import build_gm_signal_rows, to_gm_symbol, write_gm_signals_csv
+from gm_signal_module import build_gm_signal_rows, load_market_rows_by_trade_date, to_gm_symbol, write_gm_signals_csv
 from selection_module import SelectionConfig
 
 
@@ -39,10 +41,87 @@ class GmSignalModuleTests(unittest.TestCase):
         self.assertEqual(signals[0]["buy_date"], "20260103")
         self.assertEqual(signals[0]["symbol"], "SHSE.600000")
 
+    def test_build_gm_signal_rows_uses_market_trade_calendar_for_last_score_date(self):
+        rows = [
+            {
+                "trade_date": "20260618",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260618",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+        ]
+        market_rows_by_trade_date = {
+            "20260618": {
+                "600000.SH": {
+                    "stock_code": "600000.SH",
+                    "name": "A",
+                    "close": 10.0,
+                },
+                "000001.SZ": {
+                    "stock_code": "000001.SZ",
+                    "name": "B",
+                    "close": 10.0,
+                },
+            },
+            "20260622": {
+                "600000.SH": {
+                    "stock_code": "600000.SH",
+                    "name": "A",
+                    "pre_close": 10.0,
+                    "open": 10.1,
+                },
+                "000001.SZ": {
+                    "stock_code": "000001.SZ",
+                    "name": "B",
+                    "pre_close": 10.0,
+                    "open": 10.1,
+                },
+            },
+        }
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=1, min_pred_prob=0.01),
+            market_rows_by_trade_date=market_rows_by_trade_date,
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["signal_date"], "20260618")
+        self.assertEqual(signals[0]["buy_date"], "20260622")
+        self.assertEqual(signals[0]["stock_code"], "600000.SH")
+
     def test_write_gm_signals_csv_rejects_empty_output(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with self.assertRaises(ValueError):
                 write_gm_signals_csv([], Path(tmpdir) / "signals.csv")
+
+    def test_write_gm_signals_csv_allows_later_extra_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "signals.csv"
+            write_gm_signals_csv(
+                [
+                    {"signal_date": "20260102", "stock_code": "600000.SH"},
+                    {"signal_date": "20260102", "stock_code": "000001.SZ", "extra": "x"},
+                ],
+                output,
+            )
+
+            with output.open("r", newline="", encoding="utf-8-sig") as file:
+                reader = csv.DictReader(file)
+                rows = list(reader)
+
+        self.assertIn("extra", reader.fieldnames)
+        self.assertEqual(rows[1]["extra"], "x")
 
     def test_build_gm_signal_rows_can_attach_target_pct(self):
         rows = [
@@ -364,6 +443,198 @@ class GmSignalModuleTests(unittest.TestCase):
 
         self.assertEqual(len(signals), 1)
         self.assertEqual(signals[0]["stock_code"], "000001.SZ")
+
+    def test_build_gm_signal_rows_treats_zero_limit_times_as_buyable(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "name": "A",
+                "pred_prob": 0.30,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "name": "B",
+                "pred_prob": 0.20,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000002.SZ",
+                "name": "C",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+        ]
+
+        market_rows_by_trade_date = {
+            "20260103": {
+                "600000.SH": {
+                    "stock_code": "600000.SH",
+                    "name": "A",
+                    "pre_close": 10.0,
+                    "open": 10.1,
+                    "limit_times": "0",
+                },
+                "000001.SZ": {
+                    "stock_code": "000001.SZ",
+                    "name": "B",
+                    "pre_close": 10.0,
+                    "open": 10.1,
+                    "limit_times": "1",
+                },
+            }
+        }
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=2, min_pred_prob=0.01),
+            market_rows_by_trade_date=market_rows_by_trade_date,
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["stock_code"], "600000.SH")
+
+    def test_build_gm_signal_rows_uses_market_rows_for_signal_day_atr_filter(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "600000.SH",
+                "pred_prob": 0.30,
+                "atr_qfq": 0.20,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "pred_prob": 0.20,
+                "atr_qfq": 0.20,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000002.SZ",
+                "pred_prob": 0.10,
+                "atr_qfq": 0.20,
+            },
+        ]
+
+        market_rows_by_trade_date = {
+            "20260102": {
+                "600000.SH": {
+                    "stock_code": "600000.SH",
+                    "name": "A",
+                    "close": 20.0,
+                },
+                "000001.SZ": {
+                    "stock_code": "000001.SZ",
+                    "name": "B",
+                    "close": 5.0,
+                },
+            },
+            "20260103": {
+                "600000.SH": {
+                    "stock_code": "600000.SH",
+                    "name": "A",
+                    "pre_close": 20.0,
+                    "open": 20.1,
+                },
+                "000001.SZ": {
+                    "stock_code": "000001.SZ",
+                    "name": "B",
+                    "pre_close": 5.0,
+                    "open": 5.1,
+                },
+            },
+        }
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=2, min_pred_prob=0.01, max_atr_ratio=0.03),
+            market_rows_by_trade_date=market_rows_by_trade_date,
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["stock_code"], "600000.SH")
+
+    def test_build_gm_signal_rows_skips_bj_candidates(self):
+        rows = [
+            {
+                "trade_date": "20260102",
+                "stock_code": "430047.BJ",
+                "name": "BJ",
+                "pred_prob": 0.90,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "000001.SZ",
+                "name": "SZ",
+                "pred_prob": 0.80,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "000002.SZ",
+                "name": "NEXT",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+            },
+        ]
+
+        signals = build_gm_signal_rows(
+            rows,
+            SelectionConfig(top_k=2, min_pred_prob=0.01),
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["stock_code"], "000001.SZ")
+
+    def test_load_market_rows_by_trade_date_includes_close_from_stock_daily_data(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "market.db"
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.execute(
+                    """
+                    CREATE TABLE STOCK_DAILY_DATA (
+                        trade_date TEXT,
+                        stock_code TEXT,
+                        name TEXT,
+                        pre_close REAL,
+                        open REAL,
+                        close REAL,
+                        amount REAL,
+                        turnover_rate REAL,
+                        total_mv REAL,
+                        atr_qfq REAL,
+                        limit_times TEXT
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    INSERT INTO STOCK_DAILY_DATA (
+                        trade_date, stock_code, name, pre_close, open, close,
+                        amount, turnover_rate, total_mv, atr_qfq, limit_times
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    ("20260102", "600000.SH", "A", 9.8, 10.0, 10.2, 1000.0, 1.2, 200000.0, 0.24, None),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            rows = load_market_rows_by_trade_date(db_path, "20260102", "20260102")
+
+            self.assertEqual(rows["20260102"]["600000.SH"]["close"], 10.2)
+            self.assertEqual(rows["20260102"]["600000.SH"]["atr_qfq"], 0.24)
 
 
 if __name__ == "__main__":

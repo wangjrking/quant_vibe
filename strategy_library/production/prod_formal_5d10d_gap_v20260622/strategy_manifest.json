@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_gap_v20260622",
+  "name": "??5D10D pred_gap ??????",
+  "code_name": "formal_5d10d_gap_enhanced",
+  "source_strategy": "gap_t0p03_g1p08_b0p88",
+  "status": "production",
+  "production_version": "V1.1",
+  "version": "v20260622",
+  "published_at": "2026-06-22",
+  "published_by": "strategy-agent",
+  "definition": "??????????? formal L4 5D ? 10D ????????? L5 ???????????? pred_gap ???????????????????????",
+  "input_contract": {
+    "source_mode": "formal_l4_5d10d_only",
+    "formal_manifest_5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "approval_required": "approved_for_l5",
+    "legacy_odb_forbidden_by_default": true,
+    "forbidden_inputs": [
+      "data_file/odb.db",
+      "stock_predict_data_* legacy table",
+      "1D model score",
+      "unapproved research prediction asset"
+    ]
+  },
+  "prediction_assets": {
+    "score_manifest_file": "predictions/l5_score_manifest.json",
+    "fusion_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_l5_candidate_grid_20260621/fusion_5d10d.db",
+    "fusion_table": "fusion_rank_base",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+    "score_table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+    "data_range": {
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    }
+  },
+  "model": {
+    "labels": [
+      "executable_5d_open_return",
+      "executable_10d_open_return"
+    ],
+    "params_file": "model_params.json"
+  },
+  "features": {
+    "feature_file": "factors.json"
+  },
+  "rules": {
+    "trading_rules_file": "trading_rules.json",
+    "reproduction_file": "reproduction_v1_0.json"
+  },
+  "validation": {
+    "validation_file": "validation.json",
+    "platform": "juejin",
+    "selected_candidate": "gap_t0p03_g1p08_b0p88",
+    "annual_return": 3.0822728464402442,
+    "sharpe": 3.060370903203056,
+    "max_drawdown": 0.22363000979771666,
+    "avg_invested_pct": 0.6101234518072285,
+    "ge80_ratio": 0.21084337349397592,
+    "win_ratio": 0.6051873198847262,
+    "open_count": 352,
+    "close_count": 347,
+    "signal_count": 1879,
+    "buy_days": 382,
+    "gm_backtest_log": "backtests/gm_backtest_gap_t0p03_g1p08_b0p88.log"
+  },
+  "automation": {
+    "production_entry": "run_production_tasks.py",
+    "signal_export_entry": "export_formal_5d10d_l5_signals.py",
+    "production_task_config": "config/production_tasks.json"
+  },
+  "governance": {
+    "is_current_l5": true,
+    "is_only_registered_l5_production_strategy": true,
+    "no_calendar_filter": true,
+    "no_industry_filter": true,
+    "no_1d_model": true,
+    "old_strategy_retained_as_historical_archive": "prod_formal_5d10d_best_v20260621",
+    "target_300_4_80_all_hit": false
+  }
+}

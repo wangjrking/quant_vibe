@@ -60,6 +60,29 @@ def append_parquet_dedup(path: str | Path, new_rows: pd.DataFrame, subset: list[
         merged = pd.concat([old_rows, new_rows], ignore_index=True)
     else:
         merged = new_rows.copy()
+    merged = merged.replace({"None": pd.NA, "none": pd.NA, "nan": pd.NA, "NaN": pd.NA, "": pd.NA})
+    key_set = set(subset)
+    text_columns = key_set | {
+        "name",
+        "area",
+        "industry",
+        "cnspell",
+        "market",
+        "list_date",
+        "act_name",
+        "act_ent_type",
+        "limit_type",
+        "reason",
+        "first_time",
+        "last_time",
+    }
+    for col in merged.columns:
+        if col in text_columns:
+            continue
+        if merged[col].dtype == "object":
+            converted = pd.to_numeric(merged[col], errors="coerce")
+            if converted.notna().sum() >= merged[col].notna().sum() * 0.8:
+                merged[col] = converted
     merged = merged.drop_duplicates(subset=list(subset), keep="last")
     temp_path = path.with_suffix(".tmp.parquet")
     merged.to_parquet(temp_path, index=False)

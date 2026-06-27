@@ -12,7 +12,22 @@ import os
 from pathlib import Path
 
 import sqlite3
+import pyarrow as pa
+import pyarrow.dataset as ds
+import pyarrow.parquet as pq
 
+from model_asset_route import (
+    require_legacy_model_asset_chain_opt_in,
+    resolve_legacy_mixed_factor_path,
+    resolve_legacy_prediction_db_path,
+    resolve_model_feature_path,
+    resolve_model_label_path,
+    resolve_model_prediction_db_path,
+    resolve_prediction_run_dir,
+    use_legacy_mixed_features,
+    use_legacy_prediction_db,
+    write_prediction_manifest,
+)
 from project_paths import resolve_data_dir
 
 
@@ -95,6 +110,39 @@ def custom_mae(y_true, y_pred):
     # return np.mean(np.abs(all_p - all_t))
 
 
+def top_return_loss(y_true, y_pred):
+    global group_dates
+    dates = group_dates
+    if dates is None or len(dates) == 0:
+        return 0.0
+    top_k = int(os.getenv("XGB_TOP_RETURN_EVAL_K", "10"))
+    if top_k <= 0:
+        raise ValueError("XGB_TOP_RETURN_EVAL_K must be positive")
+    _, group_idx = np.unique(dates, return_inverse=True)
+    keep_true = []
+    for group in np.unique(group_idx):
+        mask = group_idx == group
+        day_p = y_pred[mask]
+        day_t = y_true[mask]
+        n = min(top_k, len(day_p))
+        top_idx = np.argpartition(day_p, -n)[-n:]
+        keep_true.append(day_t[top_idx])
+    if not keep_true:
+        return 0.0
+    return -float(np.mean(np.concatenate(keep_true)))
+
+
+def _resolve_reg_eval_metric():
+    mode = str(os.getenv("XGB_REG_EVAL_METRIC", "custom_mae")).strip().lower()
+    if mode in {"custom_mae", "top_return"}:
+        return custom_mae
+    if mode == "top_return_loss":
+        return top_return_loss
+    if mode in {"rmse", "mae"}:
+        return mode
+    raise ValueError(f"unsupported XGB_REG_EVAL_METRIC: {mode}")
+
+
 def _valid_eval_data(test_x, test_y):
     valid_mask = ~pd.isna(test_y)
     if hasattr(valid_mask, "any") and not valid_mask.any():
@@ -105,6 +153,101 @@ def _valid_eval_data(test_x, test_y):
         return None
     return eval_x, eval_y
 
+
+def _optional_int_env(name):
+    value = os.getenv(name)
+    if value is None or value == "":
+        return None
+    parsed = int(value)
+    return parsed if parsed > 0 else None
+
+
+def _sample_weight_config():
+    mode = str(os.getenv("XGB_SAMPLE_WEIGHT_MODE", "")).strip().lower()
+    if mode in {"", "none", "off", "false", "0"}:
+        return None
+    if mode != "daily_top_quantile":
+        raise ValueError(f"unsupported XGB_SAMPLE_WEIGHT_MODE: {mode}")
+    top_pct = float(os.getenv("XGB_SAMPLE_WEIGHT_TOP_PCT", "0.02"))
+    multiplier = float(os.getenv("XGB_SAMPLE_WEIGHT_TOP_MULTIPLIER", "3.0"))
+    if not 0 < top_pct <= 1:
+        raise ValueError("XGB_SAMPLE_WEIGHT_TOP_PCT must be in (0, 1]")
+    if multiplier < 1:
+        raise ValueError("XGB_SAMPLE_WEIGHT_TOP_MULTIPLIER must be >= 1")
+    return {"mode": mode, "top_pct": top_pct, "top_multiplier": multiplier}
+
+
+def _trade_dates_from_index(index):
+    names = list(getattr(index, "names", []) or [])
+    if "trade_date" in names:
+        return np.asarray(index.get_level_values("trade_date").astype(str))
+    if getattr(index, "nlevels", 1) >= 2:
+        return np.asarray(index.get_level_values(1).astype(str))
+    return None
+
+
+def _build_xgb_sample_weight(train_y):
+    config = _sample_weight_config()
+    if config is None:
+        return None
+
+    y = pd.Series(train_y).copy()
+    values = pd.to_numeric(y, errors="coerce")
+    weights = np.ones(len(values), dtype="float32")
+    valid_mask = values.notna().to_numpy()
+    if not valid_mask.any():
+        return weights
+
+    dates = _trade_dates_from_index(values.index)
+    if dates is None:
+        valid_values = values[valid_mask]
+        top_count = max(1, int(np.floor(len(valid_values) * config["top_pct"])))
+        top_index = valid_values.sort_values(ascending=False).head(top_count).index
+        weights[values.index.isin(top_index)] = config["top_multiplier"]
+        return weights
+
+    frame = pd.DataFrame({"value": values.to_numpy(), "date": dates})
+    valid = frame["value"].notna()
+    ranks = frame.loc[valid].groupby("date")["value"].rank(method="first", ascending=False)
+    counts = frame.loc[valid].groupby("date")["value"].transform("count")
+    limits = np.floor(counts.astype(float) * config["top_pct"]).clip(lower=1)
+    top_mask = ranks <= limits
+    valid_positions = np.flatnonzero(valid.to_numpy())
+    weights[valid_positions[top_mask.to_numpy()]] = config["top_multiplier"]
+    return weights
+
+
+def _validation_config():
+    mode = str(os.getenv("XGB_VALIDATION_MODE", "")).strip().lower()
+    if mode in {"", "none", "off", "false", "0"}:
+        return None
+    if mode != "train_tail_days":
+        raise ValueError(f"unsupported XGB_VALIDATION_MODE: {mode}")
+    tail_days = int(os.getenv("XGB_VALIDATION_TAIL_DAYS", "63"))
+    if tail_days <= 0:
+        raise ValueError("XGB_VALIDATION_TAIL_DAYS must be positive")
+    return {"mode": mode, "tail_days": tail_days}
+
+
+def _split_train_validation_by_tail_trade_days(train_x, train_y, tail_days):
+    dates = _trade_dates_from_index(train_x.index)
+    if dates is None:
+        return train_x, train_y, None
+    unique_dates = pd.Series(dates).drop_duplicates().sort_values().to_list()
+    if len(unique_dates) <= int(tail_days):
+        return train_x, train_y, None
+    validation_dates = set(unique_dates[-int(tail_days):])
+    validation_mask = pd.Series(dates).isin(validation_dates).to_numpy()
+    if validation_mask.all() or not validation_mask.any():
+        return train_x, train_y, None
+    fit_x = train_x.loc[~validation_mask]
+    fit_y = train_y.loc[~validation_mask]
+    validation_x = train_x.loc[validation_mask]
+    validation_y = train_y.loc[validation_mask]
+    if len(fit_y) == 0 or len(validation_y) == 0:
+        return train_x, train_y, None
+    return fit_x, fit_y, (validation_x, validation_y)
+
 def get_model(type):
 	xgb_n_estimators = int(os.getenv("XGB_N_ESTIMATORS", "14000"))
 	xgb_learning_rate = float(os.getenv("XGB_LEARNING_RATE", "0.003"))
@@ -113,6 +256,9 @@ def get_model(type):
 	xgb_colsample_bytree = float(os.getenv("XGB_COLSAMPLE_BYTREE", "1"))
 	xgb_reg_alpha = float(os.getenv("XGB_REG_ALPHA", "0"))
 	xgb_reg_lambda = float(os.getenv("XGB_REG_LAMBDA", "1"))
+	xgb_device = os.getenv("XGB_DEVICE", "cuda")
+	xgb_n_jobs = int(os.getenv("XGB_N_JOBS", "0"))
+	xgb_early_stopping_rounds = _optional_int_env("XGB_EARLY_STOPPING_ROUNDS")
 	class_model = xgb.XGBClassifier(
     use_label_encoder=False,  # 禁用旧版标签编码器
     eval_metric='logloss',    # 显式指定评估指标
@@ -124,7 +270,18 @@ def get_model(type):
 	reg_alpha=0,               # L1正则化
 	reg_lambda=1,             # L2正则化
 	random_state=42,
-	device="cuda",  # 使用 GPU 加速
+	device=xgb_device,  # 使用 GPU 加速
+	n_jobs=xgb_n_jobs,
+	)
+	class_model.set_params(
+		learning_rate=float(os.getenv("XGB_CLASS_LEARNING_RATE", str(xgb_learning_rate))),
+		max_depth=int(os.getenv("XGB_CLASS_MAX_DEPTH", str(xgb_max_depth))),
+		n_estimators=int(os.getenv("XGB_CLASS_N_ESTIMATORS", str(xgb_n_estimators))),
+		subsample=float(os.getenv("XGB_CLASS_SUBSAMPLE", str(xgb_subsample))),
+		colsample_bytree=float(os.getenv("XGB_CLASS_COLSAMPLE_BYTREE", str(xgb_colsample_bytree))),
+		reg_alpha=float(os.getenv("XGB_CLASS_REG_ALPHA", str(xgb_reg_alpha))),
+		reg_lambda=float(os.getenv("XGB_CLASS_REG_LAMBDA", str(xgb_reg_lambda))),
+		early_stopping_rounds=_optional_int_env("XGB_CLASS_EARLY_STOPPING_ROUNDS") or xgb_early_stopping_rounds,
 	)
 	reg_model = xgb.XGBRegressor(
     objective="reg:squarederror",
@@ -140,13 +297,71 @@ def get_model(type):
     reg_alpha=xgb_reg_alpha,                  # L1正则化[2,6](@ref)
     reg_lambda=xgb_reg_lambda,                 # L2正则化[2,6](@ref)
     random_state=42,
-	device="cuda",       # GPU加速[6](@ref)
+	device=xgb_device,       # GPU加速[6](@ref)
+	n_jobs=xgb_n_jobs,
 	# early_stopping_rounds=500,
 )
 	if type == 'reg':
 		return reg_model
 	else:
  		return class_model
+
+def get_model(type):
+    xgb_n_estimators = int(os.getenv("XGB_N_ESTIMATORS", "14000"))
+    xgb_learning_rate = float(os.getenv("XGB_LEARNING_RATE", "0.003"))
+    xgb_max_depth = int(os.getenv("XGB_MAX_DEPTH", "3"))
+    xgb_subsample = float(os.getenv("XGB_SUBSAMPLE", "1"))
+    xgb_colsample_bytree = float(os.getenv("XGB_COLSAMPLE_BYTREE", "1"))
+    xgb_reg_alpha = float(os.getenv("XGB_REG_ALPHA", "0"))
+    xgb_reg_lambda = float(os.getenv("XGB_REG_LAMBDA", "1"))
+    xgb_device = os.getenv("XGB_DEVICE", "cuda")
+    xgb_n_jobs = int(os.getenv("XGB_N_JOBS", "0"))
+    xgb_early_stopping_rounds = _optional_int_env("XGB_EARLY_STOPPING_ROUNDS")
+
+    class_model = xgb.XGBClassifier(
+        use_label_encoder=False,
+        eval_metric="logloss",
+        learning_rate=0.001,
+        max_depth=3,
+        n_estimators=6000,
+        subsample=1,
+        colsample_bytree=1,
+        reg_alpha=0,
+        reg_lambda=1,
+        random_state=42,
+        device=xgb_device,
+        n_jobs=xgb_n_jobs,
+    )
+    class_model.set_params(
+        learning_rate=float(os.getenv("XGB_CLASS_LEARNING_RATE", str(xgb_learning_rate))),
+        max_depth=int(os.getenv("XGB_CLASS_MAX_DEPTH", str(xgb_max_depth))),
+        n_estimators=int(os.getenv("XGB_CLASS_N_ESTIMATORS", str(xgb_n_estimators))),
+        subsample=float(os.getenv("XGB_CLASS_SUBSAMPLE", str(xgb_subsample))),
+        colsample_bytree=float(os.getenv("XGB_CLASS_COLSAMPLE_BYTREE", str(xgb_colsample_bytree))),
+        reg_alpha=float(os.getenv("XGB_CLASS_REG_ALPHA", str(xgb_reg_alpha))),
+        reg_lambda=float(os.getenv("XGB_CLASS_REG_LAMBDA", str(xgb_reg_lambda))),
+        early_stopping_rounds=_optional_int_env("XGB_CLASS_EARLY_STOPPING_ROUNDS") or xgb_early_stopping_rounds,
+    )
+
+    reg_model = xgb.XGBRegressor(
+        objective="reg:squarederror",
+        eval_metric=_resolve_reg_eval_metric(),
+        learning_rate=xgb_learning_rate,
+        max_depth=xgb_max_depth,
+        n_estimators=xgb_n_estimators,
+        subsample=xgb_subsample,
+        colsample_bytree=xgb_colsample_bytree,
+        reg_alpha=xgb_reg_alpha,
+        reg_lambda=xgb_reg_lambda,
+        random_state=42,
+        device=xgb_device,
+        n_jobs=xgb_n_jobs,
+        early_stopping_rounds=xgb_early_stopping_rounds,
+    )
+    if type == "reg":
+        return reg_model
+    return class_model
+
 
 def store_feature_importance(x, y, data_file_url, filename):
     model = get_model('reg')
@@ -163,10 +378,84 @@ def store_feature_importance(x, y, data_file_url, filename):
     importance_df.to_csv(importance_path, encoding='utf-8-sig')
     return importance_df
 
+
+def _coerce_predict_matrix(test_x):
+    if isinstance(test_x, pd.DataFrame):
+        return test_x.apply(pd.to_numeric, errors="coerce").astype("float32").to_numpy(copy=False)
+    array_x = np.asarray(test_x)
+    if array_x.dtype == object:
+        return pd.DataFrame(array_x).apply(pd.to_numeric, errors="coerce").astype("float32").to_numpy(copy=False)
+    return array_x.astype("float32", copy=False)
+
+
+def _gpu_predict_matrix_or_none(array_x):
+    try:
+        import cupy as cp  # type: ignore
+    except Exception:
+        return None
+    return cp.asarray(array_x)
+
+
+def _predict_model_outputs(model, test_x, proba=False):
+    device = ""
+    for getter_name in ("get_xgb_params", "get_params"):
+        getter = getattr(model, getter_name, None)
+        if getter is None:
+            continue
+        try:
+            params = getter() or {}
+        except Exception:
+            continue
+        device = str(params.get("device") or "")
+        if device:
+            break
+
+    booster = None
+    if device.lower().startswith("cuda") and hasattr(model, "get_booster"):
+        try:
+            booster = model.get_booster()
+        except Exception:
+            booster = None
+
+    if booster is not None and hasattr(booster, "inplace_predict"):
+        array_x = _coerce_predict_matrix(test_x)
+        predict_x = array_x
+        if device.lower().startswith("cuda"):
+            gpu_x = _gpu_predict_matrix_or_none(array_x)
+            if gpu_x is not None:
+                predict_x = gpu_x
+            elif hasattr(booster, "set_param"):
+                # Explicit CPU prediction avoids XGBoost's noisy cuda-vs-numpy
+                # fallback path. The trained model has already been saved.
+                booster.set_param({"device": "cpu"})
+        pred = np.asarray(booster.inplace_predict(predict_x))
+        if proba:
+            if pred.ndim == 2:
+                if pred.shape[1] == 1:
+                    return pred[:, 0]
+                return pred[:, 1]
+            return pred
+        return pred
+
+    if proba and hasattr(model, "predict_proba"):
+        return model.predict_proba(test_x)[:, 1]
+    return model.predict(test_x)
+
 def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=True):
     # print(test_x)
     global group_dates
-    eval_data = _valid_eval_data(test_x, test_y)
+    validation_config = _validation_config()
+    fit_train_x = train_x
+    fit_train_y = train_y
+    eval_data = None
+    if validation_config is not None:
+        fit_train_x, fit_train_y, eval_data = _split_train_validation_by_tail_trade_days(
+            train_x,
+            train_y,
+            validation_config["tail_days"],
+        )
+    if eval_data is None:
+        eval_data = _valid_eval_data(test_x, test_y)
     if eval_data is not None:
         group_dates = eval_data[0].index.get_level_values(level=1).values
     else:
@@ -177,16 +466,21 @@ def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=
     # store_feature_importance(test_x[~np.isnan(test_y)], test_y[~np.isnan(test_y)], data_file_url, 'test_feature_importance.csv')
     # print('????????????????????')
 
+    sample_weight = _build_xgb_sample_weight(fit_train_y)
+    fit_kwargs = {"verbose": 100}
+    if sample_weight is not None:
+        fit_kwargs["sample_weight"] = sample_weight
     if eval_data is not None:
-        model.fit(train_x, train_y, eval_set=[eval_data], verbose=100)
+        model.fit(fit_train_x, fit_train_y, eval_set=[eval_data], **fit_kwargs)
     else:
-        model.fit(train_x, train_y, verbose=100)
+        model.fit(fit_train_x, fit_train_y, **fit_kwargs)
+    _save_model_artifacts(model, fit_train_x.columns)
     print('?????????')
 
     import gc
     gc.collect()
 
-    pred_y_proba = model.predict(test_x)
+    pred_y_proba = _predict_model_outputs(model, test_x, proba=hasattr(model, "predict_proba"))
 
     if save_shap:
         explainer = shap.Explainer(model)
@@ -198,6 +492,41 @@ def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=
         with open(data_file_url + '/test_index.pkl', 'wb') as file:
             pickle.dump(test_index, file)
     return test_y, pred_y_proba
+
+
+def _save_model_artifacts(model, feature_columns):
+    model_path = os.getenv("XGB_MODEL_SAVE_PATH")
+    if not model_path:
+        return
+
+    path = Path(model_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    model.save_model(str(path))
+
+    metadata_path = os.getenv("XGB_MODEL_METADATA_PATH")
+    if metadata_path:
+        params = {}
+        for key, value in model.get_params().items():
+            try:
+                json.dumps(value)
+                params[key] = value
+            except TypeError:
+                params[key] = repr(value)
+        metadata = {
+            "model_path": str(path),
+            "model_class": type(model).__name__,
+            "feature_columns": [str(column) for column in feature_columns],
+            "feature_count": len(feature_columns),
+            "xgb_params": params,
+            "sample_weight_config": _sample_weight_config(),
+            "validation_config": _validation_config(),
+            "best_iteration": getattr(model, "best_iteration", None),
+            "best_score": getattr(model, "best_score", None),
+        }
+        meta_path = Path(metadata_path)
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 # 691
 def model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type='class', data_file_url=None, save_shap=True):
@@ -258,7 +587,21 @@ def sort_within_group(group):
     return (rank_data_max-rank_data)/(rank_data_max-rank_data_min)
 
 
+def _add_top_quantile_label(frame, label, base_label, quantile):
+    if base_label not in frame.columns:
+        frame = prepare_training_label(frame, base_label)
+    base = pd.to_numeric(frame[base_label], errors="coerce")
+    valid = base.notna()
+    ranks = base[valid].groupby(frame.loc[valid, "trade_date"].astype(str)).rank(pct=True, ascending=False, method="first")
+    frame[label] = np.nan
+    frame.loc[valid, label] = (ranks <= quantile).astype(int)
+    return frame
+
+
 def prepare_training_label(factor_data, label):
+    if label in factor_data.columns:
+        factor_data[label] = pd.to_numeric(factor_data[label], errors="coerce")
+        return factor_data
     if label == "risk_adjusted_10d_yield_rate":
         base_return = pd.to_numeric(factor_data["10d_yield_rate"], errors="coerce")
         atr = pd.to_numeric(factor_data["atr_qfq"], errors="coerce")
@@ -289,6 +632,30 @@ def prepare_training_label(factor_data, label):
         entry_cash = buy * (1.0 + 0.0003 + 0.001)
         exit_cash = sell * (1.0 - 0.0003 - 0.0005 - 0.001)
         factor_data[label] = exit_cash / entry_cash - 1.0
+    elif label == "executable_1d_open_top10":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_1d_open_return", 0.10)
+    elif label == "executable_1d_open_top05":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_1d_open_return", 0.05)
+    elif label == "executable_1d_open_top20":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_1d_open_return", 0.20)
+    elif label == "executable_3d_open_top10":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_3d_open_return", 0.10)
+    elif label == "executable_3d_open_top05":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_3d_open_return", 0.05)
+    elif label == "executable_3d_open_top20":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_3d_open_return", 0.20)
+    elif label == "executable_5d_open_top10":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_5d_open_return", 0.10)
+    elif label == "executable_5d_open_top05":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_5d_open_return", 0.05)
+    elif label == "executable_5d_open_top20":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_5d_open_return", 0.20)
+    elif label == "executable_10d_open_top10":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_10d_open_return", 0.10)
+    elif label == "executable_10d_open_top05":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_10d_open_return", 0.05)
+    elif label == "executable_10d_open_top20":
+        factor_data = _add_top_quantile_label(factor_data, label, "executable_10d_open_return", 0.20)
     elif label == "excess_10d_yield_rate":
         if "adjust_10d_yield_rate" not in factor_data.columns:
             raise ValueError("adjust_10d_yield_rate is required for excess_10d_yield_rate")
@@ -312,6 +679,127 @@ def load_selected_features(data_file_url, label):
     return None
 
 
+def label_required_columns(label):
+    if label == "risk_adjusted_10d_yield_rate":
+        return ["10d_yield_rate", "atr_qfq", "close"]
+    if label == "executable_10d_open_return":
+        return ["post_open", "post12_open"]
+    if label == "executable_5d_open_return":
+        return ["post_open", "post6_open"]
+    if label == "executable_3d_open_return":
+        return ["post_open", "post4_open"]
+    if label == "executable_1d_open_return":
+        return ["post_open", "post2_open"]
+    if label.startswith("executable_") and "_top" in label:
+        if "_10d_" in label:
+            return ["post_open", "post12_open"]
+        if "_5d_" in label:
+            return ["post_open", "post6_open"]
+        if "_3d_" in label:
+            return ["post_open", "post4_open"]
+        if "_1d_" in label:
+            return ["post_open", "post2_open"]
+    if label == "excess_10d_yield_rate":
+        return ["adjust_10d_yield_rate"]
+    return [label]
+
+
+def split_label_required_columns(label):
+    if label == "risk_adjusted_10d_yield_rate":
+        return ["10d_yield_rate"]
+    if label == "excess_10d_yield_rate":
+        return ["adjust_10d_yield_rate"]
+    if label.startswith("executable_") and "_top" in label:
+        if "_10d_" in label:
+            return ["executable_10d_open_return"]
+        if "_5d_" in label:
+            return ["executable_5d_open_return"]
+        if "_3d_" in label:
+            return ["executable_3d_open_return"]
+        if "_1d_" in label:
+            return ["executable_1d_open_return"]
+    return [label]
+
+
+def split_feature_required_columns(label):
+    if label == "risk_adjusted_10d_yield_rate":
+        return ["atr_qfq", "close"]
+    return []
+
+
+def _schema_columns(path: Path) -> set[str]:
+    return set(ds.dataset(path, format="parquet").schema.names)
+
+
+def _read_parquet_with_fragment_fallback(path: Path, columns: list[str], filters):
+    try:
+        return pd.read_parquet(path, columns=columns, filters=filters)
+    except pa.ArrowInvalid as exc:
+        if not path.is_dir():
+            raise
+        logging.warning(
+            "parquet dataset read failed for %s; falling back to per-file reads: %s",
+            path,
+            exc,
+        )
+        frames = [
+            pd.read_parquet(part, columns=columns, filters=filters)
+            for part in sorted(path.glob("*.parquet"))
+        ]
+        if not frames:
+            return pd.DataFrame(columns=columns)
+        return pd.concat(frames, ignore_index=True)
+
+
+def _read_split_factor_data(data_start_dt, label, data_file_url, selected_features=None):
+    feature_path = resolve_model_feature_path(data_file_url, require_exists=True)
+    label_path = resolve_model_label_path(data_file_url, require_exists=True)
+    feature_columns_available = _schema_columns(feature_path)
+    label_columns_available = _schema_columns(label_path)
+    filters = [("trade_date", ">=", str(data_start_dt))]
+
+    feature_columns = list(
+        dict.fromkeys(
+            ["stock_code", "trade_date"]
+            + split_feature_required_columns(label)
+            + model_output_columns(label)
+            + list(selected_features or [])
+        )
+    )
+    feature_columns = [column for column in feature_columns if column in feature_columns_available]
+
+    label_columns = list(
+        dict.fromkeys(
+            ["stock_code", "trade_date", "5d_yield_rate", "open6_yield_rate", "10d_yield_rate"]
+            + split_label_required_columns(label)
+        )
+    )
+    label_columns = [column for column in label_columns if column in label_columns_available]
+    missing_label_columns = [
+        column for column in split_label_required_columns(label) if column not in label_columns
+    ]
+    if missing_label_columns:
+        raise ValueError(
+            f"prediction_label_parts missing required columns for {label}: {missing_label_columns}"
+        )
+
+    feature_frame = _read_parquet_with_fragment_fallback(
+        feature_path, columns=feature_columns, filters=filters
+    )
+    label_frame = _read_parquet_with_fragment_fallback(
+        label_path, columns=label_columns, filters=filters
+    )
+    return feature_frame.merge(label_frame, on=["stock_code", "trade_date"], how="inner")
+
+
+def model_output_columns(label=None):
+    columns = ['trade_date', 'name', 'stock_code', 'pred_prob','std_his_high', '10d_yield_rate', '2d_yield_rate', 'st_type','post_high','post_close','post2_close','post2_high',
+                            'open3_yield_rate', 'open2_yield_rate', 'limit_times', 'close','pre_close','post_open', 'post2_open', 'post3_open', 'post4_open', 'post5_open', 'post6_open', 'post12_open',
+                            'industry', 'industry_encode','atr_qfq','close_rate', 'amount', 'vol', 'turnover_rate', 'turnover_rate_f', 'circ_mv', 'total_mv', 'volume_ratio']
+    if label and label not in columns:
+        columns.append(label)
+    return columns
+
 
 def get_factor_data(
     data_start_dt,
@@ -321,6 +809,7 @@ def get_factor_data(
     stock_pool_path=None,
     selected_features=None,
     use_light_factor_data=False,
+    feature_source=None,
 ):
     '''factor_data = pd.read_sql('SELECT * FROM CDB.stock_factor_data ORDER BY stock_code, trade_date', engine)
 
@@ -348,40 +837,71 @@ def get_factor_data(
             if features_path and features_path.exists():
                 features_path.unlink()
 
-    factor_data = pd.read_parquet(data_file_url + '/stock_factor_data.parquet')
-    factor_data = factor_data.set_index(['stock_code', 'trade_date'], drop=False)
+    selected_features = selected_features or load_selected_features(data_file_url, label)
+    if use_legacy_mixed_features(feature_source):
+        require_legacy_model_asset_chain_opt_in(reason="legacy mixed factor parquet input")
+        read_columns = None
+        parquet_path = resolve_legacy_mixed_factor_path(data_file_url, require_exists=True)
+        if selected_features:
+            available_columns = set(pq.ParquetFile(parquet_path).schema_arrow.names)
+            needed_columns = list(
+                dict.fromkeys(
+                    [
+                        "stock_code",
+                        "trade_date",
+                        "name",
+                        "st_type",
+                        "limit_times",
+                        "5d_yield_rate",
+                        "open6_yield_rate",
+                        "10d_yield_rate",
+                    ]
+                    + label_required_columns(label)
+                    + model_output_columns(label)
+                    + list(selected_features)
+                )
+            )
+            read_columns = [col for col in needed_columns if col in available_columns]
+        read_filters = [("trade_date", ">=", str(data_start_dt))]
+        factor_data = pd.read_parquet(
+            parquet_path,
+            columns=read_columns,
+            filters=read_filters,
+        )
+    else:
+        factor_data = _read_split_factor_data(
+            data_start_dt,
+            label,
+            data_file_url,
+            selected_features=selected_features,
+        )
     if stock_pool_path:
         stock_pool = load_stock_pool(stock_pool_path)
         factor_data = filter_frame_by_stock_pool(factor_data, stock_pool)
 
-    # 先过滤掉name为空的行，避免str.contains报错
-    factor_data = factor_data[factor_data['name'].notna()]
-    factor_data = factor_data[~factor_data['name'].str.contains('ST')]
-    factor_data = factor_data[factor_data['st_type'] != 'ST']
+    if "name" in factor_data.columns:
+        factor_data = factor_data[factor_data['name'].notna()]
+        factor_data = factor_data[~factor_data['name'].astype(str).str.contains('ST', na=False)]
+    if "st_type" in factor_data.columns:
+        factor_data = factor_data[factor_data['st_type'] != 'ST']
     print(factor_data.shape)
-    factor_data = factor_data[factor_data['limit_times'].isnull()]
+    if "limit_times" in factor_data.columns:
+        factor_data = factor_data[factor_data['limit_times'].isnull()]
     # print(factor_data.shape)
 
     # logging.info(factor_data['trade_date'].max(),factor_data['trade_date'].min(),'1')
-    factor_data = factor_data[factor_data['trade_date'] >= data_start_dt]
     factor_data = prepare_training_label(factor_data, label)
     # logging.info(factor_data['trade_date'].max(),factor_data['trade_date'].min(),'3')
 
-    factor_data['5d_yield_rate_rank']= factor_data[['5d_yield_rate']].groupby('trade_date')['5d_yield_rate'].transform(sort_within_group)
-    factor_data['open6_yield_rate_rank']= factor_data[['open6_yield_rate']].groupby('trade_date')['open6_yield_rate'].transform(sort_within_group)
-    factor_data['10d_yield_rate_rank']= factor_data[['10d_yield_rate']].groupby('trade_date')['10d_yield_rate'].transform(sort_within_group)
+    if "5d_yield_rate" in factor_data.columns:
+        factor_data['5d_yield_rate_rank']= factor_data.groupby('trade_date')['5d_yield_rate'].transform(sort_within_group)
+    if "open6_yield_rate" in factor_data.columns:
+        factor_data['open6_yield_rate_rank']= factor_data.groupby('trade_date')['open6_yield_rate'].transform(sort_within_group)
+    if "10d_yield_rate" in factor_data.columns:
+        factor_data['10d_yield_rate_rank']= factor_data.groupby('trade_date')['10d_yield_rate'].transform(sort_within_group)
 	# 使用 np.select 计算收益率
 
-    train_data = factor_data[factor_data['trade_date'] < data_test_dt]
-
-
     logging.info(factor_data.shape)
-
-
-
-    test_data = factor_data[factor_data['trade_date'] >= data_test_dt]
-    logging.info(test_data.shape)
-    train_data = train_data.dropna(subset=[label])
 
     transformer_factor_list = [
         'close_rate', 'open_rate', 'high_rate', 'low_rate', 'vol', 'amount', 'stock_encode','st_type',
@@ -537,14 +1057,28 @@ def get_factor_data(
     # train_factor_data = pd.concat([train_data[factor_list] , train_data_new], axis=1)
     # test_factor_data = pd.concat([test_data[factor_list] , test_data_new], axis=1)
 
-    selected_features = selected_features or load_selected_features(data_file_url, label)
+    factor_list = [feature for feature in factor_list if feature in factor_data.columns]
+    if label in factor_data.columns and label not in factor_list:
+        factor_list.append(label)
+
     if selected_features:
         selected_features = [feature for feature in selected_features if feature in factor_data.columns and feature != label]
         factor_list = selected_features + [label]
         print(f"selected_feature_file_loaded count={len(selected_features)}")
 
-    train_factor_data = train_data[factor_list]
-    test_factor_data = test_data[factor_list]
+    output_factor_columns = [col for col in model_output_columns(label) if col in factor_data.columns]
+    if label in factor_data.columns and label not in output_factor_columns:
+        output_factor_columns.append(label)
+
+    train_mask = factor_data['trade_date'] < data_test_dt
+    test_mask = factor_data['trade_date'] >= data_test_dt
+    train_label_mask = factor_data[label].notna()
+
+    train_data = factor_data.loc[train_mask & train_label_mask, output_factor_columns].copy()
+    test_data = factor_data.loc[test_mask, output_factor_columns].copy()
+    train_factor_data = factor_data.loc[train_mask & train_label_mask, factor_list].copy()
+    test_factor_data = factor_data.loc[test_mask, factor_list].copy()
+    logging.info(test_data.shape)
 
 
     for col in train_factor_data.select_dtypes(include=['object']).columns:
@@ -557,6 +1091,12 @@ def get_factor_data(
     train_x = train_factor_data.drop(columns=[label])
     test_y = test_factor_data.loc[:, label]
     test_x = test_factor_data.drop(columns=[label])
+    train_index = pd.MultiIndex.from_frame(train_data[["stock_code", "trade_date"]])
+    test_index = pd.MultiIndex.from_frame(test_data[["stock_code", "trade_date"]])
+    train_x.index = train_index
+    train_y.index = train_index
+    test_x.index = test_index
+    test_y.index = test_index
     validate_no_leakage(train_x.columns, label=label)
     validate_no_leakage(test_x.columns, label=label)
 
@@ -587,18 +1127,35 @@ def model_adjust(train_x, train_y, test_x, test_y):
 	logging.info('??????????????????',mse_lst, '????????????', sum(mse_lst) / len(mse_lst))
 
 
-def download_pred_data(data, label, data_file_url):
-	conn = sqlite3.connect(data_file_url + '/odb.db')
-	data.to_sql('stock_predict_data_'+label, con=conn, if_exists='replace', index=False)
-	conn.close()
+def download_pred_data(data, label, data_file_url, output_table=None, prediction_output_mode=None):
+	table_name = output_table or ('stock_predict_data_'+label)
+	if use_legacy_prediction_db(prediction_output_mode):
+		require_legacy_model_asset_chain_opt_in(reason="legacy odb prediction output")
+		db_path = resolve_legacy_prediction_db_path(data_file_url)
+	else:
+		db_path = resolve_model_prediction_db_path(data_file_url, create_parent=True)
+	with sqlite3.connect(db_path) as conn:
+		data.to_sql(table_name, con=conn, if_exists='replace', index=False)
+	if not use_legacy_prediction_db(prediction_output_mode):
+		run_dir = resolve_prediction_run_dir(data_file_url, label=label, output_table=table_name, create=True)
+		write_prediction_manifest(
+			run_dir / "prediction_manifest.json",
+			{
+				"label": label,
+				"prediction_mode": "independent",
+				"prediction_db": str(db_path),
+				"prediction_table": table_name,
+				"row_count": int(len(data)),
+			},
+		)
 
-def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url, stock_pool_path=None):
+def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url, stock_pool_path=None, output_table=None, prediction_output_mode=None, feature_source=None):
 
 	logging.info(f'#--------------------------------------------AI模块启动--------------------------------------------#')
 
 
 	logging.info(f'AI模块：1.MYSQL数据库连接成功')
-	train_x, train_y, test_x, test_y, train_data, test_data = get_factor_data(data_start_dt, data_test_dt, label, data_file_url, stock_pool_path)
+	train_x, train_y, test_x, test_y, train_data, test_data = get_factor_data(data_start_dt, data_test_dt, label, data_file_url, stock_pool_path, feature_source=feature_source)
 	logging.info(f'AI模块：2.数据集划分完成')
 
 
@@ -606,7 +1163,7 @@ def download_pdb_data(data_start_dt, data_test_dt, label, type, data_file_url, s
 	# model_adjust(train_x, train_y, test_x, test_y)
 	data = model_assess(train_x, train_y, test_x, test_y, train_data, test_data, type, data_file_url)
 	logging.info(f'AI模块：4.模型预测和评估完成')
-	download_pred_data(data, label, data_file_url)
+	download_pred_data(data, label, data_file_url, output_table=output_table, prediction_output_mode=prediction_output_mode)
 	logging.info(f'AI模块：5.预测数据入仓完成')
 
 	logging.info(f'#--------------------------------------------AI模块完成--------------------------------------------#')

@@ -1,6 +1,5 @@
 from pathlib import Path
 import gc
-import sqlite3
 
 import pandas as pd
 import numpy as np
@@ -9,6 +8,7 @@ import pyarrow.parquet as pq
 
 from data_process_module import get_factor_data
 from project_paths import resolve_data_dir
+from stock_daily_data_route import connect_stock_daily_readonly
 
 
 DATA_DIR = resolve_data_dir()
@@ -17,7 +17,7 @@ WINDOW_START = "20250101"
 
 
 def _load_recent_integ_data() -> pd.DataFrame:
-    conn = sqlite3.connect(DATA_DIR / "odb.db")
+    conn = connect_stock_daily_readonly(data_dir=DATA_DIR)
     try:
         frame = pd.read_sql(
             """

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0714_pos84_tp060_v20260624",
+  "strategy_name": "动态持有 Top1 三周期融合 pos84 6%止盈 dd0714 增强",
+  "status": "production_candidate_pending_audit_not_published",
+  "score_rule": {
+    "rank_weight_10d": 0.78,
+    "rank_weight_5d": 0.12,
+    "rank_weight_3d": 0.1,
+    "rank_weight_1d": 0.0,
+    "exit_score_basis": "10d_core_score_table"
+  },
+  "selection_rule": {
+    "top_n": 1,
+    "refill_after_buy_day_rejection": true,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "skip_open_limit_up_buy": true,
+    "calendar_or_date_filter": false,
+    "industry_filter": false,
+    "latest_state_filter_for_history": false
+  },
+  "position_rule": {
+    "max_positions": 1,
+    "target_position_pct": 0.84,
+    "cash_buffer": 0.99,
+    "position_weight_mode": "single_stock_with_account_drawdown_scaling"
+  },
+  "holding_rule": {
+    "holding_days": 2,
+    "max_holding_days": 3,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 0.97,
+    "score_continue_entry_ratio": 0.98,
+    "min_holding_days_before_score_exit": 1
+  },
+  "risk_rule": {
+    "intraday_stop_loss_pct": 0.06,
+    "take_profit_pct": 0.06,
+    "account_drawdown_scale_enabled": true,
+    "equity_dd_soft_trigger": 0.07,
+    "equity_dd_hard_trigger": 0.14,
+    "equity_dd_recover_trigger": 0.04,
+    "equity_dd_soft_scale": 0.8,
+    "equity_dd_hard_scale": 0.6,
+    "equity_dd_resize_existing": false
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015,
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+    "signal_date_rule": "使用 T 日 formal L4 分数生成 T+1 开盘交易信号"
+  }
+}

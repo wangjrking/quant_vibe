@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "source_mode": "formal_l4_3d5d10d_only",
+  "approval_required": "approved_for_l5",
+  "legacy_odb_forbidden_by_default": true,
+  "assets": {
+    "3d": {
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+      "approval_status": "approved_for_l5",
+      "db_path": "../../../data_file/model_predictions/MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_best_full_20260623_executable_3d_open_return_formal",
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260623",
+      "row_count": 2677254,
+      "trade_days": 497,
+      "null_pred_prob": 0,
+      "duplicate_keys": 0,
+      "pred_prob_sha256": "e7e7d3092ff5ae281bc245cdbcd9ded6619dab4719d073fafcb3a30e73678ad7"
+    },
+    "5d": {
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+      "approval_status": "approved_for_l5",
+      "db_path": "../../../data_file/model_predictions/MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_best_full_20260623_executable_5d_open_return_formal",
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260623",
+      "row_count": 2677254,
+      "trade_days": 497,
+      "null_pred_prob": 0,
+      "duplicate_keys": 0,
+      "pred_prob_sha256": "596de71f9cc1fdc73c93d92ade0b47d7529a698047b0dd763e509bd4d56228cf"
+    },
+    "10d": {
+      "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+      "approval_status": "approved_for_l5",
+      "db_path": "../../../data_file/model_predictions/MODEL_PREDICTIONS.db",
+      "table": "stock_predict_data_model_agent_best_full_20260623_executable_10d_open_return_formal",
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260623",
+      "row_count": 2677254,
+      "trade_days": 497,
+      "null_pred_prob": 0,
+      "duplicate_keys": 0,
+      "pred_prob_sha256": "2aa40d04bef9e5d1b45d99fdca0ce18d83e18bfe9cb9594b80ab6bef1bbe5b0b"
+    }
+  },
+  "score_inputs_used_by_strategy": [
+    "rank_10d",
+    "rank_5d",
+    "rank_3d"
+  ],
+  "entry_score_formula": "0.78 * rank_10d + 0.12 * rank_5d + 0.10 * rank_3d"
+}

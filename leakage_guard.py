@@ -16,6 +16,8 @@ def _is_leaky_feature(name, label=None):
 
     if label is not None and feature == label:
         return True
+    if lowered.startswith("executable_"):
+        return True
     if lowered.startswith("post"):
         return True
     if "post_" in lowered or "_post" in lowered:

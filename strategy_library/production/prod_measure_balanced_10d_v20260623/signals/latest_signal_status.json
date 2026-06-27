@@ -1,0 +1,26 @@
+{
+  "strategy_id": "prod_measure_balanced_10d_v20260623",
+  "as_of": "2026-06-23",
+  "status": "blocked_until_same_contract_exporter_restored",
+  "production_signal_available": false,
+  "validated_historical_signal": {
+    "file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\historical_repro_current_best.csv",
+    "signal_date_min": "20240604",
+    "signal_date_max": "20260617",
+    "buy_date_min": "20240605",
+    "buy_date_max": "20260618",
+    "juejin_validation": {
+      "annual_return": 4.129590018727238,
+      "sharpe": 3.110333718654759,
+      "max_drawdown": 0.20113614694900914,
+      "log": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\backtests\\repro_current_best.log"
+    }
+  },
+  "invalidated_latest_files": [
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\latest_20260623.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\prod_measure_balanced_10d_v20260623_signal_20260622_for_20260623.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_measure_balanced_10d_v20260623_latest.csv",
+    "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_measure_balanced_10d_v20260623_signal_20260622_for_20260623.csv"
+  ],
+  "blocked_reason": "上述 latest 信号来自非同口径 formal L4 延展文件，掘金复跑年化约 6.23%、夏普约 0.216，不能代表 412.96% 版本。需恢复/重建 repro_current_best 同口径 L5 exporter 后再生成当前交易日信号。"
+}

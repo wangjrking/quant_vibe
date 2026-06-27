@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_measure_aggressive_top1_v20260623",
+  "strategy_name": "进攻单票Top1",
+  "rule_summary": "生产 V1.0 Top1 复现逻辑，单票集中持仓，追求高收益，波动和回撤更高。",
+  "selection_rule": {
+    "max_positions": 1,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "exclude_current_limit": true,
+    "skip_open_limit_up_buy": true,
+    "industry_filter": false,
+    "calendar_or_month_filter": false
+  },
+  "position_rule": {
+    "max_positions": 1,
+    "position_style": "single_top1_concentrated"
+  },
+  "holding_rule": {
+    "holding_days": 5,
+    "max_holding_days": 5,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 0.95,
+    "min_holding_days_before_score_exit": 2
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015,
+    "skip_buy_when_open_limit_up": true
+  }
+}

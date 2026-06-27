@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import sqlite3
 from pathlib import Path
 
 import pandas as pd
 
 from data_load_module import date_range_pandas, get_pro
-from project_paths import load_config, resolve_data_dir, resolve_project_path
+from project_paths import load_config, resolve_data_dir, resolve_data_path
+from raw_table_db_module import replace_raw_table_full
 from raw_data_update_module import (
     RAW_TABLE_SPECS,
     append_parquet_dedup,
@@ -78,15 +78,14 @@ def _fetch_date_table(ts_pro, table: str, start: str, end: str, index_codes: tup
 
 def _sync_sqlite_table(data_dir: Path, file_name: str, table_name: str) -> None:
     frame = pd.read_parquet(data_dir / file_name)
-    with sqlite3.connect(data_dir / "odb.db") as conn:
-        frame.to_sql(table_name, con=conn, if_exists="replace", index=False)
+    replace_raw_table_full(data_dir, table_name, frame)
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Incrementally update local raw data for the all-A-share universe.")
     parser.add_argument("--config", default="config.json")
     parser.add_argument("--data-dir", default=None)
-    parser.add_argument("--stock-pool", default="data_file/stock_pool_all_a.csv")
+    parser.add_argument("--stock-pool", default="stock_pool_all_a.csv")
     parser.add_argument("--start", default="20100101")
     parser.add_argument("--end", required=True)
     parser.add_argument("--tables", default=DEFAULT_TABLES)
@@ -101,11 +100,16 @@ def main(argv=None):
     data_dir = resolve_data_dir(args.data_dir)
     config = load_config(args.config)
     ts_pro = get_pro(config["datasource"]["tushare_token"])
-    stock_codes = load_stock_codes(resolve_project_path(args.stock_pool))
+    stock_pool_path = resolve_data_path(args.stock_pool, data_dir=data_dir)
+    stock_codes = load_stock_codes(stock_pool_path)
     if args.limit_stocks:
         stock_codes = stock_codes[: args.limit_stocks]
     tables = [item.strip() for item in args.tables.split(",") if item.strip()]
-    print(f"raw_update_start stocks={len(stock_codes)} tables={','.join(tables)} end={args.end}", flush=True)
+    print(
+        f"raw_update_start stocks={len(stock_codes)} tables={','.join(tables)} end={args.end} "
+        f"stock_pool={stock_pool_path}",
+        flush=True,
+    )
 
     for table in tables:
         spec = RAW_TABLE_SPECS[table]

@@ -1,6 +1,6 @@
 import unittest
 
-from portfolio_backtest_module import PortfolioBacktestConfig, run_portfolio_backtest
+from portfolio_backtest_module import PortfolioBacktestConfig, run_order_backtest, run_portfolio_backtest
 
 
 class PortfolioBacktestModuleTests(unittest.TestCase):
@@ -186,6 +186,201 @@ class PortfolioBacktestModuleTests(unittest.TestCase):
 
         self.assertEqual(result["trades"][0]["stock_code"], "ILLQ")
         self.assertAlmostEqual(result["trades"][0]["slippage_rate"], 0.004)
+
+    def test_score_exit_closes_position_before_scheduled_exit(self):
+        rows = [
+            {
+                "trade_date": "20260101",
+                "stock_code": "A",
+                "name": "A",
+                "pred_prob": 1.00,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "post_open": 10.0,
+                "post12_open": 20.0,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "A",
+                "name": "A",
+                "pred_prob": 0.40,
+                "close": 11.0,
+                "atr_qfq": 0.2,
+                "post_open": 11.0,
+                "post12_open": 20.0,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "B",
+                "name": "B",
+                "pred_prob": 0.01,
+                "close": 10.0,
+                "atr_qfq": 0.2,
+                "post_open": 10.0,
+                "post12_open": 10.0,
+            },
+        ]
+
+        result = run_portfolio_backtest(
+            rows,
+            PortfolioBacktestConfig(
+                top_k=1,
+                max_positions=1,
+                holding_days=5,
+                min_pred_prob=0.50,
+                score_exit_ratio=0.50,
+                min_score_exit_holding_days=1,
+                commission_rate=0.0,
+                sell_tax_rate=0.0,
+                slippage_rate=0.0,
+            ),
+        )
+
+        self.assertEqual(result["metrics"]["trade_count"], 1)
+        self.assertEqual(result["trades"][0]["exit_signal_date"], "20260102")
+        self.assertEqual(result["trades"][0]["exit_reason"], "score_exit")
+        self.assertAlmostEqual(result["trades"][0]["net_return"], 0.10)
+
+    def test_order_backtest_waits_for_cash_instead_of_queueing_old_signals(self):
+        rows = [
+            {
+                "trade_date": "20260101",
+                "stock_code": "A",
+                "pred_prob": 0.90,
+                "close": 10.0,
+                "atr_qfq": 0.1,
+                "post_open": 10.0,
+                "post4_open": 12.0,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "B",
+                "pred_prob": 0.95,
+                "close": 10.0,
+                "atr_qfq": 0.1,
+                "post_open": 10.0,
+                "post4_open": 20.0,
+            },
+            {
+                "trade_date": "20260104",
+                "stock_code": "A",
+                "pred_prob": 0.01,
+                "close": 11.5,
+                "atr_qfq": 0.1,
+                "post_open": 12.0,
+                "post4_open": 12.0,
+            },
+            {
+                "trade_date": "20260104",
+                "stock_code": "C",
+                "pred_prob": 0.80,
+                "close": 10.0,
+                "atr_qfq": 0.1,
+                "post_open": 10.0,
+                "post4_open": 11.0,
+            },
+            {
+                "trade_date": "20260106",
+                "stock_code": "C",
+                "pred_prob": 0.01,
+                "close": 10.5,
+                "atr_qfq": 0.1,
+                "post_open": 11.0,
+                "post4_open": 11.0,
+            },
+        ]
+
+        result = run_order_backtest(
+            rows,
+            PortfolioBacktestConfig(
+                top_k=1,
+                max_positions=1,
+                holding_days=2,
+                min_pred_prob=0.1,
+                max_atr_ratio=None,
+                commission_rate=0.0,
+                sell_tax_rate=0.0,
+                slippage_rate=0.0,
+            ),
+        )
+
+        self.assertEqual([trade["stock_code"] for trade in result["trades"]], ["A", "C"])
+
+    def test_order_backtest_defers_sell_when_exit_open_is_limit_down(self):
+        rows = [
+            {
+                "trade_date": "20260101",
+                "stock_code": "A",
+                "name": "A",
+                "pred_prob": 0.90,
+                "close": 10.0,
+                "atr_qfq": 0.1,
+                "post_open": 10.0,
+                "post4_open": 9.0,
+            },
+            {
+                "trade_date": "20260102",
+                "stock_code": "A",
+                "name": "A",
+                "pred_prob": 0.10,
+                "close": 10.0,
+                "atr_qfq": 0.1,
+                "post_open": 9.0,
+                "post4_open": 9.5,
+            },
+            {
+                "trade_date": "20260103",
+                "stock_code": "A",
+                "name": "A",
+                "pred_prob": 0.10,
+                "close": 9.0,
+                "atr_qfq": 0.1,
+                "post_open": 9.5,
+                "post4_open": 9.5,
+            },
+        ]
+
+        result = run_order_backtest(
+            rows,
+            PortfolioBacktestConfig(
+                top_k=1,
+                max_positions=1,
+                holding_days=1,
+                min_pred_prob=0.1,
+                max_atr_ratio=None,
+                commission_rate=0.0,
+                sell_tax_rate=0.0,
+                slippage_rate=0.0,
+            ),
+        )
+
+        self.assertEqual(result["trades"][0]["exit_signal_date"], "20260103")
+        self.assertAlmostEqual(result["trades"][0]["net_return"], -0.05)
+
+    def test_order_backtest_can_delay_same_day_sell_proceeds(self):
+        rows = [
+            {"trade_date": "20260101", "stock_code": "A", "pred_prob": 0.90, "close": 10.0, "atr_qfq": 0.1, "post_open": 10.0},
+            {"trade_date": "20260102", "stock_code": "A", "pred_prob": 0.10, "close": 10.0, "atr_qfq": 0.1, "post_open": 11.0},
+            {"trade_date": "20260102", "stock_code": "B", "pred_prob": 0.80, "close": 10.0, "atr_qfq": 0.1, "post_open": 10.0},
+            {"trade_date": "20260103", "stock_code": "B", "pred_prob": 0.10, "close": 10.0, "atr_qfq": 0.1, "post_open": 12.0},
+        ]
+
+        result = run_order_backtest(
+            rows,
+            PortfolioBacktestConfig(
+                top_k=1,
+                max_positions=1,
+                holding_days=1,
+                min_pred_prob=0.1,
+                max_atr_ratio=None,
+                commission_rate=0.0,
+                sell_tax_rate=0.0,
+                slippage_rate=0.0,
+                reuse_sell_proceeds_same_day=False,
+            ),
+        )
+
+        self.assertEqual([trade["stock_code"] for trade in result["trades"]], ["A"])
 
 
 if __name__ == "__main__":

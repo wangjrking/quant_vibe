@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_formal_5d10d_best_v20260621",
+  "validation_status": "production_published_from_juejin_verified_candidate",
+  "validated_by": "strategy-agent",
+  "validated_at": "2026-06-21T21:30:00+08:00",
+  "platform": "juejin",
+  "selected_result": {
+    "candidate_name": "best_noncal_avgpred205_rw2121201919",
+    "selection_reason": "在非日历、非行业限制候选中，满足 Sharpe >= 3 的最高年化收益版本。",
+    "annual_return": 2.5708951990286635,
+    "sharpe": 3.0044554108640216,
+    "max_drawdown": 0.23807495613823845,
+    "win_ratio": 0.6057971014492753,
+    "avg_invested_pct": 0.5916286746987945,
+    "ge80_ratio": 0.18674698795180722,
+    "open_count": 349,
+    "close_count": 345,
+    "signal_count": 1879,
+    "buy_days": 382,
+    "max_active_positions": 5,
+    "exposure_points": 498
+  },
+  "comparison_note": {
+    "best_sharpe_candidate": "best_noncal_avgpred205",
+    "best_sharpe_candidate_annual_return": 2.5411407000126363,
+    "best_sharpe_candidate_sharpe": 3.0065551191497746,
+    "published_candidate_tradeoff": "发布版本牺牲约 0.0021 Sharpe，换取更高年化和更高平均持仓。"
+  },
+  "target_gate": {
+    "annual_return_min": 2.0,
+    "sharpe_min": 3.0,
+    "passed": true,
+    "avg_invested_pct_target": "best_effort_near_0.80_not_hard_gate",
+    "avg_invested_preference_met": false
+  },
+  "method_guardrail": {
+    "calendar_filters_rejected": true,
+    "no_calendar_or_date_filter_in_selected_candidate": true,
+    "no_industry_filter_in_selected_candidate": true,
+    "only_formal_l4_5d_10d_assets": true,
+    "no_1d_model": true,
+    "exclude_bj": true,
+    "skip_limit_up_buy": true
+  },
+  "evidence_files": {
+    "gm_backtest_log": "backtests/gm_backtest_best_noncal_avgpred205_rw2121201919.log",
+    "backtest_signal_file": "signals/backtest_signals_best_noncal_avgpred205_rw2121201919.csv",
+    "noncalendar_quality_summary": "research/summary_noncalendar_quality_refine.csv",
+    "noncalendar_quality_summary_by_annual": "research/summary_noncalendar_quality_refine_by_annual.csv",
+    "noncalendar_quality_summary_by_sharpe": "research/summary_noncalendar_quality_refine_by_sharpe.csv",
+    "noncalendar_quality_summary_qualified": "research/summary_noncalendar_quality_refine_qualified.csv"
+  },
+  "publish_scope": {
+    "new_backtest_ran_during_publish": false,
+    "new_formal_signal_generated_during_publish": false,
+    "production_registry_updated": true,
+    "production_task_updated": true
+  }
+}

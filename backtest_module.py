@@ -31,6 +31,7 @@ class BacktestConfig:
     slippage_rate: float = 0.001
     min_amount: float | None = None
     min_turnover_rate: float | None = None
+    max_total_mv: float | None = None
     liquidity_slippage_enabled: bool = False
     liquidity_amount_col: str = "amount"
     liquidity_turnover_col: str = "turnover_rate"
@@ -227,6 +228,9 @@ def _passes_filters(row, config):
     turnover = _to_float(_value(row, getattr(config, "liquidity_turnover_col", "turnover_rate")))
     if getattr(config, "min_turnover_rate", None) is not None and (turnover is None or turnover < config.min_turnover_rate):
         return False
+    total_mv = _to_float(_value(row, "total_mv"))
+    if getattr(config, "max_total_mv", None) is not None and (total_mv is None or total_mv > config.max_total_mv):
+        return False
     if config.max_atr_ratio is not None:
         ratio = _atr_ratio(row, config)
         if ratio is None or ratio > config.max_atr_ratio:
@@ -394,7 +398,10 @@ def run_backtest(rows, config=None):
 
 def read_prediction_rows(db_path, table, start_date=None, end_date=None, stock_pool_path=None):
     path = Path(db_path)
-    conn = sqlite3.connect(path)
+    try:
+        conn = sqlite3.connect(path.resolve().as_uri() + "?mode=ro&immutable=1", uri=True, timeout=30)
+    except Exception:
+        conn = sqlite3.connect(path, timeout=30)
     conn.row_factory = sqlite3.Row
     try:
         table_cols = {row[1] for row in conn.execute(f'PRAGMA table_info("{table}")')}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+  "status": "production_user_approved_pending_buy_day_hard_gate",
+  "created_at": "2026-06-25",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0712_pos89_c975_high_pos_boundary_20260625\\signals\\pos8975_scale7555.csv",
+  "validation_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0712_pos8975_scale7555_validation_20260625",
+  "boundary_search_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0712_pos89_c975_high_pos_boundary_20260625",
+  "style_exposure_and_drift": "risk_prompt_only_not_hard_gate",
+  "source_strategy_id": "candidate_dynamic_h2m3_sl06dd0712_pos8975_c975_tp070_scale7555_v20260625",
+  "published_at": "2026-06-25",
+  "published_by": "strategy-agent",
+  "current_signal": {
+    "signal_date": "20260624",
+    "buy_date": "20260625",
+    "archive_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_h2m3_pos8975_scale7555_v20260625\\signals\\latest_signal_20260624_for_20260625.csv",
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dynamic_h2m3_pos8975_scale7555_v20260625_latest.csv",
+    "status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_h2m3_pos8975_scale7555_v20260625\\signals\\latest_signal_status_20260624_for_20260625.json",
+    "buy_day_hard_gate_complete": false,
+    "buy_day_realtime_checks_required": true
+  }
+}

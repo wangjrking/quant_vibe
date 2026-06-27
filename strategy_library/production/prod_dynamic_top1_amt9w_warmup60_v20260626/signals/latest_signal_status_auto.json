@@ -1,0 +1,12 @@
+{
+  "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
+  "signal_date": "20260625",
+  "buy_date": "",
+  "latest_market_date": "20260625",
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "candidate_count_after_filters": 3183,
+  "skipped_candidates": [],
+  "selected_stock_code": "688322.SH",
+  "selected_name": "奥比中光"
+}

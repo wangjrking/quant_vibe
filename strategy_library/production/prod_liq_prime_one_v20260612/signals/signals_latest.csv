@@ -1,0 +1,2 @@
+signal_date,buy_date,symbol,stock_code,name,rank,pred_prob,pred_pct,pred_rank_desc,amount,turnover_rate,total_mv,qfq_open,qfq_close,holding_days,target_pct
+20260611,20260612,SZSE.301313,301313.SZ,凡拓数创,1,0.11610553413629532,0.9933481152993349,34,1633345.61084,35.5244,575304.3574,63.5,55.61,5,0.98

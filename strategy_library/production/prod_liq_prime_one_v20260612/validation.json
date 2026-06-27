@@ -1,24 +1,82 @@
 {
+  "schema_version": 2,
   "strategy_id": "prod_liq_prime_one_v20260612",
+  "strategy_name": "流动性精选一号",
+  "production_version": "V1.0",
   "validation_type": "gm_backtest",
-  "source_log": "data_file/reports/open_daily_tuning_20260612/juejin_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_slip0015_cash60w.log",
-  "signal_source": "data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
-  "daily_score_source": "data_file/odb.db / stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
-  "gm_strategy_runtime_name": "open_daily_nomarket_top1_q95_hold5_score095_mh2",
-  "gm_sdk_version": "3.0.183",
-  "gm_c_sdk_version": "3.8.15",
-  "metrics": {
-    "pnl_ratio": 11.520864465431202,
-    "pnl_ratio_annual": 3.8508383973281948,
-    "sharp_ratio": 1.3057659678025164,
-    "max_drawdown": 0.2863755650848838,
-    "risk_ratio": 0.9816485957446798,
-    "open_count": 102,
-    "close_count": 101,
-    "win_count": 62,
-    "lose_count": 39,
-    "win_ratio": 0.6138613861386139,
-    "calmar_ratio": 13.446812042734086
+  "primary_validation": "production_v1_0_gm_backtest",
+  "production_v1_0_gm_backtest": {
+    "description": "当前投产 V1.0 复现口径：持有期 5 天，评分退出最小持有 2 天，09:30 先卖，09:31 再买。",
+    "verified_at": "2026-06-15 00:19:38 Asia/Shanghai",
+    "source_log": "data_file/reports/prod_liq_prime_one_juejin_verify_20260615/prod_liq_prime_one_h5_score095_mh2_sell0930_buy0931_window20240605.log",
+    "signal_source": "data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
+    "daily_score_source": "data_file/odb.db / stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+    "strategy_file": "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517/main.py",
+    "gm_strategy_runtime_name": "open_daily_nomarket_top1_q95_hold5_score095_mh2",
+    "gm_sdk_version": "3.0.183",
+    "gm_c_sdk_version": "3.8.15",
+    "backtest_window": {
+      "start": "2024-06-05 09:00:00",
+      "end": "2026-07-10 15:30:00",
+      "adjust": "none"
+    },
+    "execution": {
+      "sell_time": "09:30:00",
+      "buy_time": "09:31:00",
+      "max_positions": 1,
+      "holding_days": 5,
+      "score_exit_entry_ratio": 0.95,
+      "min_holding_days_before_score_exit": 2,
+      "max_holding_days": 5,
+      "target_pct": 0.98,
+      "initial_cash": 600000,
+      "slippage_ratio": 0.0015,
+      "sync_positions": true,
+      "force_market_order": false
+    },
+    "metrics": {
+      "pnl_ratio": 50.0992912449378,
+      "pnl_ratio_percent": 5009.92912449378,
+      "pnl_ratio_annual": 23.872377681987334,
+      "pnl_ratio_annual_percent": 2387.2377681987335,
+      "sharp_ratio": 1.5466297275045484,
+      "max_drawdown": 0.27340701481476287,
+      "max_drawdown_percent": 27.340701481476287,
+      "risk_ratio": 0.9817298758027239,
+      "open_count": 94,
+      "close_count": 93,
+      "win_count": 57,
+      "lose_count": 36,
+      "win_ratio": 0.6129032258064516,
+      "win_ratio_percent": 61.29032258064516,
+      "calmar_ratio": 87.31443009302892
+    }
+  },
+  "archived_gm_backtest_20260613": {
+    "description": "原始投产归档回测结果，保留作为历史证据；该结果与 V1.0 当前环境复测结果不同，不作为 V1.0 主指标。",
+    "source_log": "data_file/reports/open_daily_tuning_20260612/juejin_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_slip0015_cash60w.log",
+    "signal_source": "data_file/gm_signals_prod_aligned_4y_liq_enh_top1_q95_amt8e5_turn2_mv1e6_clean_nost_delist.csv",
+    "daily_score_source": "data_file/odb.db / stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+    "gm_strategy_runtime_name": "open_daily_nomarket_top1_q95_hold5_score095_mh2",
+    "gm_sdk_version": "3.0.183",
+    "gm_c_sdk_version": "3.8.15",
+    "metrics": {
+      "pnl_ratio": 11.520864465431202,
+      "pnl_ratio_percent": 1152.0864465431202,
+      "pnl_ratio_annual": 3.8508383973281948,
+      "pnl_ratio_annual_percent": 385.0838397328195,
+      "sharp_ratio": 1.3057659678025164,
+      "max_drawdown": 0.2863755650848838,
+      "max_drawdown_percent": 28.63755650848838,
+      "risk_ratio": 0.9816485957446798,
+      "open_count": 102,
+      "close_count": 101,
+      "win_count": 62,
+      "lose_count": 39,
+      "win_ratio": 0.6138613861386139,
+      "win_ratio_percent": 61.38613861386139,
+      "calmar_ratio": 13.446812042734086
+    }
   },
   "local_liquidity_grid_same_rule": {
     "source_file": "data_file/reports/open_daily_tuning_20260612/liquidity_filter_grid_dynamic_slippage_top1.json",
@@ -35,5 +93,5 @@
     "max_mv": 1000000,
     "signal_days": 216
   },
-  "summary_text": "掘金回测累计收益约 1152.09%，年化收益约 385.08%，最大回撤约 28.64%，夏普比率 1.31，Calmar 比率 13.45；开仓 102 次、平仓 101 次，胜率约 61.39%。本地同规则流动性网格累计收益约 829.78%，年化收益约 215.53%，夏普约 1.90。"
+  "summary_text": "流动性精选一号 V1.0 当前掘金复测累计收益约 5009.93%，年化收益约 2387.24%，最大回撤约 27.34%，夏普比率约 1.55，开仓 94 次、平仓 93 次，胜率约 61.29%。原始 2026-06-13 归档结果另存为 archived_gm_backtest_20260613。"
 }

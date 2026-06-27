@@ -22,6 +22,7 @@ class SelectionConfig:
     min_turnover_rate: float | None = None
     max_total_mv: float | None = None
     max_per_industry: int = 2
+    exclude_bj: bool = True
     exclude_st: bool = True
     exclude_delisting: bool = True
     exclude_current_limit: bool = True
@@ -45,18 +46,52 @@ def _to_float(value):
         return None
 
 
+def _is_missing(value) -> bool:
+    if value in (None, "", "None"):
+        return True
+    try:
+        return math.isnan(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def _is_st(row):
     name = str(_value(row, "name", "") or "")
-    return bool(_value(row, "st_type")) or name.startswith("ST") or name.startswith("*ST")
+    st_type = _value(row, "st_type")
+    st_type_name = str(_value(row, "st_type_name", "") or "")
+    if name.startswith("ST") or name.startswith("*ST"):
+        return True
+    if "风险警示" in st_type_name or "退市风险" in st_type_name:
+        return True
+    if _is_missing(st_type):
+        return False
+    text = str(st_type).strip().upper()
+    if text in {"0", "0.0", "FALSE", "NONE", "NAN"}:
+        return False
+    try:
+        return float(st_type) != 0.0
+    except (TypeError, ValueError):
+        return text in {"ST", "*ST", "S"}
 
 
 def _is_delisting(row):
     name = str(_value(row, "name", "") or "")
-    return "\u9000\u5e02" in name or name.startswith("\u9000")
+    return "\u9000\u5e02" in name or name.startswith("\u9000") or name.endswith("\u9000")
+
+
+def _is_bj(row):
+    stock_code = str(_value(row, "stock_code", "") or "").strip().upper()
+    return stock_code.endswith(".BJ") or stock_code.startswith("BJSE.")
 
 
 def _is_current_limit(row):
-    return _value(row, "limit_times") not in (None, "", "None")
+    value = _value(row, "limit_times")
+    if _is_missing(value):
+        return False
+    try:
+        return float(value) > 0.0
+    except (TypeError, ValueError):
+        return True
 
 
 def _atr_ratio(row):
@@ -109,6 +144,8 @@ def select_candidates(rows, config=None):
         if config.min_pred_prob is not None and pred < config.min_pred_prob:
             continue
         if quantile_threshold is not None and pred < quantile_threshold:
+            continue
+        if config.exclude_bj and _is_bj(row):
             continue
         if config.exclude_st and _is_st(row):
             continue

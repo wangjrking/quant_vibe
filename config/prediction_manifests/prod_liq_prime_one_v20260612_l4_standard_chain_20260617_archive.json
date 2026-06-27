@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "asset_role": "rollback_archive_only",
+  "strategy_id": "prod_liq_prime_one_v20260612",
+  "label": "executable_5d_open_return",
+  "approval_status": "rollback_archive_only",
+  "source_type": "sqlite_table",
+  "db_path": "../../../data_file/model_predictions/MODEL_PREDICTIONS.db",
+  "table": "stock_predict_data_model_agent_standard_chain_tune_20260617_executable_5d_open_return_v2",
+  "market_db_path": "../../../data_file/STOCK_DAILY_DATA.db",
+  "generated_at": "2026-06-18T00:15:11+08:00",
+  "archived_at": "2026-06-20T04:20:00+08:00",
+  "row_count": 2644196,
+  "trade_days": 491,
+  "stock_count": 5528,
+  "min_trade_date": "20240604",
+  "max_trade_date": "20260612",
+  "candidate_id": "xgb_reg5d_d3_l3_fs160_lr003_n6000_standardchain_fold1fixed_20260617",
+  "model_track": "archived_formal_default",
+  "archive_reason": "Replaced by latest standard-chain 5D score asset covering 20240604-20260618.",
+  "rollback_note": "This manifest preserves the previous standard-chain 5D formal table for audit comparison or explicit rollback only. It is not an approved_for_l5 default manifest."
+}

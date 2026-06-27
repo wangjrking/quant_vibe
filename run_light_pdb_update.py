@@ -6,6 +6,16 @@ from pathlib import Path
 
 from ai_module import model_assess
 from light_factor_module import get_light_factor_data
+from model_asset_route import (
+    MODEL_PREDICTION_MODE_INDEPENDENT,
+    MODEL_PREDICTION_MODE_LEGACY,
+    require_legacy_model_asset_chain_opt_in,
+    resolve_legacy_prediction_db_path,
+    resolve_model_prediction_db_path,
+    resolve_prediction_run_dir,
+    use_legacy_prediction_db,
+    write_prediction_manifest,
+)
 
 
 def parse_args(argv=None):
@@ -19,6 +29,11 @@ def parse_args(argv=None):
     parser.add_argument("--stock-pool")
     parser.add_argument("--output-table", required=True)
     parser.add_argument("--allow-missing-features", action="store_true")
+    parser.add_argument(
+        "--prediction-output-mode",
+        default=None,
+        choices=[MODEL_PREDICTION_MODE_INDEPENDENT, MODEL_PREDICTION_MODE_LEGACY],
+    )
     return parser.parse_args(argv)
 
 
@@ -47,11 +62,29 @@ def main(argv=None):
         str(data_dir),
         save_shap=False,
     )
-    with sqlite3.connect(data_dir / "odb.db") as conn:
+    if use_legacy_prediction_db(args.prediction_output_mode):
+        require_legacy_model_asset_chain_opt_in(reason="legacy odb light-factor prediction output")
+        db_path = resolve_legacy_prediction_db_path(data_dir)
+        prediction_mode = MODEL_PREDICTION_MODE_LEGACY
+    else:
+        db_path = resolve_model_prediction_db_path(data_dir, create_parent=True)
+        prediction_mode = MODEL_PREDICTION_MODE_INDEPENDENT
+    with sqlite3.connect(db_path) as conn:
         pred_data.to_sql(args.output_table, con=conn, if_exists="replace", index=False)
+    run_dir = resolve_prediction_run_dir(data_dir, label=args.label, output_table=args.output_table, create=True)
+    write_prediction_manifest(
+        run_dir / "prediction_manifest.json",
+        {
+            "label": args.label,
+            "prediction_mode": prediction_mode,
+            "prediction_db_path": str(db_path),
+            "prediction_table": args.output_table,
+            "row_count": int(pred_data.shape[0]),
+        },
+    )
     print(
         f"light_pdb_update_done rows={pred_data.shape[0]} "
-        f"max={pred_data['trade_date'].astype(str).max()} table={args.output_table}",
+        f"max={pred_data['trade_date'].astype(str).max()} table={args.output_table} db={db_path}",
         flush=True,
     )
 

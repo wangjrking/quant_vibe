@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0612_pos84_tp060_v20260624",
+  "validation_platform": "juejin",
+  "validated_at": "2026-06-24",
+  "status": "production_candidate_pending_audit_not_published",
+  "backtest_window": {
+    "start": "2024-06-05 09:00:00",
+    "end": "2026-06-23 15:30:00"
+  },
+  "metrics": {
+    "pnl_ratio": 12.036448248866114,
+    "annual_return": 5.865558892972139,
+    "sharpe": 1.9274288725019693,
+    "max_drawdown": 0.39702989546550477,
+    "win_ratio": 0.5841584158415841,
+    "open_count": 203,
+    "close_count": 202,
+    "recent60_annual": 0.37863572876987905,
+    "recent60_sharpe": 0.778451418012333,
+    "recent60_max_drawdown": 0.21697485119321228,
+    "ytd_annual": 1.593322262144662
+  },
+  "low_path_dependency": {
+    "20250701": {
+      "annual_min": "2.8454370146797645",
+      "annual_median": "2.8677683788417316",
+      "annual_max": "3.0143963099181073",
+      "max_drawdown_max": "0.21750074486292784"
+    },
+    "20251009": {
+      "annual_min": "1.3898707328576743",
+      "annual_median": "1.5470056469829885",
+      "annual_max": "1.7992617014009107",
+      "max_drawdown_max": "0.21746309968349822"
+    },
+    "20260105": {
+      "annual_min": "1.468490551669019",
+      "annual_median": "1.8396374030621998",
+      "annual_max": "2.2467706169341946",
+      "max_drawdown_max": "0.21737288983535727"
+    }
+  },
+  "contribution_stress": {
+    "base": {
+      "annual_return": "5.865558892972139",
+      "sharpe": "1.9274288725019693",
+      "max_drawdown": "0.39702989546550477",
+      "late_min_annual": "1.593322262144662"
+    },
+    "drop_top_1pct": {
+      "annual_return": "5.208407510655286",
+      "sharpe": "1.8727052840006797",
+      "max_drawdown": "0.39702989546550477",
+      "late_min_annual": "1.593322262144662"
+    },
+    "drop_top_day": {
+      "annual_return": "5.865558892972139",
+      "sharpe": "1.9274288725019693",
+      "max_drawdown": "0.39702989546550477",
+      "late_min_annual": "1.593322262144662"
+    },
+    "drop_top_month": {
+      "annual_return": "5.528776177961675",
+      "sharpe": "1.9175406803536115",
+      "max_drawdown": "0.396982127877838",
+      "late_min_annual": "1.593322262144662"
+    },
+    "drop_top_stock": {
+      "annual_return": "5.842786778542316",
+      "sharpe": "1.926813591345436",
+      "max_drawdown": "0.39692389494724123",
+      "late_min_annual": "1.593322262144662"
+    }
+  },
+  "hard_gate_audit": {
+    "audited_files": 6,
+    "total_signal_rows": 2935,
+    "failed_files": 0,
+    "buy_join_missing": 0,
+    "bj_rows": 0,
+    "signal_st_name_rows": 0,
+    "buy_st_rows": 0,
+    "signal_delist_name_rows": 0,
+    "buy_delist_rows": 0,
+    "open_limit_up_buy_rows": 0,
+    "latest_signal_date": "20260622",
+    "latest_buy_date": "20260623",
+    "files": [
+      {
+        "file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_tp060_position_20260624\\signals\\tp060_pos84.csv",
+        "rows": 496,
+        "buy_join_missing": 0,
+        "bj_rows": 0,
+        "signal_st_name_rows": 0,
+        "buy_st_rows": 0,
+        "signal_delist_name_rows": 0,
+        "buy_delist_rows": 0,
+        "open_limit_up_buy_rows": 0,
+        "latest_signal_date": "20260622",
+        "latest_buy_date": "20260623"
+      },
+      {
+        "file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0612_pos84_tp060_validation_20260624\\signals\\base.csv",
+        "rows": 496,
+        "buy_join_missing": 0,
+        "bj_rows": 0,
+        "signal_st_name_rows": 0,
+        "buy_st_rows": 0,
+        "signal_delist_name_rows": 0,
+        "buy_delist_rows": 0,
+        "open_limit_up_buy_rows": 0,
+        "latest_signal_date": "20260622",
+        "latest_buy_date": "20260623"
+      },
+      {
+        "file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0612_pos84_tp060_validation_20260624\\signals\\drop_top_stock.csv",
+        "rows": 480,
+        "buy_join_missing": 0,
+        "bj_rows": 0,
+        "signal_st_name_rows": 0,
+        "buy_st_rows": 0,
+        "signal_delist_name_rows": 0,
+        "buy_delist_rows": 0,
+        "open_limit_up_buy_rows": 0,
+        "latest_signal_date": "20260622",
+        "latest_buy_date": "20260623"
+      },
+      {
+        "file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0612_pos84_tp060_validation_20260624\\signals\\drop_top_day.csv",
+        "rows": 495,
+        "buy_join_missing": 0,
+        "bj_rows": 0,
+        "signal_st_name_rows": 0,
+        "buy_st_rows": 0,
+        "signal_delist_name_rows": 0,
+        "buy_delist_rows": 0,
+        "open_limit_up_buy_rows": 0,
+        "latest_signal_date": "20260622",
+        "latest_buy_date": "20260623"
+      },
+      {
+        "file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0612_pos84_tp060_validation_20260624\\signals\\drop_top_month.csv",
+        "rows": 477,
+        "buy_join_missing": 0,
+        "bj_rows": 0,
+        "signal_st_name_rows": 0,
+        "buy_st_rows": 0,
+        "signal_delist_name_rows": 0,
+        "buy_delist_rows": 0,
+        "open_limit_up_buy_rows": 0,
+        "latest_signal_date": "20260622",
+        "latest_buy_date": "20260623"
+      },
+      {
+        "file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0612_pos84_tp060_validation_20260624\\signals\\drop_top_1pct.csv",
+        "rows": 491,
+        "buy_join_missing": 0,
+        "bj_rows": 0,
+        "signal_st_name_rows": 0,
+        "buy_st_rows": 0,
+        "signal_delist_name_rows": 0,
+        "buy_delist_rows": 0,
+        "open_limit_up_buy_rows": 0,
+        "latest_signal_date": "20260622",
+        "latest_buy_date": "20260623"
+      }
+    ]
+  },
+  "strict_admission": {
+    "passed": false,
+    "reason": "策略侧验证通过主要强准入检查，但仍需审计智能体复核和用户发布审批；当前仅为探索候选。",
+    "strong_gate_note": "收益提升不能单独决定准入；本候选同时保留止盈邻域、低路径依赖、贡献压力和硬过滤证据。"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+  "published_at": "2026-06-25",
+  "publisher": "strategy-agent",
+  "signal_date": "20260624",
+  "buy_date": "20260625",
+  "publish_script": "D:\\work\\quant\\quant_mcp\\quant\\main\\publish_amt9p5w_s7555_dd08_115_to_l5_20260625.py",
+  "signal_export_script": "D:\\work\\quant\\quant_mcp\\quant\\main\\export_dynamic_top1_formal_signals.py",
+  "validation_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_amt9p5w_s7555_dd08_115_current_validation_20260625",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_prod_filter_amount_interpolate_20260625\\signals\\prod_filter_amt9p5w_mv20w.csv",
+  "latest_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dynamic_top1_amt9p5w_dd08_115_v20260625_latest.csv",
+  "notes": [
+    "只读取 approved_for_l5 formal L4 3D/5D/10D 资产。",
+    "不使用 1D，不使用行业/月度/日期限制。",
+    "正式收益结论以掘金验证为准。"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "python": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe",
+  "juejin_python": "C:/Users/wangj/.conda/envs/my_quant/python.exe",
+  "generation_script": "code_snapshot/tune_top1_soft_rank_latest_formal_20260623.py",
+  "source_signal_file": "signals/historical_no_delist_latest_w90_5d10_h5_g200_e098.csv",
+  "backtest_command_reference": "python quant/main/run_juejin_signal_backtest.py --strategy-dir D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517 --signal-file <signal_file> --max-positions 1 --holding-days 5 --max-holding-days 5 --target-position-pct 1.0 --score-db <score_db> --score-table score_no_delist_latest_w90_5d10_h5_g200_e098 --market-db D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db --backtest-start '2024-06-05 09:00:00' --backtest-end '2026-06-23 15:30:00' --backtest-adjust none --backtest-initial-cash 600000 --backtest-slippage-ratio 0.0015",
+  "environment_overrides": {
+    "GM_OPEN_DAILY_SCORE_EXIT": "1",
+    "GM_MAX_DAILY_SELLS": "1",
+    "GM_STOP_LOSS_PCT": "0.08",
+    "GM_TAKE_PROFIT_PCT": "none",
+    "GM_LIGHT_STOP_LOSS_PCT": "none",
+    "GM_SKIP_OPEN_LIMIT_UP_BUY": "1",
+    "GM_SYNC_POSITIONS": "1",
+    "GM_CASH_BUFFER": "0.99",
+    "GM_SCORE_CONTINUE_ENTRY_RATIO": "1.02",
+    "GM_EQUITY_DD_RISK_MODE": "0",
+    "GM_SCORE_EXIT_ENTRY_RATIO": "0.98",
+    "GM_MIN_HOLDING_DAYS_BEFORE_SCORE_EXIT": "1"
+  }
+}

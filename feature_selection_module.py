@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 
 from leakage_guard import find_leaky_features
+from model_asset_route import MODEL_FEATURE_MODE_LEGACY, MODEL_FEATURE_MODE_SPLIT
 
 
 @dataclass
@@ -48,6 +49,11 @@ def _date_filter(frame: pd.DataFrame, start_date: str | None, end_date: str | No
 
 
 def prepare_selection_label(frame: pd.DataFrame, label: str) -> pd.DataFrame:
+    from ai_module import prepare_training_label
+
+    if label in frame.columns:
+        frame[label] = pd.to_numeric(frame[label], errors="coerce")
+        return frame
     if label == "risk_adjusted_10d_yield_rate":
         base_return = pd.to_numeric(frame["10d_yield_rate"], errors="coerce")
         atr_ratio = (
@@ -81,7 +87,55 @@ def prepare_selection_label(frame: pd.DataFrame, label: str) -> pd.DataFrame:
         frame[label] = exit_cash / entry_cash - 1.0
     elif label == "excess_10d_yield_rate":
         frame[label] = pd.to_numeric(frame["adjust_10d_yield_rate"], errors="coerce")
+    elif label.startswith("executable_") and ("_top" in label):
+        frame = prepare_training_label(frame, label)
     return frame
+
+
+def _split_label_required_columns(label: str) -> list[str]:
+    if label == "risk_adjusted_10d_yield_rate":
+        return ["10d_yield_rate"]
+    if label == "excess_10d_yield_rate":
+        return ["adjust_10d_yield_rate"]
+    if label.startswith("executable_") and ("_top" in label):
+        if "_10d_" in label:
+            return ["executable_10d_open_return"]
+        if "_5d_" in label:
+            return ["executable_5d_open_return"]
+        if "_3d_" in label:
+            return ["executable_3d_open_return"]
+        if "_1d_" in label:
+            return ["executable_1d_open_return"]
+    return [label]
+
+
+def _split_feature_required_columns(label: str) -> list[str]:
+    if label == "risk_adjusted_10d_yield_rate":
+        return ["atr_qfq", "close"]
+    return []
+
+
+def load_selection_frame(
+    data_path: str | Path,
+    *,
+    label_path: str | Path | None,
+    label: str,
+    feature_source: str,
+) -> pd.DataFrame:
+    if feature_source == MODEL_FEATURE_MODE_LEGACY:
+        return pd.read_parquet(data_path)
+    data_columns = ["trade_date", "stock_code", "name", "industry", "act_ent_type", *_split_feature_required_columns(label)]
+    label_columns = [
+        "trade_date",
+        "stock_code",
+        "5d_yield_rate",
+        "open6_yield_rate",
+        "10d_yield_rate",
+        *_split_label_required_columns(label),
+    ]
+    factors = pd.read_parquet(data_path, columns=list(dict.fromkeys(data_columns)))
+    labels = pd.read_parquet(label_path, columns=list(dict.fromkeys(label_columns)))
+    return factors.merge(labels, on=["trade_date", "stock_code"], how="inner")
 
 
 def _numeric_candidates(frame: pd.DataFrame, config: FeatureSelectionConfig) -> list[str]:
@@ -158,7 +212,13 @@ def write_score_csv(rows: list[dict], output_path: Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Select training features by daily IC.")
-    parser.add_argument("--data", default="data_file/stock_factor_data.parquet")
+    parser.add_argument("--data", default="data_file/production_factor_parts")
+    parser.add_argument("--labels", default="data_file/prediction_label_parts")
+    parser.add_argument(
+        "--feature-source",
+        default=MODEL_FEATURE_MODE_SPLIT,
+        choices=[MODEL_FEATURE_MODE_SPLIT, MODEL_FEATURE_MODE_LEGACY],
+    )
     parser.add_argument("--label", default="10d_yield_rate")
     parser.add_argument("--top-n", type=int, default=160)
     parser.add_argument("--min-abs-ic", type=float, default=0.005)
@@ -172,7 +232,12 @@ def parse_args(argv=None):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
-    frame = pd.read_parquet(args.data)
+    frame = load_selection_frame(
+        args.data,
+        label_path=args.labels,
+        label=args.label,
+        feature_source=args.feature_source,
+    )
     config = FeatureSelectionConfig(
         label=args.label,
         top_n=args.top_n,

@@ -6,6 +6,18 @@ from pathlib import Path
 
 from ai_module import get_factor_data
 from mlp_model_module import build_prediction_frame, predict_with_mlp
+from model_asset_route import (
+    MODEL_FEATURE_MODE_LEGACY,
+    MODEL_FEATURE_MODE_SPLIT,
+    MODEL_PREDICTION_MODE_INDEPENDENT,
+    MODEL_PREDICTION_MODE_LEGACY,
+    require_legacy_model_asset_chain_opt_in,
+    resolve_legacy_prediction_db_path,
+    resolve_model_prediction_db_path,
+    resolve_prediction_run_dir,
+    use_legacy_prediction_db,
+    write_prediction_manifest,
+)
 
 
 def parse_args(argv=None):
@@ -20,6 +32,16 @@ def parse_args(argv=None):
     parser.add_argument("--batch-size", type=int, default=2048)
     parser.add_argument("--hidden-dim", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument(
+        "--feature-source",
+        default=None,
+        choices=[MODEL_FEATURE_MODE_SPLIT, MODEL_FEATURE_MODE_LEGACY],
+    )
+    parser.add_argument(
+        "--prediction-output-mode",
+        default=None,
+        choices=[MODEL_PREDICTION_MODE_INDEPENDENT, MODEL_PREDICTION_MODE_LEGACY],
+    )
     return parser.parse_args(argv)
 
 
@@ -32,6 +54,7 @@ def main(argv=None):
         args.label,
         str(data_dir),
         args.stock_pool,
+        feature_source=args.feature_source,
     )
     print(f"mlp_factor_split_done train={train_x.shape} test={test_x.shape}", flush=True)
     pred_y = predict_with_mlp(
@@ -44,11 +67,30 @@ def main(argv=None):
         lr=args.lr,
     )
     pred_data = build_prediction_frame(test_data, test_y, pred_y)
-    with sqlite3.connect(data_dir / "odb.db") as conn:
+    if use_legacy_prediction_db(args.prediction_output_mode):
+        require_legacy_model_asset_chain_opt_in(reason="legacy odb mlp prediction output")
+        db_path = resolve_legacy_prediction_db_path(data_dir)
+        prediction_mode = MODEL_PREDICTION_MODE_LEGACY
+    else:
+        db_path = resolve_model_prediction_db_path(data_dir, create_parent=True)
+        prediction_mode = MODEL_PREDICTION_MODE_INDEPENDENT
+    with sqlite3.connect(db_path) as conn:
         pred_data.to_sql(args.output_table, con=conn, if_exists="replace", index=False)
+    run_dir = resolve_prediction_run_dir(data_dir, label=args.label, output_table=args.output_table, create=True)
+    write_prediction_manifest(
+        run_dir / "prediction_manifest.json",
+        {
+            "label": args.label,
+            "feature_source": args.feature_source or MODEL_FEATURE_MODE_SPLIT,
+            "prediction_mode": prediction_mode,
+            "prediction_db_path": str(db_path),
+            "prediction_table": args.output_table,
+            "row_count": int(pred_data.shape[0]),
+        },
+    )
     print(
         f"mlp_pdb_update_done rows={pred_data.shape[0]} "
-        f"max={pred_data['trade_date'].astype(str).max()} table={args.output_table}",
+        f"max={pred_data['trade_date'].astype(str).max()} table={args.output_table} db={db_path}",
         flush=True,
     )
 

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0509_pos94_tp060_v20260624",
+  "checked_at": "2026-06-24",
+  "checked_by": "strategy-agent",
+  "status": "exploration_candidate_pending_audit_not_published",
+  "current_registry_unchanged": true,
+  "production_current_after_precheck": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "weak_admission_metrics": {
+    "annual_return": 4.8712844383785665,
+    "sharpe": 1.8425187985584124,
+    "max_drawdown": 0.3965911706056802,
+    "note": "收益指标是弱准入，不能单独决定生产发布。"
+  },
+  "strong_gate_precheck": {
+    "formal_l4_only": {
+      "status": "pass",
+      "evidence": "predictions/prediction_table_meta.json"
+    },
+    "hard_filter_audit": {
+      "status": "pass",
+      "bj_rows": 0,
+      "buy_st_rows": 0,
+      "buy_delist_rows": 0,
+      "open_limit_up_buy_rows": 0,
+      "evidence": "research/hard_gate_audit.json"
+    },
+    "time_slice_continuity": {
+      "status": "pass",
+      "evidence": "research/time_slices.csv"
+    },
+    "low_path_dependency": {
+      "status": "pass",
+      "evidence": "research/nearby_summary.csv"
+    },
+    "contribution_stress": {
+      "status": "pass",
+      "drop_top_1pct_annual_return": "4.301784044812084",
+      "evidence": "research/stress_summary.csv"
+    },
+    "parameter_sensitivity": {
+      "status": "pass_with_edge_risk",
+      "chosen_case": "dd0509_tp060_pos94",
+      "evidence": "research/high_position_summary.csv",
+      "reason": "pos92、pos93、pos94 均低于 40% 回撤；pos95、pos96 越过 40% 回撤红线，pos94 是红线以下最高收益点但安全边际较薄。"
+    },
+    "production_archive_contract": {
+      "status": "partial",
+      "reason": "已生成 exploration 候选归档；未移入 production，未更新 registry，未生成生产信号。"
+    }
+  }
+}

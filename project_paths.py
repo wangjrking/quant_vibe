@@ -8,8 +8,9 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+QUANT_ROOT = PROJECT_ROOT.parent
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.json"
-DEFAULT_DATA_DIR = PROJECT_ROOT / "data_file"
+DEFAULT_DATA_DIR = QUANT_ROOT / "data_file"
 
 
 def resolve_project_path(value: str | Path | None, default: str | Path | None = None) -> Path:
@@ -29,6 +30,23 @@ def resolve_data_dir(value: str | Path | None = None) -> Path:
     if env_value:
         return resolve_project_path(env_value)
     return DEFAULT_DATA_DIR
+
+
+def resolve_data_path(
+    value: str | Path | None,
+    *,
+    data_dir: str | Path | None = None,
+    default: str | Path | None = None,
+) -> Path:
+    raw = value if value not in (None, "") else default
+    if raw in (None, ""):
+        return resolve_data_dir(data_dir)
+    path = Path(str(raw)).expanduser()
+    if path.is_absolute():
+        return path.resolve()
+    if path.parts and path.parts[0].lower() == "data_file":
+        return (DEFAULT_DATA_DIR.parent / path).resolve()
+    return (resolve_data_dir(data_dir) / path).resolve()
 
 
 def load_config(config_path: str | Path | None = None) -> dict[str, Any]:

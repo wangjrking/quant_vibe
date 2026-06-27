@@ -1,0 +1,53 @@
+{
+  "strategy_id": "prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+  "strategy_name": "动态持有 Top1 高仓位边界收益候选",
+  "status": "production_user_approved_pending_buy_day_hard_gate",
+  "model_input": {
+    "source": "formal L4 3D/5D/10D rank cache",
+    "entry_weights": {
+      "10d": 0.78,
+      "5d": 0.12,
+      "3d": 0.1
+    },
+    "uses_1d": false
+  },
+  "stock_pool_filters": {
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "no_industry_filter": true,
+    "no_month_or_date_exclusion": true,
+    "no_latest_state_backfill": true
+  },
+  "position_rule": {
+    "max_positions": 1,
+    "target_position_pct": 0.8975,
+    "cash_buffer_mode": "gm_cash_buffer_0p99"
+  },
+  "holding_rule": {
+    "holding_days": 2,
+    "max_holding_days": 3,
+    "score_exit_entry_ratio": 0.97,
+    "score_continue_entry_ratio": 0.975,
+    "min_holding_days_before_score_exit": 1
+  },
+  "risk_rule": {
+    "intraday_stop_loss_pct": 0.06,
+    "take_profit_pct": 0.07,
+    "equity_drawdown_risk_mode": true,
+    "dd_soft_trigger": 0.07,
+    "dd_hard_trigger": 0.12,
+    "dd_recover_trigger": 0.03,
+    "dd_soft_scale": 0.75,
+    "dd_hard_scale": 0.55
+  },
+  "execution_rule": {
+    "signal_date_rule": "使用 T 日 formal L4 分数生成 T+1 开盘交易研究信号",
+    "force_sell_market_order": true,
+    "juejin_backtest_slippage_ratio": 0.0015,
+    "initial_cash": 600000,
+    "current_signal_status": "pending_buy_day_market_audit"
+  },
+  "governance_note": "风格暴露和风格漂移只作为提示项，不作为单独强准入；正式生产发布仍需用户批准和审计复核。"
+}

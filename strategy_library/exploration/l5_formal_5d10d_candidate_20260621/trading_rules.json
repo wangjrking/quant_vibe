@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "strategy_id": "l5_formal_5d10d_candidate_20260621",
+  "status": "l5_candidate_not_production",
+  "rule_summary": "??? formal L4 5D+10D ??????????????Top5 ??????10D ???????????????????? 2.05?? rank ??????????????????????",
+  "score_rule": {
+    "mode": "weak_day_pool_replace_then_noncalendar_10d_positive_top5_avgpred205",
+    "base_pool": {
+      "primary_pool": {
+        "asset": "rank_10d90_5d10",
+        "formula": "0.90 * rank_10d + 0.10 * rank_5d",
+        "max_candidates_per_day": 2,
+        "max_total_mv": 150000.0,
+        "min_amount": 10000.0,
+        "min_turnover_rate": 0.3
+      },
+      "fallback_pool": {
+        "asset": "rank_10d60_5d40",
+        "formula": "0.60 * rank_10d + 0.40 * rank_5d",
+        "normal_min_amount": 10000.0,
+        "normal_min_turnover_rate": 0.3,
+        "weak_day_min_amount": 20000.0,
+        "weak_day_min_turnover_rate": 0.5,
+        "max_total_mv": 200000.0
+      },
+      "weak_day_rule": {
+        "mode": "primary_count_le1",
+        "definition": "?????? primary_count <= 1 ??? fallback ??"
+      }
+    },
+    "concentration_rule": {
+      "enabled": true,
+      "primary_count_min": 2,
+      "rank_max": 5,
+      "definition": "???????? primary_count >= 2 ??? rank <= 5 ????"
+    },
+    "noncalendar_quality_rule": {
+      "enabled": true,
+      "min_pred_10d": 0.0,
+      "post_filter_avg_pred_min": 2.05,
+      "definition": "?????? formal L4 10D ???? pred_10d >= 0??????????? pred_prob >= 2.05?",
+      "forbidden": [
+        "????",
+        "??????",
+        "????????",
+        "????"
+      ]
+    },
+    "direction": "top",
+    "rank_scope": "? trade_date ?????"
+  },
+  "selection_rule": {
+    "top_k_after_concentration": 5,
+    "primary_count_min": 2,
+    "rank_max": 5,
+    "min_pred_10d": 0.0,
+    "post_filter_avg_pred_min": 2.05,
+    "primary_max_total_mv": 150000.0,
+    "fallback_max_total_mv": 200000.0,
+    "total_mv_unit": "???150000 ??? 15 ???200000 ??? 20 ???",
+    "price_filter_enabled": false,
+    "atr_filter_enabled": false,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "exclude_current_limit": true,
+    "skip_open_limit_up_buy": true
+  },
+  "position_rule": {
+    "max_positions": 5,
+    "weight_mode": "rank_target_pct",
+    "rank_target_pct": {
+      "1": 0.207,
+      "2": 0.207,
+      "3": 0.2,
+      "4": 0.193,
+      "5": 0.193
+    },
+    "target_total_pct_reference": 1.0,
+    "max_single_position_pct": 0.207,
+    "cash_buffer": 0.99
+  },
+  "holding_rule": {
+    "holding_days": 7,
+    "max_holding_days": 10,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 1.0,
+    "min_holding_days_before_score_exit": 3,
+    "max_daily_sells": 1,
+    "score_continue_entry_ratio": 1.02
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "backtest_adjust": "none",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015
+  },
+  "forbidden_rules": [
+    "????",
+    "??????",
+    "????????",
+    "????"
+  ],
+  "risk_overlay": {
+    "equity_drawdown_risk_mode": true,
+    "soft_trigger": 0.12,
+    "hard_trigger": 0.22,
+    "recover_trigger": 0.05,
+    "soft_scale": 0.9,
+    "hard_scale": 0.7,
+    "resize_existing": false
+  }
+}

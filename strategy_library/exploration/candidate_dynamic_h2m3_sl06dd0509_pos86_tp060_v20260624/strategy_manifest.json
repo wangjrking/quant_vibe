@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl06dd0509_pos86_tp060_v20260624",
+  "name": "动态持有 Top1 三周期融合 pos86 强风控止损止盈候选",
+  "code_name": "dynamic_h2_m3_c098_w78_5d12_3d10_pos86_e097_mh1_sl06_dd0509_tp060",
+  "status": "exploration_candidate_pending_audit_not_published",
+  "created_at": "2026-06-24",
+  "created_by": "strategy-agent",
+  "definition": "基于 formal L4 10D/5D/3D 资产，按 0.78*10D rank + 0.12*5D rank + 0.10*3D rank 选 Top1，目标仓位 86%，动态持有 2-3 日，日内 6% 止损，6% 止盈，账户回撤缩放 soft=5% / hard=9% / scale=0.70/0.50。",
+  "validation": {
+    "platform": "juejin",
+    "annual_return": 4.558365195146958,
+    "sharpe": 1.9124285440529118,
+    "max_drawdown": 0.3689226441618959,
+    "recent60_annual": 0.5565653243136334,
+    "ytd_annual": 1.6738154839399872
+  },
+  "current_signal": {
+    "latest_signal_date": "20260622",
+    "latest_buy_date": "20260623",
+    "latest_candidate_signal": "signals/latest_candidate_signal.csv",
+    "status_file": "signals/latest_candidate_signal_status.json",
+    "status": "research_candidate_signal_not_production"
+  },
+  "governance": {
+    "is_current_l5": false,
+    "production": false,
+    "formal_performance_requires_juejin": true,
+    "legacy_odb_forbidden_by_default": true,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "skip_open_limit_up_buy": true,
+    "requires_audit_before_production": true,
+    "requires_user_approval_before_registry_update": true
+  }
+}

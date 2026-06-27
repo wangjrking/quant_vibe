@@ -1,7 +1,10 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 import pandas as pd
 
+from fast_feature_selection import _read_parquet_date_range
 from ai_module import prepare_training_label
 from feature_selection_module import (
     FeatureSelectionConfig,
@@ -11,6 +14,28 @@ from feature_selection_module import (
 
 
 class FeatureSelectionModuleTests(unittest.TestCase):
+    def test_read_parquet_date_range_ignores_transient_tmp_parts(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            parts_dir = Path(temp_dir) / "production_factor_parts"
+            parts_dir.mkdir()
+            pd.DataFrame(
+                [
+                    {"trade_date": "20240102", "stock_code": "000001.SZ", "factor_a": 1.0},
+                    {"trade_date": "20240103", "stock_code": "000002.SZ", "factor_a": 2.0},
+                ]
+            ).to_parquet(parts_dir / "production_factor_part_0000.parquet", index=False)
+            (parts_dir / "production_factor_part_0001.parquet.tmp_20260624").write_bytes(b"partial")
+
+            result = _read_parquet_date_range(
+                parts_dir,
+                ["trade_date", "stock_code", "factor_a"],
+                "20240103",
+                "20240103",
+            )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result.iloc[0]["stock_code"], "000002.SZ")
+
     def test_select_features_prefers_predictive_non_leaky_factor(self):
         frame = pd.DataFrame(
             {
@@ -60,6 +85,34 @@ class FeatureSelectionModuleTests(unittest.TestCase):
 
         expected = (10.8 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
         self.assertAlmostEqual(result.loc[0, "executable_5d_open_return"], expected)
+
+    def test_prepare_training_label_builds_daily_top_quantile_label(self):
+        frame = pd.DataFrame(
+            {
+                "trade_date": ["20260105"] * 10 + ["20260106"] * 10,
+                "post_open": [10.0] * 20,
+                "post6_open": list(range(10, 20)) + list(range(20, 10, -1)),
+            }
+        )
+
+        result = prepare_training_label(frame, "executable_5d_open_top10")
+
+        self.assertEqual(int(result["executable_5d_open_top10"].sum()), 2)
+        self.assertEqual(int(result.loc[9, "executable_5d_open_top10"]), 1)
+        self.assertEqual(int(result.loc[10, "executable_5d_open_top10"]), 1)
+
+    def test_prepare_selection_label_builds_daily_top_quantile_label(self):
+        frame = pd.DataFrame(
+            {
+                "trade_date": ["20260105"] * 10,
+                "post_open": [10.0] * 10,
+                "post6_open": list(range(10, 20)),
+            }
+        )
+
+        result = prepare_selection_label(frame, "executable_5d_open_top10")
+
+        self.assertEqual(int(result["executable_5d_open_top10"].sum()), 1)
 
     def test_prepare_selection_label_builds_executable_5d_open_return(self):
         frame = pd.DataFrame({"post_open": [10.0], "post6_open": [10.8]})

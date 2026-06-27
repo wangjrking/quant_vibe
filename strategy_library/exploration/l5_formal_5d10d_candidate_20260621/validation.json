@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "strategy_id": "l5_formal_5d10d_candidate_20260621",
+  "validation_status": "research_l5_candidate_only",
+  "validated_by": "strategy-agent",
+  "validated_at": "2026-06-21T20:09:00+08:00",
+  "platform": "juejin",
+  "primary_result": {
+    "candidate_name": "best_noncal_avgpred205",
+    "annual_return": 2.5411407000126363,
+    "sharpe": 3.0065551191497746,
+    "avg_invested_pct": 0.5889173433734941,
+    "ge80_ratio": 0.17269076305220885,
+    "max_drawdown": 0.23601175083620143,
+    "open_count": 349,
+    "close_count": 345,
+    "signal_count": 1879,
+    "buy_days": 382,
+    "max_active_positions": 5,
+    "win_ratio": 0.6057971014492753
+  },
+  "target_gate": {
+    "annual_return_min": 2.0,
+    "sharpe_min": 3.0,
+    "avg_invested_pct_target": "best_effort_near_0.80_not_hard_gate",
+    "passed": true,
+    "annual_passed": true,
+    "sharpe_passed": true,
+    "avg_invested_preference_met": false
+  },
+  "best_observed_noncalendar": {
+    "best_sharpe_with_annual_ge_200": {
+      "name": "best_noncal_avgpred212",
+      "annual_return": 2.5411407000126363,
+      "sharpe": 3.006555119149775
+    },
+    "highest_annual_with_sharpe_ge_3": {
+      "name": "best_noncal_avgpred205_rw2121201919",
+      "annual_return": 2.5708951990286635,
+      "sharpe": 3.0044554108640216
+    },
+    "highest_annual_noncalendar_seen_in_current_grid": {
+      "name": "best_noncal_avgpred205_rw2121201919",
+      "annual_return": 2.5708951990286635,
+      "sharpe": 3.0044554108640216
+    }
+  },
+  "method_guardrail": {
+    "calendar_filters_rejected": true,
+    "calendar_filter_reason": "????????????????????????? L5 ?????",
+    "no_calendar_or_date_filter_in_selected_candidate": true,
+    "no_industry_filter_in_selected_candidate": true
+  },
+  "evidence_files": {
+    "signal_file": "signals/candidate_signals.csv",
+    "gm_backtest_log": "backtests/gm_backtest_candidate.log",
+    "selected_score_manifest": "predictions/tiered_score_manifest.json",
+    "noncalendar_quality_summary": "research/summary_noncalendar_quality_refine.csv",
+    "noncalendar_quality_summary_by_annual": "research/summary_noncalendar_quality_refine_by_annual.csv",
+    "noncalendar_quality_summary_by_sharpe": "research/summary_noncalendar_quality_refine_by_sharpe.csv",
+    "noncalendar_quality_summary_qualified": "research/summary_noncalendar_quality_refine_qualified.csv",
+    "research_script_noncalendar_quality_refine": "D:/work/quant/quant_mcp/quant/main/research_formal_5d10d_noncalendar_quality_refine_20260621.py"
+  },
+  "conclusion": "?????????? formal L4 5D+10D ???????????????? Sharpe ?????????????? 80% ?????????????????????????????????????"
+}

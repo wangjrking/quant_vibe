@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import math
 import sqlite3
+from bisect import bisect_right
 from pathlib import Path
 
 from selection_module import SelectionConfig, select_candidates
@@ -33,26 +34,147 @@ def _group_by_trade_date(rows):
     return grouped
 
 
+def _next_buy_date_by_signal_date(
+    grouped_rows: dict[str, list[dict]],
+    market_rows_by_trade_date: dict[str, dict[str, dict]] | None,
+) -> dict[str, str]:
+    signal_dates = sorted(grouped_rows)
+    if not signal_dates:
+        return {}
+    calendar_dates = set(signal_dates)
+    if market_rows_by_trade_date:
+        calendar_dates.update(str(date) for date in market_rows_by_trade_date.keys() if date)
+    ordered_calendar = sorted(calendar_dates)
+    next_date_by_signal_date: dict[str, str] = {}
+    for signal_date in signal_dates:
+        next_idx = bisect_right(ordered_calendar, signal_date)
+        if next_idx < len(ordered_calendar):
+            next_date_by_signal_date[signal_date] = ordered_calendar[next_idx]
+    return next_date_by_signal_date
+
+
+def _merge_rows_with_market_snapshot(rows: list[dict], market_rows_for_date: dict[str, dict] | None) -> list[dict]:
+    if not rows or not market_rows_for_date:
+        return rows
+    merged_rows = []
+    for row in rows:
+        stock_code = str(row.get("stock_code", "") or "")
+        market_row = market_rows_for_date.get(stock_code) if stock_code else None
+        if not market_row:
+            merged_rows.append(row)
+            continue
+        merged = dict(market_row)
+        for key, value in row.items():
+            if value in (None, "", "None") and merged.get(key) not in (None, "", "None"):
+                continue
+            merged[key] = value
+        merged_rows.append(merged)
+    return merged_rows
+
+
 def load_market_rows_by_trade_date(db_path: str | Path, start: str, end: str) -> dict[str, dict[str, dict]]:
     """Load daily market rows keyed by trade_date -> stock_code."""
     conn = sqlite3.connect(str(Path(db_path)))
     try:
-        cursor = conn.execute(
+        tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+        if "STOCK_DAILY_DATA" in tables:
+            stock_daily_cols = {
+                row[1]
+                for row in conn.execute("PRAGMA table_info(STOCK_DAILY_DATA)").fetchall()
+            }
+            atr_expr = "atr_qfq" if "atr_qfq" in stock_daily_cols else "NULL AS atr_qfq"
+            st_type_expr = "ST_TYPE AS st_type" if "ST_TYPE" in stock_daily_cols else "NULL AS st_type"
+            st_type_name_expr = "ST_TYPE_name AS st_type_name" if "ST_TYPE_name" in stock_daily_cols else "NULL AS st_type_name"
+            query = """
+                SELECT trade_date, stock_code, name, pre_close, open, close,
+                       amount, turnover_rate, total_mv,
+                       {atr_expr},
+                       {st_type_expr}, {st_type_name_expr}, limit_times
+                FROM STOCK_DAILY_DATA
+                WHERE trade_date >= ? AND trade_date <= ?
+            """.format(atr_expr=atr_expr, st_type_expr=st_type_expr, st_type_name_expr=st_type_name_expr)
+        elif "stk_factor" in tables or "STK_FACTOR" in tables:
+            factor_table = "stk_factor" if "stk_factor" in tables else "STK_FACTOR"
+            query = f"""
+                SELECT f.trade_date,
+                       CASE
+                           WHEN f.ts_code LIKE '%.SH' THEN 'SHSE.' || substr(f.ts_code, 1, 6)
+                           WHEN f.ts_code LIKE '%.SZ' THEN 'SZSE.' || substr(f.ts_code, 1, 6)
+                           WHEN f.ts_code LIKE '%.BJ' THEN 'BJSE.' || substr(f.ts_code, 1, 6)
+                           ELSE f.ts_code
+                       END AS stock_code,
+                       b.name AS name,
+                       f.pre_close AS pre_close,
+                       f.open AS open,
+                       f.close AS close,
+                       NULL AS amount,
+                       NULL AS turnover_rate,
+                       NULL AS total_mv,
+                       NULL AS atr_qfq,
+                       NULL AS st_type,
+                       NULL AS st_type_name,
+                       NULL AS limit_times
+                FROM "{factor_table}" f
+                LEFT JOIN stock_basic_data b ON f.ts_code = b.ts_code
+                WHERE f.trade_date >= ? AND f.trade_date <= ?
             """
-            SELECT trade_date, stock_code, name, pre_close, open
-            FROM STOCK_DAILY_DATA
-            WHERE trade_date >= ? AND trade_date <= ?
-            """,
-            (str(start), str(end)),
-        )
+        else:
+            query = """
+                SELECT trade_date,
+                       CASE
+                           WHEN ts_code LIKE '%.SH' THEN 'SHSE.' || substr(ts_code, 1, 6)
+                           WHEN ts_code LIKE '%.SZ' THEN 'SZSE.' || substr(ts_code, 1, 6)
+                           WHEN ts_code LIKE '%.BJ' THEN 'BJSE.' || substr(ts_code, 1, 6)
+                           ELSE ts_code
+                       END AS stock_code,
+                       NULL AS name,
+                       pre_close,
+                       open,
+                       close,
+                       NULL AS amount,
+                       NULL AS turnover_rate,
+                       NULL AS total_mv,
+                       NULL AS atr_qfq,
+                       NULL AS st_type,
+                       NULL AS st_type_name,
+                       NULL AS limit_times
+                FROM daily_data
+                WHERE trade_date >= ? AND trade_date <= ?
+            """
+        cursor = conn.execute(query, (str(start), str(end)))
         grouped: dict[str, dict[str, dict]] = {}
-        for trade_date, stock_code, name, pre_close, open_price in cursor:
+        for (
+            trade_date,
+            stock_code,
+            name,
+            pre_close,
+            open_price,
+            close_price,
+            amount,
+            turnover_rate,
+            total_mv,
+            atr_qfq,
+            st_type,
+            st_type_name,
+            limit_times,
+        ) in cursor:
             grouped.setdefault(str(trade_date), {})[str(stock_code)] = {
                 "trade_date": str(trade_date),
                 "stock_code": str(stock_code),
                 "name": name,
                 "pre_close": pre_close,
                 "open": open_price,
+                "close": close_price,
+                "amount": amount,
+                "turnover_rate": turnover_rate,
+                "total_mv": total_mv,
+                "atr_qfq": atr_qfq,
+                "st_type": st_type,
+                "st_type_name": st_type_name,
+                "limit_times": limit_times,
             }
         return grouped
     finally:
@@ -71,6 +193,11 @@ def _to_float(value):
     return value
 
 
+def _is_bj_stock(stock_code: str | None) -> bool:
+    code = str(stock_code or "").strip().upper()
+    return code.endswith(".BJ") or code.startswith("BJSE.")
+
+
 def _limit_up_pct(stock_code: str, name: str | None = None, st_type=None) -> float:
     code = str(stock_code or "")
     name_text = str(name or "")
@@ -84,7 +211,13 @@ def _limit_up_pct(stock_code: str, name: str | None = None, st_type=None) -> flo
 def _is_current_limit(row: dict | None) -> bool:
     if not row:
         return False
-    return row.get("limit_times") not in (None, "", "None")
+    value = row.get("limit_times")
+    if value in (None, "", "None"):
+        return False
+    numeric_value = _to_float(value)
+    if numeric_value is not None:
+        return numeric_value > 0.0
+    return True
 
 
 def _is_unbuyable_next_day(next_day_row: dict | None) -> bool:
@@ -169,7 +302,7 @@ def build_gm_signal_rows(
     config = config or SelectionConfig()
     grouped = _group_by_trade_date(rows)
     trade_dates = sorted(grouped)
-    next_date_by_signal_date = {date: trade_dates[idx + 1] for idx, date in enumerate(trade_dates[:-1])}
+    next_date_by_signal_date = _next_buy_date_by_signal_date(grouped, market_rows_by_trade_date)
     signals = []
 
     concurrency_cap = None
@@ -179,17 +312,25 @@ def build_gm_signal_rows(
             expected_concurrent_positions = min(expected_concurrent_positions, int(max_positions))
         concurrency_cap = float(target_total_pct) / float(max(expected_concurrent_positions, 1))
 
-    for signal_date in trade_dates[:-1]:
-        buy_date = next_date_by_signal_date[signal_date]
+    for signal_date in trade_dates:
+        buy_date = next_date_by_signal_date.get(signal_date)
+        if not buy_date:
+            continue
         next_day_rows = {
             str(row.get("stock_code") or ""): row
             for row in grouped.get(buy_date, [])
             if row.get("stock_code")
         }
+        signal_day_rows = grouped[signal_date]
+        signal_day_market_rows = None
         if market_rows_by_trade_date and buy_date in market_rows_by_trade_date:
             next_day_rows = market_rows_by_trade_date[buy_date]
+        if market_rows_by_trade_date and signal_date in market_rows_by_trade_date:
+            signal_day_market_rows = market_rows_by_trade_date[signal_date]
+        selection_rows = _merge_rows_with_market_snapshot(signal_day_rows, signal_day_market_rows)
+        selection_buffer_k = max(int(config.top_k), min(300, int(config.top_k) * 20 + 20))
         day_config = SelectionConfig(
-            top_k=config.top_k,
+            top_k=selection_buffer_k,
             trade_date=signal_date,
             pred_col=config.pred_col,
             min_pred_prob=config.min_pred_prob,
@@ -202,12 +343,20 @@ def build_gm_signal_rows(
             exclude_st=config.exclude_st,
             exclude_current_limit=config.exclude_current_limit,
         )
-        candidates = select_candidates(grouped[signal_date], day_config)
+        candidates = select_candidates(selection_rows, day_config)
+        candidates = [
+            candidate
+            for candidate in candidates
+            if not _is_bj_stock(candidate.get("stock_code"))
+        ]
         candidates = [
             candidate
             for candidate in candidates
             if not _is_unbuyable_next_day(next_day_rows.get(str(candidate.get("stock_code") or "")))
         ]
+        candidates = candidates[: int(config.top_k)]
+        for rank, candidate in enumerate(candidates, start=1):
+            candidate["rank"] = rank
         weights = _signal_weights(candidates, config.pred_col, weight_mode)
         if liquidity_target_pct_enabled and candidates:
             weights = [
@@ -251,7 +400,12 @@ def write_gm_signals_csv(signals: list[dict], output_path: str | Path) -> None:
         raise ValueError("No gm signals to write.")
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames: list[str] = []
+    for signal in signals:
+        for field in signal.keys():
+            if field not in fieldnames:
+                fieldnames.append(field)
     with path.open("w", newline="", encoding="utf-8-sig") as file:
-        writer = csv.DictWriter(file, fieldnames=list(signals[0].keys()))
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(signals)

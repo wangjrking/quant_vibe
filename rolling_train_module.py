@@ -6,6 +6,7 @@ import argparse
 import calendar
 import csv
 import json
+import os
 import sqlite3
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
@@ -13,6 +14,25 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 import pandas as pd
+
+from model_asset_route import (
+    MODEL_FEATURE_MODE_LEGACY,
+    MODEL_FEATURE_MODE_SPLIT,
+    MODEL_PREDICTION_MODE_INDEPENDENT,
+    MODEL_PREDICTION_MODE_LEGACY,
+    enrich_research_prediction_manifest,
+    require_legacy_model_asset_chain_opt_in,
+    resolve_legacy_mixed_factor_path,
+    resolve_legacy_prediction_db_path,
+    resolve_model_feature_path,
+    resolve_model_label_path,
+    resolve_model_prediction_db_path,
+    resolve_prediction_run_dir,
+    use_legacy_mixed_features,
+    use_legacy_prediction_db,
+    write_prediction_manifest,
+)
+from stock_daily_data_route import resolve_stock_daily_db_path
 
 
 DATE_FMT = "%Y%m%d"
@@ -38,6 +58,7 @@ class FoldFeatureSelectionConfig:
     max_missing_ratio: float = 0.35
     folds: int = 8
     score_output_dir: str | None = None
+    exclude_prefixes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -238,6 +259,83 @@ def _row_count(obj) -> int:
         return 0
 
 
+def _align_frame_to_existing_table(frame: pd.DataFrame, conn: sqlite3.Connection, table_name: str) -> pd.DataFrame:
+    """Align append frames to an existing SQLite table schema.
+
+    Different rolling folds may expose a slightly different set of diagnostic
+    columns after label construction. The prediction table is a research output,
+    so append using the first fold's schema and keep training from failing on
+    harmless extra columns.
+    """
+    table_info = conn.execute(f'pragma table_info("{table_name}")').fetchall()
+    if not table_info:
+        return frame
+    columns = [row[1] for row in table_info]
+    aligned = frame.copy()
+    for column in columns:
+        if column not in aligned.columns:
+            aligned[column] = None
+    return aligned[columns]
+
+
+def _model_artifact_paths(
+    *,
+    data_file_url: str,
+    label: str,
+    window: RollingWindow,
+    output_table: str | None,
+    prediction_output_path: str | Path | None,
+) -> tuple[Path, Path]:
+    if prediction_output_path:
+        prediction_path = Path(prediction_output_path)
+        base_dir = prediction_path.parent.parent if prediction_path.parent.name == "fold_predictions" else prediction_path.parent
+    else:
+        base_dir = resolve_prediction_run_dir(data_file_url, label=label, output_table=output_table, create=True)
+
+    model_dir = base_dir / "models"
+    model_path = model_dir / f"model_fold{window.fold:02d}.json"
+    metadata_path = model_dir / f"model_fold{window.fold:02d}_metadata.json"
+    return model_path, metadata_path
+
+
+def _prediction_storage_target(
+    *,
+    data_file_url: str,
+    label: str,
+    output_table: str | None,
+    prediction_output_path: str | Path | None,
+    prediction_output_mode: str | None,
+) -> dict[str, Any]:
+    table_name = output_table or f"stock_predict_data_{label}_rolling"
+    if prediction_output_path:
+        path = Path(prediction_output_path)
+        base_dir = path.parent.parent if path.parent.name == "fold_predictions" else path.parent
+        return {
+            "prediction_mode": "parquet_files",
+            "table_name": table_name,
+            "db_path": None,
+            "prediction_path": path,
+            "run_dir": base_dir,
+            "manifest_path": base_dir / "prediction_manifest.json",
+        }
+    if use_legacy_prediction_db(prediction_output_mode):
+        require_legacy_model_asset_chain_opt_in(reason="legacy odb rolling prediction output")
+        db_path = resolve_legacy_prediction_db_path(data_file_url)
+        mode = MODEL_PREDICTION_MODE_LEGACY
+    else:
+        db_path = resolve_model_prediction_db_path(data_file_url, create_parent=True)
+        mode = MODEL_PREDICTION_MODE_INDEPENDENT
+    run_dir = resolve_prediction_run_dir(data_file_url, label=label, output_table=table_name, create=True)
+    return {
+        "prediction_mode": mode,
+        "table_name": table_name,
+        "db_path": db_path,
+        "prediction_path": None,
+        "run_dir": run_dir,
+        "manifest_path": run_dir / "prediction_manifest.json",
+    }
+
+
 def train_predict_slice(
     *,
     train_start: str,
@@ -249,6 +347,7 @@ def train_predict_slice(
     model_type: str = "reg",
     selected_features: list[str] | None = None,
     use_light_factor_data: bool = False,
+    feature_source: str | None = None,
 ):
     from ai_module import get_factor_data, model_assess
 
@@ -260,6 +359,7 @@ def train_predict_slice(
         data_file_url,
         selected_features=selected_features,
         use_light_factor_data=use_light_factor_data,
+        feature_source=feature_source,
     )
     test_x = _filter_by_trade_date(test_x, predict_start, predict_end)
     test_y = _filter_by_trade_date(test_y, predict_start, predict_end)
@@ -287,9 +387,11 @@ def build_fold_feature_selection_fn(
     config: FoldFeatureSelectionConfig,
     stock_pool_path: str | None = None,
     use_light_factor_data: bool = False,
+    feature_source: str | None = None,
 ) -> Callable[[RollingWindow], list[str]]:
-    from fast_feature_selection import score_features_fast, write_score_csv
+    from leakage_guard import find_leaky_features
     if use_light_factor_data:
+        from fast_feature_selection import score_features_fast, write_score_csv
         from light_factor_module import build_light_factor_frame, read_raw_frame
         from select_light_long_features import DEFAULT_CANDIDATES
 
@@ -326,7 +428,7 @@ def build_fold_feature_selection_fn(
             )
         )
         raw = read_raw_frame(
-            Path(data_file_url) / "odb.db",
+            resolve_stock_daily_db_path(data_file_url),
             start="20100101",
             end=None,
             needed_columns=needed_columns,
@@ -334,27 +436,68 @@ def build_fold_feature_selection_fn(
         )
         frame = build_light_factor_frame(raw, candidate_features, config.label)
     else:
-        from stock_pool_module import filter_frame_by_stock_pool, load_stock_pool
-
-        data_path = Path(data_file_url) / "stock_factor_data.parquet"
-        if not data_path.exists():
-            raise FileNotFoundError(f"stock_factor_data.parquet not found: {data_path}")
-        frame = pd.read_parquet(data_path)
-        if stock_pool_path:
-            stock_pool = load_stock_pool(stock_pool_path)
-            frame = filter_frame_by_stock_pool(frame, stock_pool)
+        from fast_feature_selection import score_features_fast_parquet, score_features_fast_split, write_score_csv
+        feature_path = None
+        label_path = None
+        data_path = None
+        if use_legacy_mixed_features(feature_source):
+            require_legacy_model_asset_chain_opt_in(reason="legacy mixed factor feature selection input")
+            data_path = resolve_legacy_mixed_factor_path(data_file_url, require_exists=True)
+        else:
+            feature_path = resolve_model_feature_path(data_file_url, require_exists=True)
+            label_path = resolve_model_label_path(data_file_url, require_exists=True)
+        frame = None
 
     def select_for_window(window: RollingWindow) -> list[str]:
-        rows, selected = score_features_fast(
-            frame,
-            label=config.label,
-            start=window.train_start,
-            end=window.train_end,
-            top_n=config.top_n,
-            min_abs_ic=config.min_abs_ic,
-            max_missing_ratio=config.max_missing_ratio,
-            folds=config.folds,
-        )
+        if config.score_output_dir:
+            output_dir = Path(config.score_output_dir)
+            cached_path = output_dir / f"selected_features_{config.label}_rolling_fold{window.fold}.json"
+            if cached_path.exists():
+                payload = json.loads(cached_path.read_text(encoding="utf-8"))
+                loaded = payload.get("features", payload if isinstance(payload, list) else [])
+                cached_features = [str(feature) for feature in loaded]
+                if not find_leaky_features(cached_features, label=config.label):
+                    return cached_features
+        if use_light_factor_data:
+            rows, selected = score_features_fast(
+                frame,
+                label=config.label,
+                start=window.train_start,
+                end=window.train_end,
+                top_n=config.top_n,
+                min_abs_ic=config.min_abs_ic,
+                max_missing_ratio=config.max_missing_ratio,
+                folds=config.folds,
+                exclude_prefixes=config.exclude_prefixes,
+            )
+        else:
+            if stock_pool_path:
+                raise NotImplementedError("parquet chunk feature selection does not support stock_pool_path yet")
+            if use_legacy_mixed_features(feature_source):
+                rows, selected = score_features_fast_parquet(
+                    data_path,
+                    label=config.label,
+                    start=window.train_start,
+                    end=window.train_end,
+                    top_n=config.top_n,
+                    min_abs_ic=config.min_abs_ic,
+                    max_missing_ratio=config.max_missing_ratio,
+                    folds=config.folds,
+                    exclude_prefixes=config.exclude_prefixes,
+                )
+            else:
+                rows, selected = score_features_fast_split(
+                    feature_path,
+                    label_path=label_path,
+                    label=config.label,
+                    start=window.train_start,
+                    end=window.train_end,
+                    top_n=config.top_n,
+                    min_abs_ic=config.min_abs_ic,
+                    max_missing_ratio=config.max_missing_ratio,
+                    folds=config.folds,
+                    exclude_prefixes=config.exclude_prefixes,
+                )
         if config.score_output_dir:
             output_dir = Path(config.score_output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -379,6 +522,9 @@ def train_one_fold_with_ai(
     stock_pool_path: str | None = None,
     selected_features: list[str] | None = None,
     use_light_factor_data: bool = False,
+    prediction_output_path: str | Path | None = None,
+    feature_source: str | None = None,
+    prediction_output_mode: str | None = None,
 ) -> dict:
     """Train one fold with the existing ai_module and persist predictions.
 
@@ -397,6 +543,7 @@ def train_one_fold_with_ai(
         stock_pool_path=stock_pool_path,
         selected_features=selected_features,
         use_light_factor_data=use_light_factor_data,
+        feature_source=feature_source,
     )
 
     test_x = _filter_by_trade_date(test_x, window.test_start, window.test_end)
@@ -415,32 +562,88 @@ def train_one_fold_with_ai(
             "skipped": "empty_train_or_test",
         }
 
-    predictions = model_assess(
-        train_x,
-        train_y,
-        test_x,
-        test_y,
-        train_data,
-        test_data,
-        model_type,
-        data_file_url,
-        save_shap=False,
+    model_path, metadata_path = _model_artifact_paths(
+        data_file_url=data_file_url,
+        label=label,
+        window=window,
+        output_table=output_table,
+        prediction_output_path=prediction_output_path,
     )
-    prediction_rows = _row_count(predictions)
-    table_name = output_table or f"stock_predict_data_{label}_rolling"
-    db_path = Path(data_file_url) / "odb.db"
-    conn = sqlite3.connect(db_path)
+    old_model_path = os.environ.get("XGB_MODEL_SAVE_PATH")
+    old_metadata_path = os.environ.get("XGB_MODEL_METADATA_PATH")
+    os.environ["XGB_MODEL_SAVE_PATH"] = str(model_path)
+    os.environ["XGB_MODEL_METADATA_PATH"] = str(metadata_path)
     try:
-        predictions.to_sql(table_name, con=conn, if_exists=if_exists, index=False)
-        conn.commit()
+        predictions = model_assess(
+            train_x,
+            train_y,
+            test_x,
+            test_y,
+            train_data,
+            test_data,
+            model_type,
+            data_file_url,
+            save_shap=False,
+        )
     finally:
-        conn.close()
+        if old_model_path is None:
+            os.environ.pop("XGB_MODEL_SAVE_PATH", None)
+        else:
+            os.environ["XGB_MODEL_SAVE_PATH"] = old_model_path
+        if old_metadata_path is None:
+            os.environ.pop("XGB_MODEL_METADATA_PATH", None)
+        else:
+            os.environ["XGB_MODEL_METADATA_PATH"] = old_metadata_path
+
+    prediction_rows = _row_count(predictions)
+    storage = _prediction_storage_target(
+        data_file_url=data_file_url,
+        label=label,
+        output_table=output_table,
+        prediction_output_path=prediction_output_path,
+        prediction_output_mode=prediction_output_mode,
+    )
+    table_name = storage["table_name"]
+    if storage["prediction_path"] is not None:
+        prediction_output_path = Path(storage["prediction_path"])
+        prediction_output_path.parent.mkdir(parents=True, exist_ok=True)
+        predictions.to_parquet(prediction_output_path, index=False)
+    else:
+        db_path = Path(storage["db_path"])
+        conn = sqlite3.connect(db_path, timeout=120)
+        try:
+            conn.execute("PRAGMA busy_timeout=300000")
+            if if_exists == "append":
+                predictions = _align_frame_to_existing_table(predictions, conn, table_name)
+            predictions.to_sql(table_name, con=conn, if_exists=if_exists, index=False)
+            conn.commit()
+        finally:
+            conn.close()
+        prediction_output_path = None
+
+    manifest = {
+        "label": label,
+        "feature_source": feature_source or MODEL_FEATURE_MODE_SPLIT,
+        "prediction_mode": storage["prediction_mode"],
+        "prediction_db_path": str(storage["db_path"]) if storage["db_path"] is not None else "",
+        "prediction_table": table_name,
+        "prediction_output_path": str(prediction_output_path) if prediction_output_path else "",
+        "model_output_path": str(model_path),
+        "model_metadata_path": str(metadata_path),
+        "selected_feature_count": len(selected_features or []),
+    }
+    write_prediction_manifest(storage["manifest_path"], enrich_research_prediction_manifest(manifest))
 
     return {
         "train_rows": train_rows,
         "test_rows": test_rows,
         "prediction_rows": prediction_rows,
         "output_table": table_name,
+        "prediction_output_path": str(prediction_output_path) if prediction_output_path else "",
+        "prediction_db_path": str(storage["db_path"]) if storage["db_path"] is not None else "",
+        "prediction_mode": storage["prediction_mode"],
+        "model_output_path": str(model_path),
+        "model_metadata_path": str(metadata_path),
         "selected_feature_count": len(selected_features or []),
     }
 
@@ -454,10 +657,14 @@ def execute_rolling_training(
     summary_output: str | Path | None = None,
     stock_pool_path: str | None = None,
     fold_feature_selector: Callable[[RollingWindow], list[str]] | None = None,
+    selected_features: list[str] | None = None,
     start_fold: int = 1,
     end_fold: int | None = None,
     resume_existing_table: bool = False,
     use_light_factor_data: bool = False,
+    prediction_output_path: str | Path | None = None,
+    feature_source: str | None = None,
+    prediction_output_mode: str | None = None,
 ) -> list[dict]:
     output_table = output_table or f"stock_predict_data_{label}_rolling"
     first_write = not resume_existing_table
@@ -469,7 +676,7 @@ def execute_rolling_training(
 
     def train_fn(window: RollingWindow) -> dict:
         nonlocal first_write
-        selected_features = fold_feature_selector(window) if fold_feature_selector else None
+        window_selected_features = fold_feature_selector(window) if fold_feature_selector else selected_features
         metrics = train_one_fold_with_ai(
             window,
             data_file_url=data_file_url,
@@ -478,8 +685,11 @@ def execute_rolling_training(
             output_table=output_table,
             if_exists="replace" if first_write else "append",
             stock_pool_path=stock_pool_path,
-            selected_features=selected_features,
+            selected_features=window_selected_features,
             use_light_factor_data=use_light_factor_data,
+            prediction_output_path=prediction_output_path,
+            feature_source=feature_source,
+            prediction_output_mode=prediction_output_mode,
         )
         first_write = False
         return metrics
@@ -542,6 +752,7 @@ def parse_args(argv=None):
     parser.add_argument("--embargo-days", type=int, default=10)
     parser.add_argument("--train-mode", default="fixed", choices=["fixed", "expanding"])
     parser.add_argument("--output-table", default=None)
+    parser.add_argument("--prediction-output-path", default=None)
     parser.add_argument("--summary-output", default=None)
     parser.add_argument("--stock-pool-path", default=None)
     parser.add_argument("--fold-feature-selection", action="store_true")
@@ -550,10 +761,22 @@ def parse_args(argv=None):
     parser.add_argument("--fold-feature-max-missing-ratio", type=float, default=0.35)
     parser.add_argument("--fold-feature-folds", type=int, default=8)
     parser.add_argument("--fold-feature-output-dir", default=None)
+    parser.add_argument("--fold-feature-exclude-prefixes", default="")
+    parser.add_argument("--selected-features-path", default=None)
     parser.add_argument("--start-fold", type=int, default=1)
     parser.add_argument("--end-fold", type=int, default=None)
     parser.add_argument("--resume-existing-table", action="store_true")
     parser.add_argument("--use-light-factor-data", action="store_true")
+    parser.add_argument(
+        "--feature-source",
+        default=None,
+        choices=[MODEL_FEATURE_MODE_SPLIT, MODEL_FEATURE_MODE_LEGACY],
+    )
+    parser.add_argument(
+        "--prediction-output-mode",
+        default=None,
+        choices=[MODEL_PREDICTION_MODE_INDEPENDENT, MODEL_PREDICTION_MODE_LEGACY],
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
@@ -586,10 +809,16 @@ def main(argv=None):
 
     fold_feature_selector = None
     if args.fold_feature_selection:
+        exclude_prefixes = tuple(
+            prefix.strip()
+            for prefix in str(args.fold_feature_exclude_prefixes).split(",")
+            if prefix.strip()
+        )
         fold_feature_selector = build_fold_feature_selection_fn(
             data_file_url=args.data_file_url,
             stock_pool_path=args.stock_pool_path,
             use_light_factor_data=args.use_light_factor_data,
+            feature_source=args.feature_source,
             config=FoldFeatureSelectionConfig(
                 label=args.label,
                 top_n=args.fold_feature_top_n,
@@ -597,8 +826,13 @@ def main(argv=None):
                 max_missing_ratio=args.fold_feature_max_missing_ratio,
                 folds=args.fold_feature_folds,
                 score_output_dir=args.fold_feature_output_dir,
+                exclude_prefixes=exclude_prefixes,
             ),
         )
+    fixed_selected_features = None
+    if args.selected_features_path:
+        payload = json.loads(Path(args.selected_features_path).read_text(encoding="utf-8"))
+        fixed_selected_features = [str(feature) for feature in payload.get("features", payload if isinstance(payload, list) else [])]
 
     summary = execute_rolling_training(
         windows,
@@ -609,10 +843,14 @@ def main(argv=None):
         summary_output=args.summary_output,
         stock_pool_path=args.stock_pool_path,
         fold_feature_selector=fold_feature_selector,
+        selected_features=fixed_selected_features,
         start_fold=args.start_fold,
         end_fold=args.end_fold,
         resume_existing_table=args.resume_existing_table,
         use_light_factor_data=args.use_light_factor_data,
+        prediction_output_path=args.prediction_output_path,
+        feature_source=args.feature_source,
+        prediction_output_mode=args.prediction_output_mode,
     )
     for row in summary:
         print(row)

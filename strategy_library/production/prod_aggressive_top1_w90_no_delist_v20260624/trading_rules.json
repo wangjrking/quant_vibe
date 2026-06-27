@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "strategy_name": "aggressive Top1 90D10 no-delist",
+  "production_version": "v20260624",
+  "rule_summary": "使用当前 formal L4 10D 与 5D 分数，按 0.90 * 10D rank + 0.10 * 5D rank 生成 Top1 单票信号。排除北交所、ST/风险警示、退市标记、信号日涨停，并在买入日跳过开盘涨停不可买入标的。",
+  "score_rule": {
+    "rank_weight_10d": 0.9,
+    "rank_weight_5d": 0.1,
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/top1_no_delist_rerun_20260624/scores_latest_formal_top1.db",
+    "score_table": "score_no_delist_latest_w90_5d10_h5_g200_e098",
+    "score_column": "pred_prob"
+  },
+  "selection_rule": {
+    "top_n": 1,
+    "refill_after_buy_day_rejection": true,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "exclude_signal_day_limit": true,
+    "skip_open_limit_up_buy": true,
+    "calendar_or_date_filter": false,
+    "industry_filter": false
+  },
+  "position_rule": {
+    "max_positions": 1,
+    "target_position_pct": 0.99,
+    "cash_buffer": 0.99,
+    "position_weight_mode": "single_stock_high_exposure"
+  },
+  "holding_rule": {
+    "holding_days": 5,
+    "max_holding_days": 5,
+    "open_daily_score_exit": true,
+    "score_exit_entry_ratio": 0.98,
+    "score_exit_gamma": 2.0,
+    "min_holding_days_before_score_exit": 1,
+    "max_daily_sells": 1,
+    "score_continue_entry_ratio": 1.02
+  },
+  "risk_rule": {
+    "account_drawdown_scale_enabled": false,
+    "stop_loss_pct": 0.08,
+    "take_profit_pct": null,
+    "known_risk_note": "单票高仓位导致最大回撤较高。60%-70% 仓位研究版本可降低回撤，但本次按用户指定发布原高收益版本。"
+  },
+  "execution_rule": {
+    "platform": "juejin",
+    "initial_cash": 600000,
+    "slippage_ratio": 0.0015,
+    "market_db_path": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db",
+    "signal_date_rule": "使用 T 日 formal L4 分数生成 T+1 开盘交易信号。",
+    "tradability_checks": {
+      "skip_buy_when_open_limit_up": true,
+      "skip_sell_when_open_limit_down": true,
+      "skip_buy_when_open_missing_or_zero": true,
+      "round_lot": 100
+    }
+  }
+}

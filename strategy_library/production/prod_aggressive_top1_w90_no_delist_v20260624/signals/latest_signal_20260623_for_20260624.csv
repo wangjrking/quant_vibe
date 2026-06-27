@@ -1,0 +1,2 @@
+﻿signal_date,buy_date,symbol,stock_code,name,rank,pred_prob,entry_score,pred_1d,pred_3d,pred_5d,pred_10d,rank_1d,rank_3d,rank_5d,rank_10d,amount,turnover_rate,total_mv,atr_qfq,target_pct,holding_days,max_holding_days,score_exit_entry_ratio,min_holding_days_before_score_exit
+20260623,20260624,SZSE.300959,300959.SZ,线上线下,1,0.9999997037733742,0.9991835994194486,0.9994558316705968,0.9991293306729548,0.9997349900235807,0.9994558316705968,0.999455732946299,1.0,0.9967343976777939,0.999455732946299,436844.72644,5.3584,1248031.5662,18.1055,0.99000,5,5,0.98000,1

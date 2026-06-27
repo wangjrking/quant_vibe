@@ -1,4 +1,0 @@
-interface:
-  display_name: "Quant Vibe Deploy"
-  short_description: "Initialize Quant Vibe clone environments."
-  default_prompt: "Use $quant-vibe-deploy to initialize this cloned Quant Vibe project."

@@ -1,0 +1,11 @@
+{
+  "best": "top3_10d80_full_h3_nodd",
+  "rows": 1471,
+  "buy_days": 494,
+  "bj_rows": 0,
+  "missing_signal_market": 0,
+  "missing_buy_market": 6,
+  "signal_st_or_risk_warning": 0,
+  "buy_st_or_risk_warning": 0,
+  "buy_limit_times_gt0": 0
+}

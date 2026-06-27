@@ -1,0 +1,77 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_liq_prime_one_v2_reproducible_20260614",
+  "name": "流动性精选一只 v2 可复现冻结版",
+  "code_name": "liq_prime_one_reproducible",
+  "status": "production_candidate",
+  "version": "v20260614",
+  "created_at": "2026-06-14",
+  "purpose": "先复刻原投产策略的预测表血缘，再以可复现生产包形式冻结，避免后续用现有数据重训冒充原版。",
+  "prediction": {
+    "label": "executable_5d_open_return",
+    "prediction_table": "stock_predict_data_executable_5d_open_return_prod_aligned_rebuilt_20260614",
+    "reference_prediction_table": "stock_predict_data_executable_5d_open_return_prod_aligned_202206_202606",
+    "rebuild_script": "D:/work/quant/quant_mcp/rebuild_prod_aligned_from_components_20260614.py",
+    "rebuild_verification": "D:/work/quant/quant_mcp/quant/data_file/reports/prod_retrain_repro_20260614/original_artifacts/prod_aligned_rebuild_from_components_20260614.json"
+  },
+  "lineage": {
+    "type": "component_table_rebuild",
+    "segments": [
+      {
+        "start": "20220606",
+        "end": "20240603",
+        "source_table": "stock_predict_data_executable_5d_open_return_prod_rebuild_aligned_early_202206_202406",
+        "rows": 370682
+      },
+      {
+        "start": "20240604",
+        "end": "20260609",
+        "source_table": "stock_predict_data_executable_5d_open_return_m018_scores_currentdata_202406_202606",
+        "rows": 867177
+      },
+      {
+        "start": "20260610",
+        "end": "20260612",
+        "source_table": "stock_predict_data_executable_5d_open_return_prod_aligned_increment_20260610_20260612",
+        "rows": 15617
+      }
+    ],
+    "exact_rebuild": true,
+    "pred_prob_diff_count": 0,
+    "missing_in_target": 0,
+    "extra_in_target": 0
+  },
+  "features": {
+    "feature_file": "features.json",
+    "selection_method": "按训练折内 IC 排序筛选 Top120 候选因子，生产 fold8 使用 83 个有效因子。",
+    "feature_count": 83
+  },
+  "model": {
+    "model_file_available": false,
+    "model_params_file": "model_params.json",
+    "note": "旧版未保存二进制模型 checkpoint，因此 v2 冻结的是可精确重建的预测表血缘，而不是重训模型本体。后续新模型必须保存 checkpoint。"
+  },
+  "signals": {
+    "signal_file": "signals_latest.csv",
+    "external_signal_file": "D:/work/quant/quant_mcp/quant/data_file/gm_signals_prod_liq_prime_one_v2_reproducible_20260614_latest.csv",
+    "buy_date_range": "20230629-20260612",
+    "signal_count": 222
+  },
+  "trading_rules": {
+    "top_k": 1,
+    "prediction_quantile_min": 0.95,
+    "min_amount": 800000,
+    "min_turnover_rate": 2.0,
+    "max_total_mv": 1000000,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "holding_days": 5,
+    "target_pct": 0.98,
+    "score_exit_enabled": true,
+    "score_exit_ratio": 0.95,
+    "min_holding_days_before_score_exit": 2,
+    "slippage_ratio": 0.0015,
+    "initial_cash": 600000
+  },
+  "promotion_rule": "只有当预测表、信号表、掘金回测和训练/组件血缘全部可复验时，才能从 production_candidate 升级为 production。"
+}

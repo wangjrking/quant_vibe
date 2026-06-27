@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_measure_aggressive_top1_v20260623",
+  "name": "进攻单票Top1",
+  "code_name": "aggressive_top1",
+  "status": "production_measurement",
+  "production_version": "v20260623",
+  "published_at": "2026-06-23",
+  "published_by": "strategy-agent",
+  "definition": "基于生产 V1.0 Top1 逻辑的单票集中策略，目标风格为高收益、高波动和高集中度。",
+  "source_research": {
+    "source_strategy": "prod_liq_prime_one_v20260612",
+    "gm_log": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_measure_aggressive_top1_v20260623/backtests/prod_liq_prime_one_h5_score095_mh2_repro_20260623.log"
+  },
+  "validation": {
+    "platform": "juejin",
+    "cumulative_return": 53.87701086548269,
+    "annual_return": 25.672466012925824,
+    "sharpe": 1.48697137407193,
+    "max_drawdown": 0.2794438808114246,
+    "open_count": 95,
+    "close_count": 95,
+    "win_count": 58,
+    "lose_count": 37,
+    "win_ratio": 0.6105263157894737
+  },
+  "input_contract": {
+    "source_mode": "formal_l4_strategy_specific",
+    "formal_manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/prod_liq_prime_one_v20260612_l4_formal.json",
+    "formal_score_db": "D:/work/quant/quant_mcp/quant/data_file/model_predictions/MODEL_PREDICTIONS.db",
+    "formal_score_table": "stock_predict_data_model_agent_5d_topgate_fusion_20260622_executable_5d_open_return_research",
+    "formal_score_max_trade_date": "20260622",
+    "legacy_odb_allowed_only_for_historical_reproduction": true
+  },
+  "governance": {
+    "production_measurement": true,
+    "formal_performance_requires_juejin": true,
+    "legacy_odb_not_allowed_as_default_new_signal_source": true,
+    "other_strategies_removed_from_current_production_registry": true
+  }
+}

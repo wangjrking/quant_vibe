@@ -1,21 +1,94 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-13",
+  "updated_at": "2026-06-26",
   "production": {
-    "current": "prod_liq_prime_one_v20260612",
+    "current": "prod_dynamic_top1_amt9w_warmup60_v20260626",
     "strategies": [
       {
-        "strategy_id": "prod_liq_prime_one_v20260612",
-        "name": "流动性精选一号",
+        "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
+        "name": "单票动态Top1 量额90k warmup60",
+        "path": "strategy_library/production/prod_dynamic_top1_amt9w_warmup60_v20260626",
         "status": "production",
-        "version": "v20260612",
+        "published_at": "2026-06-26",
+        "annual_return": 10.100743648504821,
+        "sharpe": 1.5900016821764518,
+        "max_drawdown": 0.39745866601968405,
+        "validation_platform": "juejin"
+      }
+    ]
+  },
+  "historical_production": {
+    "retained_directories": [
+      {
+        "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+        "path": "strategy_library/production/prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+        "status": "historical_archive",
+        "reason": "用户于 2026-06-26 批准用量额90k warmup60 版本替换当前生产策略，旧生产版本下架保留复现。"
+      },
+      {
+        "strategy_id": "prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+        "path": "strategy_library/production/prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+        "status": "historical_archive",
+        "reason": "用户于 2026-06-25 批准以 amt9p5w_s7555_dd08_115 替换当前生产策略，旧生产版本下架保留复现。"
+      },
+      {
+        "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+        "path": "strategy_library/production/prod_aggressive_top1_w90_no_delist_v20260624",
+        "status": "historical_archive",
+        "reason": "用户于 2026-06-25 批准发布 pos8975_scale7555 为当前 L5 策略后下架，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_formal_5d10d_top5_noexit_v20260623",
+        "path": "strategy_library/production/prod_formal_5d10d_top5_noexit_v20260623",
+        "status": "historical_archive",
+        "reason": "用户要求将 509.34% 年化的进攻型 Top1 90D10 无退市策略发布为当前生产策略后，从 current production 下架，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_formal_5d10d_top3_stclean_v20260623",
+        "path": "strategy_library/production/prod_formal_5d10d_top3_stclean_v20260623",
+        "status": "historical_archive",
+        "reason": "用户要求发布 154.89% Top5 no-exit 版本后从当前生产下架，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_measure_balanced_10d_v20260623",
+        "path": "strategy_library/production/prod_measure_balanced_10d_v20260623",
+        "status": "blocked_by_st_risk_warning_gate",
+        "reason": "412.96% 历史信号版本命中 ST/风险警示硬门禁，保留为审计反例，不作为当前生产策略。"
+      },
+      {
+        "strategy_id": "prod_formal_5d10d_gap_v20260622",
+        "path": "strategy_library/production/prod_formal_5d10d_gap_v20260622",
+        "status": "historical_archive",
+        "reason": "已从当前生产清单下架，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_formal_5d10d_best_v20260621",
+        "path": "strategy_library/production/prod_formal_5d10d_best_v20260621",
+        "status": "historical_archive",
+        "reason": "历史生产归档，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_liq_prime_one_v20260612",
         "path": "strategy_library/production/prod_liq_prime_one_v20260612",
-        "definition": "基于 executable_5d_open_return 预测标签，使用 2010 年以来滚动/扩展训练集训练 XGBoost 模型，每期按 IC 筛选 Top120 因子，并在预测结果中按 q95 分位、成交额不低于 80 万、换手率不低于 2、总市值不高于 100 万口径筛选后选取预测分最高的 1 只股票作为交易信号。"
+        "status": "historical_archive",
+        "reason": "旧生产归档，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_liq_prime_one_v2_reproducible_20260614",
+        "path": "strategy_library/production/prod_liq_prime_one_v2_reproducible_20260614",
+        "status": "historical_archive",
+        "reason": "旧生产归档，保留用于审计复现。"
+      },
+      {
+        "strategy_id": "prod_measure_aggressive_top1_v20260623",
+        "path": "strategy_library/production/prod_measure_aggressive_top1_v20260623",
+        "status": "historical_archive",
+        "reason": "历史生产测量归档，保留用于审计复现，不作为当前生产策略。"
       }
     ]
   },
   "exploration": {
     "root": "strategy_library/exploration",
-    "rule": "未完成投产归档、未登记为 current production 的参数搜索、回测候选和临时信号均归入探索策略。"
+    "rule": "未完成生产测量归档、未登记为 current production 的参数搜索、回测候选和临时信号均归入探索策略。"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
+  "strategy_name": "单票动态Top1 量额95k dd08_115",
+  "status": "production",
+  "created_at": "2026-06-25",
+  "published_at": "2026-06-25",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_strategy_id": "prod_dynamic_h2m3_pos8975_scale7555_v20260625",
+  "validation_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_amt9p5w_s7555_dd08_115_current_validation_20260625",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_prod_filter_amount_interpolate_20260625\\signals\\prod_filter_amt9p5w_mv20w.csv",
+  "input_contract": {
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+    "allow_legacy": false
+  },
+  "current_signal": {
+    "signal_date": "20260624",
+    "buy_date": "20260625",
+    "archive_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_top1_amt9p5w_dd08_115_v20260625\\signals\\latest_signal_20260624_for_20260625.csv",
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dynamic_top1_amt9p5w_dd08_115_v20260625_latest.csv",
+    "status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dynamic_top1_amt9p5w_dd08_115_v20260625\\signals\\latest_signal_status_20260624_for_20260625.json",
+    "buy_day_hard_gate_complete": true,
+    "buy_day_realtime_checks_required": false
+  }
+}

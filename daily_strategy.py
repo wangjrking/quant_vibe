@@ -1,13 +1,16 @@
-"""Daily update pipeline for the stock selection strategy.
+"""Legacy mixed-asset daily stock selection pipeline.
 
-The daily pipeline is intentionally stage-aware: it only recomputes expensive
-factor and prediction artifacts when the upstream data has advanced.
+This entry still stitches together the historical wide-factor parquet and
+legacy `odb.db.stock_predict_data_*` prediction tables. The current standard
+L5 automation entrypoint is `run_production_tasks.py` with an approved L4
+prediction manifest. This legacy path therefore requires an explicit opt-in.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 import sqlite3
 import subprocess
@@ -17,9 +20,30 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import pyarrow.parquet as pq
+
+from model_asset_route import resolve_model_feature_path
+from stock_daily_data_route import resolve_stock_daily_db_path
 
 
 DEFAULT_LABEL = "10d_yield_rate"
+LEGACY_ENTRY_NOTICE = """\
+daily_strategy.py is a legacy mixed-asset orchestration entry.
+
+It still checks:
+- L3 legacy factor asset: data_file/stock_factor_data.parquet
+- L4 legacy prediction asset: data_file/odb.db::stock_predict_data_*
+
+Current standard layered defaults are:
+- L1: quant/data_file/raw_table_dbs/[table].DB
+- L2: quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA
+- L3 features: quant/data_file/production_factor_parts/
+- L3 labels: quant/data_file/prediction_label_parts/
+- L5 automation entry: quant/main/run_production_tasks.py
+
+To run this historical path intentionally, pass --allow-legacy-asset-chain
+or set QUANT_ALLOW_LEGACY_DAILY_STRATEGY=1.
+"""
 
 
 @dataclass
@@ -34,6 +58,18 @@ class StageResult:
     name: str
     status: str
     detail: str = ""
+
+
+def legacy_asset_chain_opted_in(args) -> bool:
+    return bool(getattr(args, "allow_legacy_asset_chain", False)) or os.environ.get(
+        "QUANT_ALLOW_LEGACY_DAILY_STRATEGY"
+    ) == "1"
+
+
+def require_legacy_asset_chain_opt_in(args) -> None:
+    if legacy_asset_chain_opted_in(args):
+        return
+    raise RuntimeError(LEGACY_ENTRY_NOTICE)
 
 
 def _max_date(values) -> str | None:
@@ -52,6 +88,21 @@ def parquet_max_date(path: Path, column: str = "trade_date") -> str | None:
     return _max_date(frame[column])
 
 
+def parquet_asset_max_date(path: Path, column: str = "trade_date") -> str | None:
+    if not path.exists():
+        return None
+    if path.is_file():
+        return parquet_max_date(path, column=column)
+
+    max_date: str | None = None
+    for parquet_path in sorted(path.glob("*.parquet")):
+        table = pq.read_table(parquet_path, columns=[column])
+        value = _max_date(table.column(column).to_pylist())
+        if value is not None and (max_date is None or value > max_date):
+            max_date = value
+    return max_date
+
+
 def sqlite_table_max_date(db_path: Path, table: str, column: str = "trade_date") -> str | None:
     if not db_path.exists():
         return None
@@ -65,9 +116,11 @@ def load_data_state(data_dir: Path) -> DataState:
 
 
 def load_data_state_for_label(data_dir: Path, label: str) -> DataState:
+    stock_daily_db = resolve_stock_daily_db_path(data_dir=data_dir)
+    feature_path = resolve_model_feature_path(data_dir=data_dir)
     return DataState(
-        source_date=sqlite_table_max_date(data_dir / "odb.db", "STOCK_DAILY_DATA"),
-        factor_date=parquet_max_date(data_dir / "stock_factor_data.parquet"),
+        source_date=sqlite_table_max_date(stock_daily_db, "STOCK_DAILY_DATA"),
+        factor_date=parquet_asset_max_date(feature_path),
         prediction_date=sqlite_table_max_date(data_dir / "odb.db", f"stock_predict_data_{label}"),
     )
 
@@ -228,7 +281,12 @@ def run_daily(args) -> dict:
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description="Run the daily stock selection strategy.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run the legacy mixed-asset daily stock selection strategy. "
+            "Current production/default L5 automation should use run_production_tasks.py."
+        )
+    )
     parser.add_argument("--project-dir", default=".")
     parser.add_argument("--data-dir", default="data_file")
     parser.add_argument("--python", default=sys.executable)
@@ -243,11 +301,21 @@ def parse_args(argv=None):
     parser.add_argument("--max-atr-ratio", type=float, default=0.10)
     parser.add_argument("--output")
     parser.add_argument("--summary-output", default="data_file/daily_strategy_summary.json")
+    parser.add_argument(
+        "--allow-legacy-asset-chain",
+        action="store_true",
+        help="Explicitly allow this legacy mixed-asset entry to run.",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    try:
+        require_legacy_asset_chain_opt_in(args)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     summary = run_daily(args)
     summary_path = Path(args.summary_output)
     summary_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,12 @@
+{
+  "strict_model_checkpoint_available": false,
+  "reason": "Original XGBoost booster/checkpoint files were not archived. This strategy is strictly reproducible at prediction-table and signal level, not at model-retraining level.",
+  "model_params_file": "model_params.json",
+  "required_for_future_versions": [
+    "booster_foldN.ubj",
+    "selected_features_foldN.json",
+    "feature_ic_scores_foldN.csv",
+    "train/test sample key hashes",
+    "environment snapshot"
+  ]
+}

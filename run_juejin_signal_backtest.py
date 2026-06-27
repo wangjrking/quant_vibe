@@ -23,6 +23,7 @@ def parse_args(argv=None):
     parser.add_argument("--take-profit-pct", type=float)
     parser.add_argument("--score-db")
     parser.add_argument("--score-table")
+    parser.add_argument("--market-db")
     parser.add_argument("--score-stop-loss-pred", type=float)
     parser.add_argument("--score-take-profit-pred", type=float)
     parser.add_argument("--score-stop-loss-ratio", type=float)
@@ -102,6 +103,8 @@ def main(argv=None):
         env["GM_SCORE_DB"] = str(Path(args.score_db).resolve())
     if args.score_table:
         env["GM_SCORE_TABLE"] = str(args.score_table)
+    if args.market_db:
+        env["GM_MARKET_DB"] = str(Path(args.market_db).resolve())
     if args.score_stop_loss_pred is not None:
         env["GM_SCORE_STOP_LOSS_PRED"] = str(args.score_stop_loss_pred)
     if args.score_take_profit_pred is not None:

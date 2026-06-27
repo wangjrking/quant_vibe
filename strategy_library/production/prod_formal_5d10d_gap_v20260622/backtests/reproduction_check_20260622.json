@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-06-22T00:56:36+08:00",
+  "checked_by": "strategy-agent",
+  "purpose": "记录当前 L5 生产策略在掘金入口的完整复现参数，避免遗漏环境变量导致复现偏差。",
+  "strategy_id": "prod_formal_5d10d_best_v20260621",
+  "candidate": "best_noncal_avgpred205_rw2121201919",
+  "platform": "juejin",
+  "command_context": {
+    "project_workdir": "D:/work/quant/quant_mcp",
+    "strategy_dir": "D:/work/dfcf/juejin/strategy/ce327750-634e-11f1-b8d7-10ffe0295517",
+    "runner": "D:/work/quant/quant_mcp/quant/main/run_juejin_signal_backtest.py",
+    "python": "C:/Users/wangj/.conda/envs/my_quant/python.exe"
+  },
+  "inputs": {
+    "signal_file": "D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_formal_5d10d_best_v20260621/signals/backtest_signals_best_noncal_avgpred205_rw2121201919.csv",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+    "score_table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+    "market_db": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db"
+  },
+  "backtest_args": {
+    "max_positions": 5,
+    "holding_days": 7,
+    "max_holding_days": 10,
+    "target_position_pct": 0.21,
+    "backtest_start": "2024-06-05 09:00:00",
+    "backtest_end": "2026-06-30 15:30:00",
+    "backtest_adjust": "none",
+    "backtest_initial_cash": 600000,
+    "backtest_slippage_ratio": 0.0015
+  },
+  "required_env": {
+    "GM_OPEN_DAILY_SCORE_EXIT": "1",
+    "GM_SCORE_EXIT_ENTRY_RATIO": "1.0",
+    "GM_MIN_HOLDING_DAYS_BEFORE_SCORE_EXIT": "3",
+    "GM_MAX_DAILY_SELLS": "1",
+    "GM_STOP_LOSS_PCT": "0.08",
+    "GM_TAKE_PROFIT_PCT": "none",
+    "GM_LIGHT_STOP_LOSS_PCT": "none",
+    "GM_SCORE_EXIT_RANK": "none",
+    "GM_LOG_EXPOSURE": "1",
+    "GM_SKIP_OPEN_LIMIT_UP_BUY": "1",
+    "GM_FORCE_MARKET_ORDER": "0",
+    "GM_FORCE_BUY_MARKET_ORDER": "0",
+    "GM_SYNC_POSITIONS": "0",
+    "GM_CASH_BUFFER": "0.99",
+    "GM_VERBOSE_TRADES": "0",
+    "GM_SCORE_CONTINUE_ENTRY_RATIO": "1.02",
+    "GM_EQUITY_DD_RISK_MODE": "1",
+    "GM_EQUITY_DD_SOFT_TRIGGER": "0.12",
+    "GM_EQUITY_DD_HARD_TRIGGER": "0.22",
+    "GM_EQUITY_DD_RECOVER_TRIGGER": "0.05",
+    "GM_EQUITY_DD_SOFT_SCALE": "0.90",
+    "GM_EQUITY_DD_HARD_SCALE": "0.70"
+  },
+  "reproduced_result": {
+    "log_file": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_backtest_end_alignment_20260622/logs/production_archive_signal_current_main_full_candidate_env_end20260630.log",
+    "annual_return": 2.5708951990286635,
+    "sharpe": 3.0044554108640225,
+    "max_drawdown": 0.23807495613823845,
+    "win_ratio": 0.6057971014492753,
+    "open_count": 349,
+    "close_count": 345
+  },
+  "automation_validation": {
+    "export_validate_only": {
+      "status": "passed",
+      "signals": 65,
+      "buy_days": 13,
+      "buy_date_range": "20260602-20260618"
+    },
+    "production_tasks_dry_run": {
+      "status": "passed",
+      "workdir": "D:/work/quant/quant_mcp/quant/main",
+      "summary_file": "D:/work/quant/quant_mcp/quant/main/logs/production_tasks/production_tasks_20260622_005722.json"
+    }
+  },
+  "notes": [
+    "从项目根目录直接运行 production_tasks.json 会错误解析相对路径；标准入口工作目录应为 quant/main。",
+    "本次没有生成正式信号，没有覆盖生产结果，没有修改投产策略参数。"
+  ]
+}

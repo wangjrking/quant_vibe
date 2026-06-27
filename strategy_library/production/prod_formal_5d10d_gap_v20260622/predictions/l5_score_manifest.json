@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "asset_role": "l5_strategy_score_asset",
+  "strategy_id": "prod_formal_5d10d_gap_v20260622",
+  "approval_status": "approved_for_l5_strategy_publish",
+  "generated_by": "strategy-agent",
+  "source_formal_l4_manifests": [
+    "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+  ],
+  "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+  "score_table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+  "fusion_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_l5_candidate_grid_20260621/fusion_5d10d.db",
+  "fusion_table": "fusion_rank_base",
+  "min_trade_date": "20240604",
+  "max_trade_date": "20260618",
+  "legacy_odb_allowed": false,
+  "notes": "该资产是 L5 交易规则评分输入，不是模型训练产物。"
+}

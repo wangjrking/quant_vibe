@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "asset_type": "research_weak_day_pool_score_table_for_strong_signal_concentration",
+  "status": "l5_research_only",
+  "source_mode": "latest_formal_l4_5d10d_only",
+  "db_path": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+  "table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+  "table_check": {
+    "row_count": 2666231,
+    "min_trade_date": "20240604",
+    "max_trade_date": "20260618"
+  },
+  "score_rule": {
+    "mode": "weak_day_pool_replace_then_strong_signal_concentration",
+    "base_pool": {
+      "primary_pool": {
+        "asset": "rank_10d90_5d10",
+        "formula": "0.90 * rank_10d + 0.10 * rank_5d",
+        "max_candidates_per_day": 2,
+        "max_total_mv": 150000.0,
+        "min_amount": 10000.0,
+        "min_turnover_rate": 0.3
+      },
+      "fallback_pool": {
+        "asset": "rank_10d60_5d40",
+        "formula": "0.60 * rank_10d + 0.40 * rank_5d",
+        "normal_min_amount": 10000.0,
+        "normal_min_turnover_rate": 0.3,
+        "weak_day_min_amount": 20000.0,
+        "weak_day_min_turnover_rate": 0.5,
+        "max_total_mv": 200000.0
+      },
+      "weak_day_rule": {
+        "mode": "primary_count_le1",
+        "definition": "????? primary_count <= 1 ????????????"
+      }
+    },
+    "concentration_rule": {
+      "enabled": true,
+      "primary_count_min": 2,
+      "rank_max": 4,
+      "definition": "???????? primary_count >= 2 ??? rank <= 4 ??????"
+    },
+    "direction": "top",
+    "rank_scope": "? trade_date ????? rank"
+  },
+  "execution_rule": {
+    "holding_days": 7,
+    "max_holding_days": 7,
+    "max_positions": 5,
+    "single_position_pct": 0.22,
+    "score_exit_entry_ratio": 1.0,
+    "min_holding_days_before_score_exit": 3,
+    "max_daily_sells": 1
+  },
+  "generated_by": "D:/work/quant/quant_mcp/quant/main/research_formal_5d10d_strong_signal_concentration_20260621.py",
+  "notes": [
+    "????? L5 ?????????????????? formal L4 ???????",
+    "?????? approved_for_l5 ? 5D ? 10D formal L4 ?????",
+    "????????????????????????????????"
+  ]
+}

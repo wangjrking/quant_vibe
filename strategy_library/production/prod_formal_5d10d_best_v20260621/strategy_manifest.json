@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_best_v20260621",
+  "name": "正式5D10D融合优选策略",
+  "code_name": "formal_5d10d_best",
+  "source_strategy": "best_noncal_avgpred205_rw2121201919",
+  "status": "production",
+  "production_version": "V1.0",
+  "version": "v20260621",
+  "published_at": "2026-06-21",
+  "published_by": "strategy-agent",
+  "definition": "基于模型智能体已批准的 formal L4 5D 与 10D 预测资产，使用 10D 为主、5D 为辅的融合评分与弱日候选池补位，按非日历、非行业限制的质量过滤规则选择最多 5 只股票。策略排除北交所、ST、退市、当前涨停，买入侧跳过次日开盘涨停；持仓按评分动态卖出和最长持有约束管理。正式绩效结论以掘金回测日志为准。",
+  "input_contract": {
+    "source_mode": "formal_l4_5d10d_only",
+    "formal_manifest_5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "approval_required": "approved_for_l5",
+    "legacy_odb_forbidden_by_default": true,
+    "forbidden_inputs": [
+      "data_file/odb.db",
+      "stock_predict_data_* legacy table",
+      "1D model score",
+      "unapproved research prediction asset"
+    ]
+  },
+  "prediction_assets": {
+    "score_manifest_file": "predictions/l5_score_manifest.json",
+    "fusion_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_l5_candidate_grid_20260621/fusion_5d10d.db",
+    "fusion_table": "fusion_rank_base",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+    "score_table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+    "data_range": {
+      "min_trade_date": "20240604",
+      "max_trade_date": "20260618"
+    }
+  },
+  "model": {
+    "labels": [
+      "executable_5d_open_return",
+      "executable_10d_open_return"
+    ],
+    "params_file": "model_params.json",
+    "note": "L5 不训练模型、不加工因子，只消费模型智能体批准的 formal L4 预测资产。"
+  },
+  "features": {
+    "feature_file": "factors.json",
+    "note": "特征清单与训练细节以 L4 formal manifest 及模型智能体归档为准，L5 只使用预测分数和行情/流动性字段做交易规则过滤。"
+  },
+  "rules": {
+    "trading_rules_file": "trading_rules.json",
+    "reproduction_file": "reproduction_v1_0.json"
+  },
+  "validation": {
+    "validation_file": "validation.json",
+    "platform": "juejin",
+    "selected_candidate": "best_noncal_avgpred205_rw2121201919",
+    "annual_return": 2.5708951990286635,
+    "sharpe": 3.0044554108640216,
+    "max_drawdown": 0.23807495613823845,
+    "avg_invested_pct": 0.5916286746987945,
+    "ge80_ratio": 0.18674698795180722,
+    "win_ratio": 0.6057971014492753,
+    "open_count": 349,
+    "close_count": 345,
+    "signal_count": 1879,
+    "buy_days": 382,
+    "gm_backtest_log": "backtests/gm_backtest_best_noncal_avgpred205_rw2121201919.log"
+  },
+  "automation": {
+    "production_entry": "run_production_tasks.py",
+    "signal_export_entry": "export_formal_5d10d_l5_signals.py",
+    "production_task_config": "config/production_tasks.json"
+  },
+  "governance": {
+    "is_current_l5": true,
+    "is_only_registered_l5_production_strategy": true,
+    "no_calendar_filter": true,
+    "no_industry_filter": true,
+    "no_new_backtest_during_publish": true,
+    "no_new_formal_signal_during_publish": true,
+    "previous_production_strategy_status": "retained_as_historical_directory_not_registered_current"
+  }
+}

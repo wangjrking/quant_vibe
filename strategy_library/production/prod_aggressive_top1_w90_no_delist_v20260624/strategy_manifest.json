@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
+  "name": "aggressive Top1 90D10 no-delist",
+  "code_name": "no_delist_latest_w90_5d10_h5_g200_e098",
+  "status": "production_user_override_not_admission_passed",
+  "production_version": "v20260624",
+  "published_at": "2026-06-24",
+  "published_by": "strategy-agent",
+  "publication_basis": "用户明确要求将该版本发布为生产策略；策略侧保留未通过严格生产准入的风险标记。",
+  "definition": "基于当前 approved_for_l5 formal L4 10D 与 5D 预测资产的 Top1 单票进攻策略。策略按 0.90 * 10D rank + 0.10 * 5D rank 排序，每日最多买入 1 只，目标仓位约 99%，持有 5 个交易日，并启用每日分数卖出。",
+  "input_contract": {
+    "source_mode": "formal_l4_5d10d_only",
+    "formal_manifest_5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "approval_required": "approved_for_l5",
+    "legacy_odb_forbidden_by_default": true,
+    "forbidden_inputs": [
+      "data_file/odb.db",
+      "stock_predict_data_* legacy table",
+      "unapproved research prediction asset"
+    ]
+  },
+  "prediction_assets": {
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/top1_no_delist_rerun_20260624/scores_latest_formal_top1.db",
+    "score_table": "score_no_delist_latest_w90_5d10_h5_g200_e098",
+    "signal_source": "signals/historical_no_delist_latest_w90_5d10_h5_g200_e098.csv",
+    "data_range": {
+      "min_signal_date": "20240604",
+      "max_signal_date": "20260623",
+      "latest_archived_buy_date": "20260624"
+    }
+  },
+  "validation": {
+    "platform": "juejin",
+    "annual_return": 5.09335042648637,
+    "sharpe": 2.1242037354810757,
+    "max_drawdown": 0.47957543328038005,
+    "pnl_ratio": 10.451834162844634,
+    "win_ratio": 0.5170068027210885,
+    "open_count": 149,
+    "close_count": 147,
+    "gm_backtest_log": "backtests/gm_backtest_no_delist_latest_w90_5d10_h5_g200_e098_full_20240605.log"
+  },
+  "admission_status": {
+    "strict_production_admission_passed": false,
+    "reason": "夏普未达到 3，近期开仓路径依赖明显，参数邻域存在尖峰风险；本次为用户指定发布。",
+    "known_risks": [
+      "full-period annual return is high but parameter-neighborhood sensitivity remains material",
+      "recent empty-start annual return can be much lower than full-period result",
+      "single-stock high exposure causes large drawdown"
+    ]
+  },
+  "current_signal": {
+    "signal_date": "20260623",
+    "buy_date": "20260624",
+    "archive_file": "signals/latest_signal_20260623_for_20260624.csv",
+    "latest_file": "D:/work/quant/quant_mcp/quant/data_file/production_signals/prod_aggressive_top1_w90_no_delist_v20260624_latest.csv",
+    "status_file": "signals/latest_signal_status_20260623_for_20260624.json",
+    "buy_day_realtime_checks_required": true,
+    "note": "??? 20260623->20260624 ?? latest?20260624 ?????????????"
+  },
+  "governance": {
+    "is_current_l5": true,
+    "is_only_registered_l5_production_strategy": true,
+    "formal_performance_requires_juejin": true,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "skip_open_limit_up_buy": true,
+    "production": true,
+    "published_by_user_override": true
+  }
+}

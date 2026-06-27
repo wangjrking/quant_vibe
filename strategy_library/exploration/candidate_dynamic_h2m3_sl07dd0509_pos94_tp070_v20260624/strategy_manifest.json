@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "strategy_id": "candidate_dynamic_h2m3_sl07dd0509_pos94_tp070_v20260624",
+  "name": "动态持有 Top1 三周期融合 pos94 7%止损止盈收益增强候选",
+  "code_name": "dynamic_h2_m3_c098_w78_5d12_3d10_pos94_e097_mh1_sl07_dd0509_tp070",
+  "status": "exploration_candidate_pending_audit_not_published",
+  "created_at": "2026-06-24",
+  "created_by": "strategy-agent",
+  "definition": "formal L4 10D/5D/3D 融合 Top1，目标仓位 94%，动态持有 2-3 日，7% 止损，7% 止盈，账户回撤缩放 soft=5% / hard=9% / scale=0.70/0.50。",
+  "validation": {
+    "platform": "juejin",
+    "annual_return": 5.054102253982817,
+    "sharpe": 1.8770238311954652,
+    "max_drawdown": 0.39660716064977325,
+    "recent60_annual": 0.5582670723794133,
+    "ytd_annual": 1.7064271196485048
+  },
+  "current_signal": {
+    "latest_signal_date": "20260622",
+    "latest_buy_date": "20260623",
+    "latest_candidate_signal": "signals/latest_candidate_signal.csv",
+    "status": "research_candidate_signal_not_production"
+  },
+  "governance": {
+    "is_current_l5": false,
+    "production": false,
+    "legacy_odb_forbidden_by_default": true,
+    "exclude_bj": true,
+    "exclude_st": true,
+    "exclude_delisting": true,
+    "skip_open_limit_up_buy": true,
+    "requires_audit_before_production": true,
+    "requires_user_approval_before_registry_update": true
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "top_stock": "300573.SZ",
+  "top_day": "20240925",
+  "top_month": "202409",
+  "top_1pct_count": 5,
+  "total_positive_proxy": 13.272158718971289,
+  "top_stock_share": 0.11349017538825242,
+  "top_day_share": 0.04434353947928666,
+  "top_month_share": 0.12041385477750968,
+  "variant_reasons": {
+    "base": "原始信号",
+    "drop_top_stock": "去最高代理股票 300573.SZ",
+    "drop_top_day": "去最高代理信号日 20240925",
+    "drop_top_month": "去最高代理月份 202409",
+    "drop_top_1pct": "去最高 1% 代理信号 5 条"
+  }
+}

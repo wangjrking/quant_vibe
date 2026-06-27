@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_formal_5d10d_gap_v20260622",
+  "source_strategy": "gap_t0p03_g1p08_b0p88",
+  "platform": "juejin",
+  "validated_at": "2026-06-22",
+  "backtest_range": {
+    "start": "2024-06-05 09:00:00",
+    "end": "2026-06-30 15:30:00"
+  },
+  "metrics": {
+    "annual_return": 3.0822728464402442,
+    "sharpe": 3.060370903203056,
+    "max_drawdown": 0.22363000979771666,
+    "avg_invested_pct": 0.6101234518072285,
+    "ge80_ratio": 0.21084337349397592,
+    "win_ratio": 0.6051873198847262,
+    "open_count": 352,
+    "close_count": 347,
+    "signal_count": 1879,
+    "buy_days": 382
+  },
+  "target_check": {
+    "annual_ge_3": true,
+    "sharpe_ge_4": false,
+    "avg_invested_ge_0p8": false,
+    "all_target_hit": false
+  },
+  "baseline_current_l5_before_publish": {
+    "strategy_id": "prod_formal_5d10d_best_v20260621",
+    "annual_return": 2.5708951990286635,
+    "sharpe": 3.0044554108640216,
+    "max_drawdown": 0.23807495613823845,
+    "avg_invested_pct": 0.5916286746987945
+  },
+  "gm_backtest_log": "backtests/gm_backtest_gap_t0p03_g1p08_b0p88.log",
+  "signal_file": "signals/backtest_signals_gap_t0p03_g1p08_b0p88.csv",
+  "research_summary": "research/summary.csv"
+}

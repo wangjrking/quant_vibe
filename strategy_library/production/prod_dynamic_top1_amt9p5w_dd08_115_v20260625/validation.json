@@ -1,0 +1,107 @@
+{
+  "metrics": {
+    "annual_return": 9.506538299141285,
+    "pnl_ratio": 19.50793749604609,
+    "sharpe": 2.099391346931876,
+    "max_drawdown": 0.3926017764998195,
+    "win_ratio": 0.595,
+    "open_count": 201,
+    "close_count": 200,
+    "avg_invested_pct": 0.4108926815415822,
+    "recent60_annual": 0.46815211653029243,
+    "recent120_annual": 2.8668627465995034,
+    "ytd_annual": 2.0657284234264823
+  },
+  "hard_gate_audit": {
+    "audited_files": 6,
+    "failed_files": 0,
+    "buy_join_missing": 0,
+    "bj_rows": 0,
+    "buy_st_rows": 0,
+    "buy_delist_rows": 0,
+    "open_limit_up_buy_rows": 0,
+    "latest_signal_date": "20260622",
+    "latest_buy_date": "20260623"
+  },
+  "nearby_summary": [
+    {
+      "anchor": "20250701",
+      "starts": 7,
+      "annual_min": 3.8426949061532856,
+      "annual_median": 3.866816335653697,
+      "annual_max": 4.086492472535907,
+      "sharpe_min": 2.690744754833423,
+      "sharpe_median": 2.71294488904095,
+      "max_drawdown_max": 0.21715156228349758
+    },
+    {
+      "anchor": "20251009",
+      "starts": 7,
+      "annual_min": 2.061577037299842,
+      "annual_median": 2.129046437198202,
+      "annual_max": 2.3149874237495593,
+      "sharpe_min": 2.5211144537164074,
+      "sharpe_median": 2.5488319394641334,
+      "max_drawdown_max": 0.21692484727711503
+    },
+    {
+      "anchor": "20260105",
+      "starts": 7,
+      "annual_min": 1.9143969867726474,
+      "annual_median": 2.3712227709304226,
+      "annual_max": 2.931480908842578,
+      "sharpe_min": 2.5972306193125263,
+      "sharpe_median": 2.8439304463502064,
+      "max_drawdown_max": 0.21709737421188618
+    }
+  ],
+  "stress_summary": [
+    {
+      "variant": "base",
+      "reason": "原始信号",
+      "full_annual": 9.506538299141285,
+      "full_sharpe": 2.099391346931876,
+      "full_max_drawdown": 0.3926017764998195,
+      "late_min_annual": 2.0657284234264823
+    },
+    {
+      "variant": "drop_top_1pct",
+      "reason": "去最高 1% 代理信号 5 条",
+      "full_annual": 9.506538299141285,
+      "full_sharpe": 2.099391346931876,
+      "full_max_drawdown": 0.3926017764998195,
+      "late_min_annual": 2.0657284234264823
+    },
+    {
+      "variant": "drop_top_day",
+      "reason": "去最高代理信号日 20240926",
+      "full_annual": 9.506538299141285,
+      "full_sharpe": 2.099391346931876,
+      "full_max_drawdown": 0.3926017764998195,
+      "late_min_annual": 2.0657284234264823
+    },
+    {
+      "variant": "drop_top_month",
+      "reason": "去最高代理月份 202409",
+      "full_annual": 9.506538299141285,
+      "full_sharpe": 2.099391346931876,
+      "full_max_drawdown": 0.3926017764998195,
+      "late_min_annual": 2.0657284234264823
+    },
+    {
+      "variant": "drop_top_stock",
+      "reason": "去最高代理股票 300573.SZ",
+      "full_annual": 9.506538299141285,
+      "full_sharpe": 2.099391346931876,
+      "full_max_drawdown": 0.3926017764998195,
+      "late_min_annual": 2.0657284234264823
+    }
+  ],
+  "status": "production",
+  "validation_platform": "juejin",
+  "production_publication": {
+    "published_at": "2026-06-25",
+    "user_approved": true,
+    "buy_day_hard_gate_complete_for_latest_signal": true
+  }
+}

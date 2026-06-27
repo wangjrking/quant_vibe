@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_formal_5d10d_gap_v20260622",
+  "scope": "l5_consumption_contract",
+  "note": "L5 不训练模型。本文件只记录本策略消费的 formal L4 模型资产入口，模型训练参数以模型智能体归档为准。",
+  "formal_l4_assets": [
+    {
+      "label": "executable_5d_open_return",
+      "manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+      "candidate_id": "xgb_reg5d_d4_l4_fs160_lr003_n6000_topk_gate1_20260620",
+      "feature_count": 160
+    },
+    {
+      "label": "executable_10d_open_return",
+      "manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+      "candidate_id": "xgb_reg10d_d4_l4_fs160_lr003_n6000_topk_gate2_20260620",
+      "feature_count": 160
+    }
+  ],
+  "l5_score_blend": {
+    "primary_rank_weight_10d": 0.9,
+    "primary_rank_weight_5d": 0.1,
+    "fallback_rank_weight_10d": 0.6,
+    "fallback_rank_weight_5d": 0.4
+  }
+}

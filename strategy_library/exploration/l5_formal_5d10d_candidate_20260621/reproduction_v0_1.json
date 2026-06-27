@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "strategy_id": "l5_formal_5d10d_candidate_20260621",
+  "status": "research_reproducible_candidate",
+  "python": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe",
+  "juejin_python": "C:/Users/wangj/.conda/envs/my_quant/python.exe",
+  "working_directory": "D:/work/quant/quant_mcp",
+  "selected_candidate": "best_noncal_avgpred205",
+  "selected_signal": "signals/candidate_signals.csv",
+  "selected_backtest_log": "backtests/gm_backtest_candidate.log",
+  "selected_score_manifest": "predictions/tiered_score_manifest.json",
+  "formal_5d10d_noncalendar_quality_refine_command": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe quant/main/research_formal_5d10d_noncalendar_quality_refine_20260621.py",
+  "prior_research_commands": {
+    "weak_day_pool_replace": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe quant/main/research_formal_5d10d_weak_day_pool_replace_20260621.py",
+    "weak_pool_exit_refine": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe quant/main/research_formal_5d10d_weak_pool_exit_refine_20260621.py",
+    "weak_pool_target_overlay": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe quant/main/research_formal_5d10d_weak_pool_target_overlay_20260621.py"
+  },
+  "notes": [
+    "????? L5 ??????? production current?",
+    "??? latest formal L4 5D ? 10D ???????? 1D????? odb.db ????",
+    "???????? GM_BACKTEST_INDICATOR?"
+  ]
+}

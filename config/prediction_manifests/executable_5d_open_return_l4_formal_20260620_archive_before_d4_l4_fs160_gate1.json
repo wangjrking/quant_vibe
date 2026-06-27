@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "asset_role": "l4_formal_prediction_asset",
+  "label": "executable_5d_open_return",
+  "approval_status": "approved_for_l5",
+  "source_type": "sqlite_table",
+  "db_path": "../../../data_file/model_predictions/MODEL_PREDICTIONS.db",
+  "table": "stock_predict_data_model_agent_toprank_latestfactor_20260618_executable_5d_open_return_score_20240604_20260618",
+  "market_db_path": "../../../data_file/STOCK_DAILY_DATA.db",
+  "generated_at": "2026-06-20T04:20:00+08:00",
+  "row_count": 2666231,
+  "trade_days": 495,
+  "stock_count": 5530,
+  "min_trade_date": "20240604",
+  "max_trade_date": "20260618",
+  "candidate_id": "xgb_reg5d_d3_l6_fs120_lr003_n6000_toprank_latestfactor_20260618",
+  "model_track": "formal_l5_consumable_strategy_score_asset",
+  "promoted_from_manifest": "../../../data_file/model_predictions/stock_predict_data_model_agent_toprank_latestfactor_20260618_executable_5d_open_return_score_20240604_20260618/prediction_manifest.json",
+  "base_training_eval_table": "stock_predict_data_model_agent_toprank_latestfactor_20260618_executable_5d_open_return_v1",
+  "incremental_score_dates": [
+    "20260617",
+    "20260618"
+  ],
+  "notes": "Formal L4 strategy score asset covering 20240604 through 20260618. Approved as L5-consumable after user authorization on 2026-06-20. No strategy parameters, signals, or backtests were generated in this approval-status update.",
+  "governance_status": "approved_l5_consumable_bound_to_existing_5d_default_task",
+  "l5_approved_at": "2026-06-20T04:20:00+08:00",
+  "l5_approval_basis": "user_authorized_each_label_model_publish"
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_formal_5d10d_best_v20260621",
+  "purpose": "复现当前 L5 正式策略的输入、规则、证据和自动化入口。",
+  "environment": {
+    "project_root": "D:/work/quant/quant_mcp",
+    "python": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe",
+    "requirements": "environment/requirements.txt"
+  },
+  "inputs": {
+    "formal_5d_manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_10d_manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_weak_day_pool_replace_20260621/weak_day_pool_scores.db",
+    "score_table": "weak_f60_liq_primary_count_le1_prank_10d90_5d10_frank_10d60_5d40_20000p0_0p5",
+    "fusion_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_model_application_20260621/formal_5d10d_l5_candidate_grid_20260621/fusion_5d10d.db",
+    "fusion_table": "fusion_rank_base",
+    "market_db": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db"
+  },
+  "automation_entry": {
+    "production_runner": "quant/main/run_production_tasks.py",
+    "production_config": "quant/main/config/production_tasks.json",
+    "signal_exporter": "quant/main/export_formal_5d10d_l5_signals.py",
+    "dry_run_command": "D:/work/quant/quant_mcp/.venv/Scripts/python.exe D:/work/quant/quant_mcp/quant/main/run_production_tasks.py --config D:/work/quant/quant_mcp/quant/main/config/production_tasks.json --dry-run"
+  },
+  "validation_commands": [
+    "D:/work/quant/quant_mcp/.venv/Scripts/python.exe -m py_compile D:/work/quant/quant_mcp/quant/main/export_formal_5d10d_l5_signals.py",
+    "D:/work/quant/quant_mcp/.venv/Scripts/python.exe D:/work/quant/quant_mcp/quant/main/export_formal_5d10d_l5_signals.py --strategy-dir D:/work/quant/quant_mcp/quant/main/strategy_library/production/prod_formal_5d10d_best_v20260621 --market-db D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db --start 20240604 --end 20260618 --lookback-trade-days 45 --validate-only",
+    "D:/work/quant/quant_mcp/.venv/Scripts/python.exe D:/work/quant/quant_mcp/quant/main/run_production_tasks.py --config D:/work/quant/quant_mcp/quant/main/config/production_tasks.json --dry-run"
+  ],
+  "forbidden_reproduction_shortcuts": [
+    "使用 data_file/odb.db 旧预测表",
+    "使用 1D 模型评分",
+    "加入月份或日期过滤",
+    "加入行业限制",
+    "将研究信号冒充正式信号"
+  ],
+  "notes": [
+    "发布时没有生成新的正式信号，也没有跑新的掘金回测。",
+    "掘金回测证据来自已归档日志 backtests/gm_backtest_best_noncal_avgpred205_rw2121201919.log。",
+    "若需要生成最新交易信号，应由已发布 production_tasks.json 经授权执行。"
+  ]
+}

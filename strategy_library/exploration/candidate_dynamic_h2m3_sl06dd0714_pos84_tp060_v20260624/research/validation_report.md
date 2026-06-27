@@ -1,0 +1,59 @@
+# sl06_dd0714_pos84_tp060 完整验证
+
+## 当前结论
+
+验证对象：`dynamic_h2_m3_c098_w78_5d12_3d10_pos84_e097_mh1_sl06_dd0714_tp060`。该版本固定 formal L4 多周期模型入场、Top1 单票、目标仓位 `84%`、动态持有 `h2_m3_c098`、分数退出 `0.97`、日内 `6%` 止损、账户回撤缩放 `soft=7% / hard=14% / recover=4% / scale=0.80/0.60`，新增通用 `6%` 止盈。
+
+止盈属于通用退出规则，不改变股票池，不使用行业、月份、日期或最新状态筛历史样本。本报告用于判断收益增强是否同时满足强准入里的持续性、低路径依赖和压力验证要求。
+
+## 时间切片
+
+| 切片 | 年化 | Sharpe | 最大回撤 | 开仓数 | 平均仓位 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| full | 667.36% | 1.96 | 39.19% | 203 | 38.68% |
+| slice_2024h2 | 397.61% | 1.54 | 33.83% | 55 | 38.91% |
+| slice_2025h1 | 96.27% | 1.33 | 31.27% | 40 | 37.89% |
+| slice_2025h2 | 197.86% | 2.72 | 14.57% | 59 | 42.13% |
+| slice_2026ytd | 165.53% | 2.39 | 22.56% | 49 | 43.49% |
+| slice_recent120 | 226.58% | 2.79 | 22.59% | 52 | 43.30% |
+| slice_recent60 | 33.25% | 0.68 | 22.56% | 22 | 45.71% |
+
+## 低路径依赖
+
+| 锚点 | 起点数 | 年化最小 | 年化中位 | 年化最大 | 最大回撤最大 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 20250701 | 7 | 301.65% | 303.46% | 319.95% | 22.63% |
+| 20251009 | 7 | 153.88% | 170.55% | 198.65% | 22.62% |
+| 20260105 | 7 | 153.12% | 190.38% | 231.16% | 22.62% |
+
+## 贡献集中压力
+
+- 最高代理贡献股票：`300573.SZ`，占正代理贡献 `11.35%`。
+- 最高代理贡献日：`20240925`，占正代理贡献 `4.43%`。
+- 最高代理贡献月份：`202409`，占正代理贡献 `12.04%`。
+
+| 压力变体 | 说明 | 年化 | Sharpe | 最大回撤 | 近期开仓最差年化 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| base | 原始信号 | 667.36% | 1.96 | 39.19% | 165.53% |
+| drop_top_1pct | 去最高 1% 代理信号 5 条 | 597.94% | 1.91 | 39.19% | 165.53% |
+| drop_top_day | 去最高代理信号日 20240925 | 667.36% | 1.96 | 39.19% | 165.53% |
+| drop_top_month | 去最高代理月份 202409 | 612.42% | 1.95 | 39.19% | 165.53% |
+| drop_top_stock | 去最高代理股票 300573.SZ | 664.95% | 1.96 | 39.19% | 165.53% |
+
+## 硬过滤审计
+
+- 审计文件数：`6`
+- 失败文件数：`0`
+- 买入日行情缺失：`0`
+- 北交所：`0`
+- 买入日 ST / 风险警示：`0`
+- 买入日退市：`0`
+- 买入日开盘涨停：`0`
+
+## 证据路径
+
+- 时间切片：`D:\work\quant\quant_mcp\quant\data_file\reports\strategy_agent_goal_high_annual_20260623\top1_no_delist_rerun_20260624\diversification_tune_20260624\strict_sync_liquidity_neighborhood_20260624\formal_horizon_entry_confirmation_20260624\dynamic_h2_m3_sl06_dd0714_pos84_tp060_validation_20260624\time_slices.csv`
+- 低路径依赖：`D:\work\quant\quant_mcp\quant\data_file\reports\strategy_agent_goal_high_annual_20260623\top1_no_delist_rerun_20260624\diversification_tune_20260624\strict_sync_liquidity_neighborhood_20260624\formal_horizon_entry_confirmation_20260624\dynamic_h2_m3_sl06_dd0714_pos84_tp060_validation_20260624\nearby_summary.csv`
+- 贡献压力：`D:\work\quant\quant_mcp\quant\data_file\reports\strategy_agent_goal_high_annual_20260623\top1_no_delist_rerun_20260624\diversification_tune_20260624\strict_sync_liquidity_neighborhood_20260624\formal_horizon_entry_confirmation_20260624\dynamic_h2_m3_sl06_dd0714_pos84_tp060_validation_20260624\stress_summary.csv`
+- 硬过滤审计：`D:\work\quant\quant_mcp\quant\data_file\reports\strategy_agent_goal_high_annual_20260623\top1_no_delist_rerun_20260624\diversification_tune_20260624\strict_sync_liquidity_neighborhood_20260624\formal_horizon_entry_confirmation_20260624\dynamic_h2_m3_sl06_dd0714_pos84_tp060_validation_20260624\hard_gate_audit.json`
+- 掘金日志：`D:\work\quant\quant_mcp\quant\data_file\reports\strategy_agent_goal_high_annual_20260623\top1_no_delist_rerun_20260624\diversification_tune_20260624\strict_sync_liquidity_neighborhood_20260624\formal_horizon_entry_confirmation_20260624\dynamic_h2_m3_sl06_dd0714_pos84_tp060_validation_20260624\logs`

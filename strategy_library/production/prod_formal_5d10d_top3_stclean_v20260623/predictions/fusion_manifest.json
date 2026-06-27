@@ -1,0 +1,14 @@
+{
+  "model_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
+  "market_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+  "table_5d": "stock_predict_data_model_agent_5d_gate6_balanced_bonus_20260622_executable_5d_open_return_research",
+  "table_10d": "stock_predict_data_model_agent_10d_topgate_fusion_20260622_executable_10d_open_return_research",
+  "fusion_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\latest_formal_5d10d_stclean_refill\\fusion_5d10d_latest_20260622.db",
+  "row_count": 2671741,
+  "trade_days": 496,
+  "stock_count": 5530,
+  "min_trade_date": "20240604",
+  "max_trade_date": "20260622",
+  "no_industry_filter": true,
+  "no_1d_score_separate_use": true
+}

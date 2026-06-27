@@ -1,0 +1,3 @@
+Goldminer Python SDK: 3.0.183
+Goldminer C SDK: 3.8.15
+Tushare: not required for frozen-table reproduction; required only for daily data refresh.

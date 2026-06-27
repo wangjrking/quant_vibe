@@ -1,0 +1,12 @@
+{
+  "platform": "juejin",
+  "candidate": "scale110_cap30_h5_noexit",
+  "annual_return": 1.5488809241226176,
+  "sharpe": 1.1928900907663769,
+  "max_drawdown": 0.451527114351596,
+  "avg_invested_pct": 0.8209141565040652,
+  "signal_count": 2330,
+  "buy_days": 494,
+  "gm_backtest_log": "backtests/gm_backtest_scale110_cap30_h5_noexit.log",
+  "status": "production_accepted_by_user_on_2026-06-23"
+}
