@@ -12,7 +12,9 @@
 deploy/cloud-center/
 ```
 
-该目录已包含 Docker Compose、环境变量模板、ClickHouse 初始化 SQL、PostgreSQL 初始化 SQL和健康检查脚本。
+该目录已包含 Docker Compose、环境变量模板、ClickHouse 初始化 SQL、PostgreSQL 初始化 SQL、MCP skeleton 服务和健康检查脚本。
+
+如果当前宿主机是 Win10，而不是标准 Linux 服务器，执行口径应优先参考补充文档 `docs/governance/cloud-data-warehouse-mcp-platform-win10.md`。当前 `deploy/cloud-center/` 部署包默认使用 Linux 宿主机路径，Win10 需要单独做路径适配后再部署。
 
 ## 总体结论
 
@@ -420,7 +422,7 @@ deploy/cloud-center/scripts/health_check.sh
 deploy/cloud-center/scripts/health_check.ps1
 ```
 
-本阶段 Docker Compose 已可启动 ClickHouse、PostgreSQL 和 MinIO 三个基础服务。MCP 子服务在本阶段只定义服务拆分、权限和端口边界，真实 MCP 服务实现进入下一阶段。
+本阶段 Docker Compose 已可启动 ClickHouse、PostgreSQL、MinIO 和三个 MCP skeleton 服务：`asset-registry-mcp`、`ops-mcp`、`audit-mcp`。MCP skeleton 只提供 `/health`、`/metadata`、`/services`、`/tools`，真实数据库读写工具进入下一阶段。
 
 ## 初始化顺序
 
@@ -530,6 +532,7 @@ WHERE name IN ('l1_raw', 'l2_base', 'l3_feature', 'l4_model', 'l5_strategy', 'l6
 - 远程数仓 MCP 中台方案文档。
 - 可执行部署步骤和 schema 草案。
 - `deploy/cloud-center/` 基础部署包。
+- `asset-registry-mcp`、`ops-mcp`、`audit-mcp` 的可启动 skeleton 服务。
 - Git 分支提交，供另一台服务器拉取。
 
 本阶段不交付：
@@ -538,6 +541,6 @@ WHERE name IN ('l1_raw', 'l2_base', 'l3_feature', 'l4_model', 'l5_strategy', 'l6
 - 真实生产资产迁移。
 - 生产默认读取入口切换。
 - 自动同步任务。
-- 真实 MCP 服务代码实现。
+- 真实 MCP 数据库读写工具实现。
 
 以上事项需要后续单独审批和实施。
