@@ -2,7 +2,7 @@
 
 Quant Vibe 是一个面向 A 股的本地量化研究与信号生成项目，覆盖数据接入、特征加工、模型预测、组合信号和非执行态交易交付。
 
-项目仅在本机 Python 与 DuckDB 环境中运行，不提供云中心或云服务器部署方案。
+项目仅在本机 Python 与 DuckDB 环境中运行。
 
 ## 技术架构
 
@@ -62,7 +62,7 @@ copy config.example.json config.json
 
 ## 本地部署与自检
 
-本项目不需要云服务器。完成环境安装和 Token 配置后，在项目根目录执行：
+完成环境安装和 Token 配置后，在项目根目录执行：
 
 ```powershell
 cd D:\work\quant\quant_mcp\quant\main
@@ -70,7 +70,7 @@ cd D:\work\quant\quant_mcp\quant\main
 .\.venv\Scripts\python.exe tools\standard_agent_architecture_check.py
 ```
 
-两项检查通过后，即可按 L1-L8 工作流运行本地任务。Docker 仅用于本机可复现环境；当前没有 Docker Desktop 也不影响标准流水线。
+两项检查通过后，即可按 L1-L8 工作流运行本地任务。
 
 ## Codex 多智能体配置
 
@@ -113,7 +113,6 @@ cd D:\work\quant\quant_mcp\quant\main
 | `juejin_strategies/` | 本地 GM 策略文件，不提交 |
 | `tools/` | 校验、审计、切换和运维脚本 |
 | `tests/` | 自动化测试 |
-| `Dockerfile`、`docker-compose.yml` | 可选的本地容器运行入口 |
 
 ## 文档导航
 

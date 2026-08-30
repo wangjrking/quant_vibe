@@ -42,5 +42,5 @@ matplotlib>=3.5.0,<4.0.0
 Pillow>=9.0.0
 python-docx>=1.1.0
 
-# Optional deep-learning modules are installed by Docker build arg:
-# docker build --build-arg INSTALL_TORCH=true -t quant-vibe .
+# Optional deep-learning modules are installed manually when needed:
+# pip install torch --index-url https://download.pytorch.org/whl/cpu
