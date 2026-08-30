@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from quant.main.model_input_contract_v2_candidate import (
+from model_input_contract_v2_candidate import (
     ModelInputContractError,
     build_contract,
     build_projection_sql,
@@ -38,7 +38,7 @@ def test_contract_sql_is_explicit_projection_and_runtime_order_is_fail_closed(mo
         def load_model(self, _path):
             return None
 
-    monkeypatch.setattr("quant.main.model_input_contract_v2_candidate.xgb.Booster", FakeBooster)
+    monkeypatch.setattr("model_input_contract_v2_candidate.xgb.Booster", FakeBooster)
     contract = build_contract(
         label_key="x",
         production_model_asset_id="asset",
@@ -68,7 +68,7 @@ def test_contract_rejects_metadata_booster_order_mismatch(monkeypatch, tmp_path:
         def load_model(self, _path):
             return None
 
-    monkeypatch.setattr("quant.main.model_input_contract_v2_candidate.xgb.Booster", FakeBooster)
+    monkeypatch.setattr("model_input_contract_v2_candidate.xgb.Booster", FakeBooster)
     with pytest.raises(ModelInputContractError, match="differ"):
         build_contract(
             label_key="x",
