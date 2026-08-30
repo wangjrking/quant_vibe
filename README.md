@@ -2,17 +2,22 @@
 
 Quant Vibe is an A-share multi-factor research and signal-generation project. It includes raw data updates, factor processing, model training, stock selection, backtesting, GM signal export, and report generation.
 
-The project uses paths relative to the repository root by default, so a fresh clone does not need machine-specific path edits.
+The project runs from a local working directory. It uses paths relative to the
+repository root by default and does not require a hosted Git remote.
 
 ## Standard Chain Default
 
 Current model-side standard chain defaults are:
 
-- L3 production features: `quant/data_file/production_factor_parts/`
-- L3 training labels: `quant/data_file/prediction_label_parts/`
-- L4 prediction assets: `quant/data_file/model_predictions/`
+- L1 raw table files: `quant/data_file/production_assets/duckdb/l1_raw_tables/[table].duckdb`
+- L2 market base: `quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb::STOCK_DAILY_DATA`
+- L3 production features: `quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>`
+- L3 training labels: `quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>`
+- L4 formal prediction assets: `quant/data_file/production_assets/duckdb/l4_*.duckdb`
 
 Legacy mixed assets such as `quant/data_file/stock_factor_data.parquet`,
+`quant/data_file/production_factor_parts/`,
+`quant/data_file/prediction_label_parts/`,
 `quant/data_file/standard_factor_by_date_parts/`,
 `quant/data_file/standard_factor_by_date_parts_fast40/`, and
 `quant/data_file/odb.db::stock_predict_data_*` are archived and must not be
@@ -21,12 +26,15 @@ requires explicit `QUANT_ALLOW_LEGACY_MODEL_ASSET_CHAIN=1`.
 
 ## Quick Start
 
-### 1. Clone
+### 1. Open the Local Project
 
-```bash
-git clone https://github.com/wangjrking/quant_vibe.git
-cd quant_vibe
+```powershell
+cd D:\work\quant\quant_mcp\quant\main
 ```
+
+For another local machine, copy the project directory by approved local media
+or file sharing, then open that copied directory. Do not depend on a GitHub or
+other hosted remote for standard operation.
 
 ### 2. Local Python Environment
 
@@ -128,18 +136,31 @@ The current standard layered workflow is documented in:
 
 Current default assets:
 
-- L1 raw split DB: `quant/data_file/raw_table_dbs/[table].DB`
-- L2 market base: `quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA`
-- L3 production features: `quant/data_file/production_factor_parts/`
-- L3 training labels: `quant/data_file/prediction_label_parts/`
+- L1 raw DuckDB table files: `quant/data_file/production_assets/duckdb/l1_raw_tables/[table].duckdb`
+- Historical DuckDB bundle archive: `quant/data_file/production_assets/duckdb/quant_production.duckdb` (not current active route)
+- L2 market base: `quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb::STOCK_DAILY_DATA`
+- L3 production features: `quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>`
+- L3 training labels: `quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>`
 - L4 prediction assets: independent prediction-asset plan; `odb.db.stock_predict_data_*` is not the default new-chain entry
 - L5 standard automation entry: `quant/main/run_production_tasks.py`
+
+当前强制治理规则：
+
+- 前复权价格字段和基于前复权价格生成的技术字段/因子，必须在字段名、schema 或 contract 中显式标记 `qfq` 语义。
+- 若实际值是前复权，但仍使用裸 `open/high/low/close/pre_close` 之类字段名表达主线语义，则属于治理缺陷，不得作为终态口径继续扩散到模型、策略或交易环节。
 
 Formal manifest contract for L5 reads:
 
 - Production L5 reads require a prediction manifest with `approval_status=approved_for_l5`.
 - The manifest must explicitly define `db_path` and `table` for a non-legacy L4 prediction asset.
 - A manifest that still points to `odb.db` or a legacy prediction table is for legacy reproduction only, not the default production signal path.
+
+L1 raw consumer contract:
+
+- `quant/main/l1_raw_data_route.py` is the formal L1 read route.
+- The current active L1 backend is DuckDB table files under `quant/data_file/production_assets/duckdb/l1_raw_tables/[table].duckdb`.
+- Legacy SQLite L1 access is not part of the default chain. Use explicit legacy opt-in only for historical rollback work.
+- `quant/main/raw_table_db_module.py` now defaults to DuckDB writes and rejects legacy SQLite write modes unless `QUANT_ALLOW_LEGACY_RAW_SQLITE=1` is set for explicit historical rollback work.
 
 ## Common Commands
 
@@ -187,7 +208,7 @@ python generate_juejin_strategy_reports.py
 
 `daily_strategy.py` and `run_daily_strategy.ps1` are also legacy mixed-asset orchestration entries. They still depend on `stock_factor_data.parquet` and `odb.db.stock_predict_data_*`, so they require explicit opt-in and are not the standard L5 signal path.
 
-`run_cdb_update.py` and `run_incremental_cdb_update.py` maintain the historical compatibility wide-factor parquet. The current layered default L3 feature asset remains `production_factor_parts/`.
+`run_cdb_update.py` and `run_incremental_cdb_update.py` maintain the historical compatibility wide-factor parquet. The current layered default L3 feature asset is the active DuckDB L3 feature file; `production_factor_parts/` is now historical rollback evidence rather than the current default route.
 
 `config/production_tasks.example.json` now ships disabled by default and should only be enabled after the model agent provides an `approved_for_l5` manifest with explicit `db_path` and `table`.
 

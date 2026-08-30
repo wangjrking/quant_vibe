@@ -65,14 +65,18 @@ D:\opt\quant_mcp\
     postgres\
 ```
 
-Repository state in `D:\opt\quant_mcp\repo`:
+Historical repository state in `D:\opt\quant_mcp\repo` at the time of this assessment:
 
 ```text
-remote: https://github.com/wangjrking/quant_vibe.git
+remote: hosted remote used at that time; removed from the current local-only project
 branch: cloud-center-mcp
 head: abae9e62f2302d964cd7fa20c34e9fb4ecb549b9
 status: clean before this assessment file
 ```
+
+This historical remote reference is not a current project requirement. Current
+operation uses the local project directory and does not require a hosted Git
+remote.
 
 `D:\opt\quant_mcp\env\warehouse.env` was copied from
 `deploy/cloud-center/env.example`. It is outside the git repo and should stay

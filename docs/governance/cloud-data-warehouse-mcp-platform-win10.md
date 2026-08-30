@@ -1,5 +1,23 @@
 # Win10 远程数据中心落地方案
 
+## 当前状态
+
+本文档是旧“远程数据中心 / ClickHouse + PostgreSQL + MinIO”方向的 Win10 落地补充，当前已降级为历史方案，不再作为 MCP 中台主线执行入口。
+
+当前主线为 L8 MCP 资产发布层、MCP 中台和对外资产网关，技术栈为：
+
+```text
+PostgreSQL + MinIO/对象存储 + MCP gateway
+```
+
+当前主线文档见：
+
+```text
+quant/main/docs/governance/mcp-asset-gateway-platform.md
+```
+
+除非主人重新审批，否则本文档中的 ClickHouse、远程全量数据中心和大表迁移内容仅作为历史参考。
+
 ## 目标
 
 本文档定义当前阶段基于 Win10 主机的远程数据中心落地方案。该方案服务于本项目的远程数仓 MCP 中台建设，重点解决以下问题：
@@ -87,7 +105,13 @@ ssh <win10-user>@<win10-host> "Get-ChildItem D:\"
 | asset-registry-mcp | 8101 | MCP skeleton 健康检查和元数据 |
 | ops-mcp | 8102 | MCP skeleton 健康检查和元数据 |
 | audit-mcp | 8103 | MCP skeleton 健康检查和元数据 |
-| MCP Gateway 预留 | 8104-8109 | 后续子服务健康检查和 API |
+| l1-data-mcp | 8111 | L1 MCP skeleton 健康检查和元数据 |
+| l2-base-mcp | 8112 | L2 MCP skeleton 健康检查和元数据 |
+| l3-feature-mcp | 8113 | L3 MCP skeleton 健康检查和元数据 |
+| l4-model-mcp | 8114 | L4 MCP skeleton 健康检查和元数据 |
+| l5-strategy-mcp | 8115 | L5 MCP skeleton 健康检查和元数据 |
+| l6-backtest-mcp | 8116 | L6 MCP skeleton 健康检查和元数据 |
+| l7-trading-mcp | 8117 | L7 MCP skeleton 健康检查和元数据 |
 
 原则：
 
@@ -119,7 +143,7 @@ D:\quant\cloud-center\
 
 - `repo\`：拉取当前 Git 仓库的 `cloud-center-mcp` 分支。
 - `env\`：仅在服务器本地保存 `.env` 类敏感配置。
-- `volumes\clickhouse\`：ClickHouse 数据目录。
+- `volumes\clickhouse\`：历史/回滚占位目录。Win10 当前 Compose 使用 Docker named volume `quant-clickhouse-data` 承载 `/var/lib/clickhouse`，避免 MergeTree 在 Windows bind mount 上写入 part 时出现 rename 权限问题。
 - `volumes\postgres\`：PostgreSQL 数据目录。
 - `volumes\minio\`：MinIO 对象数据目录。
 - `backups\`：数据库导出、对象存储归档和恢复点。
@@ -140,16 +164,20 @@ D:\quant\cloud-center\
 
 ### MCP 服务拆分规划
 
-当前部署包已先提供 `asset-registry-mcp`、`ops-mcp`、`audit-mcp` 三个 skeleton 服务，用于验证容器拓扑、端口和健康检查。它们只提供 `/health`、`/metadata`、`/services`、`/tools`，不提供生产数据读写工具。
+当前部署包已提供治理类 `asset-registry-mcp`、`ops-mcp`、`audit-mcp`，以及分层类 `l1-data-mcp` 到 `l7-trading-mcp` 十个 skeleton 服务，用于验证容器拓扑、端口和健康检查。它们只提供 `/health`、`/metadata`、`/services`、`/tools`，不提供生产数据读写工具。
 
 当前推荐至少拆分以下子服务：
 
 | 服务 | 核心职责 | 默认写权限 |
 | --- | --- | --- |
 | `asset-registry-mcp` | registry、manifest、lineage、审计状态查询 | 数仓/审计受控写 |
+| `l1-data-mcp` | L1 原始镜像覆盖查询、分区查询、源 manifest 查询 | 数据接入写 |
 | `l2-base-mcp` | L2 综合底表覆盖查询、范围查询、快照读取 | 数据整合写 |
 | `l3-feature-mcp` | L3 因子、标签、manifest 查询 | 因子写 |
 | `l4-model-mcp` | L4 预测结果、formal manifest、模型文件索引查询 | 模型写 |
+| `l5-strategy-mcp` | L5 策略信号、策略 manifest、准入状态查询 | 策略写 |
+| `l6-backtest-mcp` | L6 回测明细、报告、归档和证据索引查询 | 策略写 |
+| `l7-trading-mcp` | L7 交易交付、执行证据、审计状态查询 | 交易写 |
 | `audit-mcp` | 审计记录和证据索引查询 | 审计写 |
 | `ops-mcp` | 任务状态、健康状态、部署记录、锁、日报查询 | 指挥官/数仓受控写 |
 
@@ -168,7 +196,7 @@ D:\quant\cloud-center\
 1. Win10 主机安装 Docker Desktop。
 2. 运行 Linux Containers 模式。
 3. 通过 SSH 从本机远程执行 Docker、Git、PowerShell 命令。
-4. 容器卷映射统一绑定到 `D:\quant\cloud-center\volumes\...`。
+4. PostgreSQL 和 MinIO 绑定到 `D:\quant\cloud-center\volumes\...`；ClickHouse 使用 Docker named volume，避免 Windows 文件系统语义影响 MergeTree 写入。
 
 ### 关键现实约束
 
@@ -199,10 +227,8 @@ D:\quant\cloud-center\
 
 ```powershell
 New-Item -ItemType Directory -Force D:\quant\cloud-center | Out-Null
-cd D:\quant\cloud-center
-git clone https://github.com/wangjrking/quant_vibe.git repo
-cd repo
-git checkout cloud-center-mcp
+Copy-Item -Recurse -Force D:\work\quant\quant_mcp\quant\main D:\quant\cloud-center\repo
+cd D:\quant\cloud-center\repo
 New-Item -ItemType Directory -Force D:\quant\cloud-center\env,D:\quant\cloud-center\volumes\clickhouse,D:\quant\cloud-center\volumes\postgres,D:\quant\cloud-center\volumes\minio,D:\quant\cloud-center\volumes\mcp_logs,D:\quant\cloud-center\backups,D:\quant\cloud-center\runtime | Out-Null
 ```
 
@@ -211,10 +237,12 @@ New-Item -ItemType Directory -Force D:\quant\cloud-center\env,D:\quant\cloud-cen
 Win10 版 Compose 文件需要把卷目录改成 Windows 路径，例如：
 
 ```text
-D:/quant/cloud-center/volumes/clickhouse:/var/lib/clickhouse
+quant-clickhouse-data:/var/lib/clickhouse
 D:/quant/cloud-center/volumes/postgres:/var/lib/postgresql/data
 D:/quant/cloud-center/volumes/minio:/data
 ```
+
+注意：Win10 不建议把 ClickHouse `/var/lib/clickhouse` 直接绑定到 `D:` 盘目录。试点写入已验证 Windows bind mount 可能触发 MergeTree part rename 权限错误，因此 `docker-compose.win10.yml` 使用 Docker named volume `quant-clickhouse-data`。
 
 环境文件建议放在：
 
@@ -303,7 +331,7 @@ Win10 阶段最少要准备以下备份闭环：
 ### 阶段 C：MCP 服务落地
 
 - 先实现 `asset-registry-mcp`、`ops-mcp`、`audit-mcp`。
-- 再实现 `l2-base-mcp`、`l3-feature-mcp`、`l4-model-mcp`。
+- 再实现 `l1-data-mcp`、`l2-base-mcp`、`l3-feature-mcp`、`l4-model-mcp`、`l5-strategy-mcp`、`l6-backtest-mcp`、`l7-trading-mcp`。
 - 所有服务先只做只读接口，再评估受控写接口。
 
 ### 阶段 D：资产镜像迁移

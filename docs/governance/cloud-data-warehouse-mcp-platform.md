@@ -1,4 +1,22 @@
-# 远程数仓 MCP 中台方案
+﻿# 远程数仓 MCP 中台方案
+
+## 当前状态
+
+本文档记录旧“远程数仓 / ClickHouse 全量迁移 / 远程全量数据中心”方向，当前已降级为历史方案，不再作为本项目 MCP 中台主线。
+
+当前主线已切换为 L8 MCP 资产发布层、MCP 中台和对外资产网关，技术栈为：
+
+```text
+PostgreSQL + MinIO/对象存储 + MCP gateway
+```
+
+当前主线文档见：
+
+```text
+quant/main/docs/governance/mcp-asset-gateway-platform.md
+```
+
+除非主人重新审批，否则本文档中的 ClickHouse 全量大表迁移、远程计算预测、远程全量数据中心建设不应进入当前执行计划。
 
 ## 目标
 
@@ -313,6 +331,7 @@ CREATE TABLE IF NOT EXISTS ops.workflow_tasks (
 | `l3-feature-mcp` | 查询 ClickHouse L3 因子、标签和对应 manifest | 因子写，模型只读 |
 | `l4-model-mcp` | 查询 ClickHouse L4 预测明细、对象存储模型文件和 PostgreSQL formal manifest | 模型写，策略只读 |
 | `l5-strategy-mcp` | 查询 ClickHouse L5 信号、策略归档和正式信号资产 | 策略写，交易只读 |
+| `l6-backtest-mcp` | 查询 ClickHouse L6 回测明细、回测报告和回测归档 | 策略写，审计只读 |
 | `l7-trading-mcp` | 查询 ClickHouse L7 交易交付和对象存储执行证据 | 交易写，审计只读 |
 | `audit-mcp` | 查询 PostgreSQL 审计记录和对象存储证据路径 | 审计写，其他只读 |
 | `ops-mcp` | 查询 PostgreSQL 任务状态、监控、锁和日报 | 指挥官写，其他只读 |
@@ -350,7 +369,7 @@ ch_readonly：跨层只读，供审计和查询
 
 - 每个专业智能体只获得本层写权限和必要下游/上游只读权限。
 - 审计智能体默认只读业务资产，只能写审计记录。
-- 数仓智能体可写 PostgreSQL `registry` 和 `ops` 运维表，不直接写 ClickHouse 业务生产数据。
+- MCP智能体可写 PostgreSQL `registry` 和 `ops` 运维表，不直接写 ClickHouse 业务生产数据。
 - 生产资产 database / schema 不允许公共写权限。
 
 ## 部署目录
@@ -370,15 +389,13 @@ ch_readonly：跨层只读，供审计和查询
   runtime/
 ```
 
-仓库拉取：
+本地项目复制：
 
 ```bash
 sudo mkdir -p /opt/quant_mcp
 sudo chown -R "$USER":"$USER" /opt/quant_mcp
-cd /opt/quant_mcp
-git clone https://github.com/wangjrking/quant_vibe.git repo
-cd repo
-git checkout cloud-center-mcp
+rsync -a --delete --exclude .git /path/to/local/quant_mcp/ /opt/quant_mcp/repo/
+cd /opt/quant_mcp/repo
 ```
 
 ## 环境变量模板
@@ -422,7 +439,7 @@ deploy/cloud-center/scripts/health_check.sh
 deploy/cloud-center/scripts/health_check.ps1
 ```
 
-本阶段 Docker Compose 已可启动 ClickHouse、PostgreSQL、MinIO 和三个 MCP skeleton 服务：`asset-registry-mcp`、`ops-mcp`、`audit-mcp`。MCP skeleton 只提供 `/health`、`/metadata`、`/services`、`/tools`，真实数据库读写工具进入下一阶段。
+本阶段 Docker Compose 已可启动 ClickHouse、PostgreSQL、MinIO 和十个 MCP skeleton 服务：`asset-registry-mcp`、`ops-mcp`、`audit-mcp`、`l1-data-mcp`、`l2-base-mcp`、`l3-feature-mcp`、`l4-model-mcp`、`l5-strategy-mcp`、`l6-backtest-mcp`、`l7-trading-mcp`。MCP skeleton 只提供 `/health`、`/metadata`、`/services`、`/tools`，真实数据库读写工具进入下一阶段。
 
 ## 初始化顺序
 
@@ -445,9 +462,8 @@ sudo mkdir -p /opt/quant_mcp/{env,volumes/clickhouse,volumes/postgres,volumes/mi
 sudo chown -R "$USER":"$USER" /opt/quant_mcp
 
 cd /opt/quant_mcp
-git clone https://github.com/wangjrking/quant_vibe.git repo
-cd repo
-git checkout cloud-center-mcp
+rsync -a --delete --exclude .git /path/to/local/quant_mcp/ /opt/quant_mcp/repo/
+cd /opt/quant_mcp/repo
 
 cp deploy/cloud-center/env.example /opt/quant_mcp/env/warehouse.env
 # 编辑 /opt/quant_mcp/env/warehouse.env，填入本机密钥
@@ -528,11 +544,11 @@ WHERE name IN ('l1_raw', 'l2_base', 'l3_feature', 'l4_model', 'l5_strategy', 'l6
 
 本阶段交付：
 
-- 数仓智能体文档包。
+- MCP智能体文档包。
 - 远程数仓 MCP 中台方案文档。
 - 可执行部署步骤和 schema 草案。
 - `deploy/cloud-center/` 基础部署包。
-- `asset-registry-mcp`、`ops-mcp`、`audit-mcp` 的可启动 skeleton 服务。
+- `asset-registry-mcp`、`ops-mcp`、`audit-mcp` 和 `l1-data-mcp` 到 `l7-trading-mcp` 的可启动 skeleton 服务。
 - Git 分支提交，供另一台服务器拉取。
 
 本阶段不交付：
