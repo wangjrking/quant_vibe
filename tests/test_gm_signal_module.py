@@ -2,6 +2,7 @@ import sqlite3
 import tempfile
 import unittest
 import csv
+import importlib.util
 from pathlib import Path
 
 from gm_signal_module import build_gm_signal_rows, load_market_rows_by_trade_date, to_gm_symbol, write_gm_signals_csv
@@ -122,6 +123,66 @@ class GmSignalModuleTests(unittest.TestCase):
 
         self.assertIn("extra", reader.fieldnames)
         self.assertEqual(rows[1]["extra"], "x")
+
+    def test_write_gm_signals_csv_rejects_naked_front_adjusted_indicator_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "signals.csv"
+            with self.assertRaisesRegex(ValueError, "naked front-adjusted indicator"):
+                write_gm_signals_csv(
+                    [
+                        {"signal_date": "20260102", "stock_code": "600000.SH", "atr": 0.2},
+                    ],
+                    output,
+                )
+
+    def test_write_gm_signals_csv_rejects_naked_raw_derived_market_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "signals.csv"
+            with self.assertRaisesRegex(ValueError, "naked raw-derived market fields"):
+                write_gm_signals_csv(
+                    [
+                        {"signal_date": "20260102", "stock_code": "600000.SH", "pct_chg": 2.0},
+                    ],
+                    output,
+                )
+
+    @unittest.skipIf(importlib.util.find_spec("duckdb") is None, "duckdb is not installed")
+    def test_load_market_rows_by_trade_date_supports_duckdb_stock_daily_table(self):
+        import duckdb
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "market.duckdb"
+            with duckdb.connect(str(db_path)) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE STOCK_DAILY_DATA (
+                        trade_date VARCHAR,
+                        stock_code VARCHAR,
+                        name VARCHAR,
+                        pre_close DOUBLE,
+                        open DOUBLE,
+                        close DOUBLE,
+                        amount DOUBLE,
+                        turnover_rate DOUBLE,
+                        total_mv DOUBLE,
+                        atr_qfq DOUBLE,
+                        limit_times VARCHAR
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    INSERT INTO STOCK_DAILY_DATA VALUES
+                    ('20240604', '000001.SZ', '平安银行', 10.0, 10.1, 10.2, 1200000.0, 3.5, 900000.0, 0.2, NULL),
+                    ('20240605', '000001.SZ', '平安银行', 10.1, 10.2, 10.3, 1300000.0, 3.6, 910000.0, 0.2, NULL)
+                    """
+                )
+
+            grouped = load_market_rows_by_trade_date(db_path, "20240604", "20240605")
+
+        self.assertEqual(sorted(grouped), ["20240604", "20240605"])
+        self.assertEqual(grouped["20240604"]["000001.SZ"]["name"], "平安银行")
+        self.assertEqual(grouped["20240605"]["000001.SZ"]["turnover_rate"], 3.6)
 
     def test_build_gm_signal_rows_can_attach_target_pct(self):
         rows = [

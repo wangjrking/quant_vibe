@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_repro500_p435_s96_p10d70_v20260702",
+  "strategy_name": "复现500高收益 Top3 p435 s96 p10d70",
+  "name": "复现500高收益 Top3 p435 s96 p10d70",
+  "status": "production",
+  "created_at": "2026-07-02",
+  "published_at": "2026-07-02",
+  "published_at_iso": "2026-07-02T23:12:55+08:00",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_candidate": "reconstruct_500_from_p44_plus_1dge_m002",
+  "source_report_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_latest_l4_weight_candidates_20260702",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_repro500_p435_s96_p10d70_v20260702\\signals\\full_history_repro500_p435_s96_p10d70.csv",
+  "latest_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_repro500_p435_s96_p10d70_v20260702\\signals\\latest_signal_20260702_for_20260703.csv",
+  "latest_signal_status": "pending_buy_day_hard_gate",
+  "input_contract": {
+    "formal_manifest_1d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "source_type": "duckdb_table",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false,
+    "active_universe_no_bj": true,
+    "market_field_semantics": {
+      "qfq_fields": [
+        "atr_qfq",
+        "buy_open_gap_pct is qfq-derived in source candidate"
+      ],
+      "execution_price_rule": "交易可执行过滤必须使用不复权真实价格，不得用前复权价格判断涨跌停或真实成交。",
+      "bare_price_field_policy": "后续生产链路不得默认把裸open/high/low/close/pre_close视为前复权；必须显式标记raw或qfq。"
+    }
+  },
+  "metrics": {
+    "annual_return": 5.004967653460939,
+    "pnl_ratio": 19.155999484616252,
+    "sharpe": 3.9058695428854118,
+    "max_drawdown": 0.0386954551286109,
+    "win_ratio": 0.7347670250896058,
+    "open_count": 279,
+    "close_count": 279,
+    "calmar_ratio": 129.3425193430619
+  },
+  "trading_rules_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_repro500_p435_s96_p10d70_v20260702\\trading_rules.json",
+  "validation_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_repro500_p435_s96_p10d70_v20260702\\validation.json",
+  "latest_signal_date": "20260702",
+  "latest_buy_date": "20260703",
+  "latest_signal_status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_repro500_p435_s96_p10d70_v20260702\\signals\\latest_signal_20260702_for_20260703_status.json"
+}

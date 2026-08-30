@@ -1,0 +1,214 @@
+{
+  "protocol_id": "front_combo_preregistered_observation_protocol_20260721",
+  "status": "frozen_protocol_only_waiting_model_remediation_and_reaudit",
+  "track": "research_only",
+  "created_date": "2026-07-21",
+  "research_question": "Can an audited 10D-main and 5D-support score improve net forward strategy performance without historical winner selection or silent input fallback?",
+  "governance": {
+    "production_change_allowed": false,
+    "formal_l4_change_allowed": false,
+    "signal_generation_allowed": false,
+    "backtest_allowed_before_reaudit": false,
+    "restricted_candidate_scores_may_be_read": false,
+    "required_release_gate": "allow_for_preregistered_strategy_observation_only",
+    "current_gate": "restricted_p1"
+  },
+  "restricted_reference_assets_not_executable": [
+    "quant/data_file/experimental_assets/model-agent/l4_predictions/l4_10d_front_combo_calibrator_20260714.duckdb",
+    "quant/data_file/experimental_assets/model-agent/l4_predictions/l4_5d_front_combo_calibrator_20260714.duckdb"
+  ],
+  "required_input_contract_after_remediation": {
+    "backend": "duckdb_table",
+    "one_table_one_file": true,
+    "no_bj": true,
+    "allow_legacy": false,
+    "allow_sqlite": false,
+    "allow_research_fallback": false,
+    "required_columns": [
+      "trade_date",
+      "stock_code",
+      "pred_prob"
+    ],
+    "required_horizons": [
+      "5d_open_return",
+      "10d_open_return"
+    ],
+    "required_frozen_hashes": [
+      "candidate_duckdb_sha256",
+      "candidate_table_key_score_sha256",
+      "research_model_sha256",
+      "source_formal_manifest_sha256",
+      "source_l3_duckdb_sha256",
+      "materialization_code_sha256"
+    ],
+    "target_day_key_domain_rule": "5D and 10D key domains must exactly match the audited target universe; any missing full row fails closed",
+    "field_null_rule": "Declared field-level natural nulls are handled only by a separately frozen rule; full-row absence must never be filled with 0.5",
+    "duplicate_key_rule": "trade_date + stock_code duplicate count must equal zero",
+    "tie_break_rule": "pred_prob desc, stock_code asc"
+  },
+  "information_timing": {
+    "signal_time": "T close after formal scores are available",
+    "signal_inputs": "Only T-or-earlier audited score and L2 fields",
+    "execution_time": "T+1 open",
+    "execution_price": "raw unadjusted open",
+    "technical_price_semantics": "explicit qfq fields only",
+    "t_plus_one_open_gate": "raw open, raw pre_close and raw limit state only; never part of T signal selection",
+    "next_open_return_usage": "offline evaluation label only"
+  },
+  "score_semantics": {
+    "main_axis": "10D audited candidate daily percentile rank",
+    "support_axis": "5D audited candidate daily percentile rank",
+    "forbidden_axes": [
+      "1D score",
+      "3D score",
+      "historical signal lists",
+      "realized trade outcomes"
+    ],
+    "blend_grid": [
+      {
+        "weight_10d": 0.8,
+        "weight_5d": 0.2
+      },
+      {
+        "weight_10d": 0.9,
+        "weight_5d": 0.1
+      }
+    ],
+    "formula": "weight_10d * daily_pct_rank(score_10d) + weight_5d * daily_pct_rank(score_5d)"
+  },
+  "universe_and_filter_order": [
+    "audited no-BJ target-day key domain",
+    "exclude ST and risk warning using target-day governed L2 fields",
+    "exclude delisting and delisting-risk names using target-day fields",
+    "exclude suspension and non-tradable rows",
+    "require amount >= 90000 and total_mv >= 200000 using target-day values",
+    "compute 10D and 5D daily percentile ranks",
+    "compute frozen blend score",
+    "rank by blend score desc then stock_code asc",
+    "take TopN and refill after any execution-day rejection"
+  ],
+  "parameter_grid": {
+    "top_n": [
+      3,
+      5
+    ],
+    "rebalance_every_trade_days": [
+      1,
+      2
+    ],
+    "minimum_hold_trade_days": [
+      1,
+      2
+    ],
+    "maximum_hold_trade_days": 10,
+    "held_sell_rank_percentile_below": [
+      0.9,
+      0.95
+    ],
+    "challenger_score_edge": 0.02,
+    "target_invested_ratio": 0.9,
+    "position_rule": "equal weight across accepted names, no leverage",
+    "grid_case_count": 32,
+    "random_seed": 20260721
+  },
+  "buy_and_sell_rules": {
+    "buy": "At each frozen rebalance frequency, buy highest-ranked accepted names up to TopN",
+    "sell": "After minimum hold, sell only when held rank is below the frozen threshold and an accepted challenger exceeds held blend score by at least 0.02; force sell at maximum hold",
+    "sell_independent_of_original_buy_list": true,
+    "t_plus_one_constraint": "No same-day sell of a newly bought A-share position",
+    "refill": "After T+1 limit-up, suspension or other hard rejection, refill in frozen rank order until TopN or candidate exhaustion",
+    "shortage_audit": "Record requested TopN, accepted count, rejection reason and exhausted-candidate count for every buy day",
+    "account_drawdown_scaling": false,
+    "intraday_stop_loss": false,
+    "date_month_industry_filters": false
+  },
+  "cost_and_execution": {
+    "initial_capital_cny": 700000,
+    "buy_slippage": 0.004,
+    "sell_slippage": 0.0005,
+    "commission_each_side": 0.0003,
+    "minimum_commission_cny": 5.0,
+    "sell_stamp_duty": 0.0005,
+    "fill_price": "T+1 raw unadjusted open after execution hard gates",
+    "benchmark_slippage_case": {
+      "buy_slippage": 0.0025,
+      "sell_slippage": 0.0
+    },
+    "stress_slippage_case": {
+      "buy_slippage": 0.0065,
+      "sell_slippage": 0.0005
+    }
+  },
+  "sample_windows": {
+    "historical_seen_period": {
+      "range": "20220606-20260717",
+      "usage": "descriptive lineage audit only; forbidden for parameter selection or admission"
+    },
+    "observation": {
+      "start": "20260722",
+      "length_trade_days": 120,
+      "end_rule": "the 120th valid A-share trading day from start, inclusive",
+      "minimum_complete_days_required": 120
+    },
+    "unseen_forward": {
+      "start_rule": "first A-share trading day after the frozen 120-day observation window",
+      "length_trade_days": 60,
+      "access_before_observation_freeze": false
+    }
+  },
+  "observation_selection_order": [
+    "discard any case failing a strong gate",
+    "maximize minimum Sharpe across three consecutive 40-trading-day slices",
+    "maximize full-observation Sharpe",
+    "maximize platform pnl_ratio_annual",
+    "minimize maximum drawdown",
+    "prefer lower turnover",
+    "prefer lower TopN and lower parameter complexity"
+  ],
+  "observation_promotion_gates": {
+    "platform_linear_annual_min": 5.0,
+    "sharpe_min": 4.0,
+    "max_drawdown_max": 0.4,
+    "minimum_buy_days": 80,
+    "minimum_closed_trades": 120,
+    "minimum_average_invested_ratio": 0.7,
+    "all_three_40d_slices_positive": true,
+    "neighbor_cases_required_positive": true,
+    "neighbor_min_sharpe_ratio_to_selected": 0.6,
+    "repeat_run_exact_match_required": true,
+    "remove_best_stock_result_positive": true,
+    "remove_best_month_result_positive": true,
+    "remove_top_1pct_trades_result_positive": true,
+    "hard_filter_audit_zero_hits": true,
+    "future_leakage_audit_pass": true,
+    "lineage_rebuild_audit_pass": true
+  },
+  "metric_disclosure": [
+    "Juejin pnl_ratio_annual labelled platform linear annualization and non-CAGR",
+    "cumulative pnl_ratio",
+    "CAGR with explicit time basis",
+    "Sharpe",
+    "maximum drawdown",
+    "win ratio",
+    "turnover and trade counts",
+    "signal coverage and invested ratio"
+  ],
+  "unseen_forward_open_conditions": [
+    "one observation candidate passes every frozen gate",
+    "candidate parameters and selection evidence are frozen before forward access",
+    "all code, config and input asset hashes are frozen",
+    "audit-agent explicitly approves opening the forward window",
+    "no rule or threshold changes after observation results are read"
+  ],
+  "stop_conditions": [
+    "model remediation or reaudit does not grant allow_for_preregistered_strategy_observation_only",
+    "input hash, table, schema or key-domain mismatch",
+    "any missing target-day full row or silent 0.5 fallback",
+    "any SQLite, legacy, research fallback or BJ row",
+    "any future-window access before the required freeze",
+    "no candidate passes all observation promotion gates",
+    "Juejin run cannot be reproduced exactly twice",
+    "a rule, grid or cost change is requested after observation begins"
+  ],
+  "failure_policy": "Report no passing candidate; do not relax gates, reopen the same observation window, or publish production assets"
+}

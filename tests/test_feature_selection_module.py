@@ -1,13 +1,17 @@
 import unittest
 import tempfile
+import os
 from pathlib import Path
+from unittest.mock import patch
 
+import duckdb
 import pandas as pd
 
-from fast_feature_selection import _read_parquet_date_range
+from fast_feature_selection import _read_parquet_date_range, score_features_fast_split
 from ai_module import prepare_training_label
 from feature_selection_module import (
     FeatureSelectionConfig,
+    load_selection_frame,
     prepare_selection_label,
     select_features,
 )
@@ -61,7 +65,7 @@ class FeatureSelectionModuleTests(unittest.TestCase):
             {
                 "10d_yield_rate": [0.10, 0.05],
                 "atr_qfq": [1.0, 0.5],
-                "close": [20.0, 10.0],
+                "close_qfq": [20.0, 10.0],
             }
         )
 
@@ -69,6 +73,32 @@ class FeatureSelectionModuleTests(unittest.TestCase):
 
         self.assertAlmostEqual(result.loc[0, "risk_adjusted_10d_yield_rate"], 2.0)
         self.assertAlmostEqual(result.loc[1, "risk_adjusted_10d_yield_rate"], 1.0)
+
+    def test_prepare_training_label_prefers_close_qfq_when_present(self):
+        frame = pd.DataFrame(
+            {
+                "10d_yield_rate": [0.10],
+                "atr_qfq": [1.0],
+                "close": [20.0],
+                "close_qfq": [10.0],
+            }
+        )
+
+        result = prepare_selection_label(frame, "risk_adjusted_10d_yield_rate")
+
+        self.assertAlmostEqual(result.loc[0, "risk_adjusted_10d_yield_rate"], 1.0)
+
+    def test_prepare_selection_label_requires_explicit_close_qfq(self):
+        frame = pd.DataFrame(
+            {
+                "10d_yield_rate": [0.10],
+                "atr_qfq": [1.0],
+                "close": [20.0],
+            }
+        )
+
+        with self.assertRaisesRegex(KeyError, "requires explicit front-adjusted column: close_qfq"):
+            prepare_selection_label(frame, "risk_adjusted_10d_yield_rate")
 
     def test_prepare_training_label_builds_executable_open_return(self):
         frame = pd.DataFrame({"post_open": [10.0], "post12_open": [11.0]})
@@ -153,6 +183,151 @@ class FeatureSelectionModuleTests(unittest.TestCase):
 
         expected = (10.3 * (1 - 0.0003 - 0.0005 - 0.001)) / (10.0 * (1 + 0.0003 + 0.001)) - 1
         self.assertAlmostEqual(result.loc[0, "executable_1d_open_return"], expected)
+
+    def test_load_selection_frame_reads_duckdb_mainline_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_dir = root / "data_file"
+            registry_dir = data_dir / "asset_registry"
+            duckdb_dir = data_dir / "production_assets" / "duckdb"
+            registry_dir.mkdir(parents=True)
+            duckdb_dir.mkdir(parents=True)
+            duckdb_path = duckdb_dir / "quant_production.duckdb"
+            with duckdb.connect(str(duckdb_path)) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE prod_l3_feature_table(
+                        trade_date TEXT,
+                        stock_code TEXT,
+                        name TEXT,
+                        industry TEXT,
+                        act_ent_type TEXT,
+                        factor_a DOUBLE
+                    )
+                    """
+                )
+                conn.execute(
+                    "INSERT INTO prod_l3_feature_table VALUES ('20240102', '000001.SZ', 'A', 'I1', 'SOE', 1.5)"
+                )
+                conn.execute(
+                    """
+                    CREATE TABLE prod_l3_label_table(
+                        trade_date TEXT,
+                        stock_code TEXT,
+                        "5d_yield_rate" DOUBLE,
+                        "open6_yield_rate" DOUBLE,
+                        "10d_yield_rate" DOUBLE
+                    )
+                    """
+                )
+                conn.execute(
+                    "INSERT INTO prod_l3_label_table VALUES ('20240102', '000001.SZ', 0.1, 0.2, 0.3)"
+                )
+            (registry_dir / "production_assets.json").write_text(
+                f"""
+                {{
+                  "assets": [
+                    {{
+                      "asset_id": "prod_l3_feature_duckdb",
+                      "layer": "L3_features",
+                      "asset_type": "duckdb_table",
+                      "status": "production_active",
+                      "allowed_for_main_workflow": true,
+                      "asset_path": "{duckdb_path.as_posix()}::prod_l3_feature_table"
+                    }},
+                    {{
+                      "asset_id": "prod_l3_label_duckdb",
+                      "layer": "L3_labels",
+                      "asset_type": "duckdb_table",
+                      "status": "production_active",
+                      "allowed_for_main_workflow": true,
+                      "asset_path": "{duckdb_path.as_posix()}::prod_l3_label_table"
+                    }}
+                  ]
+                }}
+                """,
+                encoding="utf-8",
+            )
+
+            with patch.dict(
+                os.environ,
+                {
+                    "QUANT_MODEL_FEATURE_DUCKDB": str(duckdb_path),
+                    "QUANT_MODEL_LABEL_DUCKDB": str(duckdb_path),
+                    "QUANT_MODEL_FEATURE_DUCKDB_TABLE": "prod_l3_feature_table",
+                    "QUANT_MODEL_LABEL_DUCKDB_TABLE": "prod_l3_label_table",
+                },
+                clear=False,
+            ):
+                frame = load_selection_frame(
+                    "",
+                    label_path="",
+                    label="10d_yield_rate",
+                    feature_source="production_split",
+                )
+
+        self.assertEqual(len(frame), 1)
+        self.assertEqual(frame.iloc[0]["stock_code"], "000001.SZ")
+        self.assertIn("10d_yield_rate", frame.columns)
+
+    def test_score_features_fast_split_reads_duckdb_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            duckdb_path = root / "quant_production.duckdb"
+            feature_rows = []
+            label_rows = []
+            for day in ("20240102", "20240103"):
+                for idx in range(120):
+                    stock_code = f"{idx:06d}.SZ"
+                    feature_rows.append(
+                        f"('{day}', '{stock_code}', {idx + 1}, {120 - idx})"
+                    )
+                    label_rows.append(
+                        f"('{day}', '{stock_code}', {(idx + 1) / 1000.0})"
+                    )
+            with duckdb.connect(str(duckdb_path)) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE feature_table(
+                        trade_date TEXT,
+                        stock_code TEXT,
+                        factor_a DOUBLE,
+                        factor_b DOUBLE
+                    )
+                    """
+                )
+                conn.execute(
+                    "INSERT INTO feature_table VALUES " + ", ".join(feature_rows)
+                )
+                conn.execute(
+                    """
+                    CREATE TABLE label_table(
+                        trade_date TEXT,
+                        stock_code TEXT,
+                        "10d_yield_rate" DOUBLE
+                    )
+                    """
+                )
+                conn.execute(
+                    "INSERT INTO label_table VALUES " + ", ".join(label_rows)
+                )
+
+            rows, selected = score_features_fast_split(
+                duckdb_path,
+                label_path=duckdb_path,
+                feature_table="feature_table",
+                label_table="label_table",
+                label="10d_yield_rate",
+                start="20240102",
+                end="20240103",
+                top_n=2,
+                min_abs_ic=0.5,
+                max_missing_ratio=0.35,
+                folds=2,
+            )
+
+        self.assertTrue(rows)
+        self.assertIn("factor_a", selected)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,69 @@
+﻿{
+  "config_id": "model_observation_window_policy_v1_20260627",
+  "generated_at": "2026-06-27T11:20:00+08:00",
+  "actor": "model-agent",
+  "asset_role": "model_governance_policy_config_not_formal",
+  "approval_status": "research_policy_only",
+  "purpose": "Define the four-year observation-window standard for L4 model research evaluation and production promotion.",
+  "scope": {
+    "layer": "L4 model prediction assets",
+    "applies_to_labels": [
+      "executable_1d_open_return",
+      "executable_3d_open_return",
+      "executable_5d_open_return",
+      "executable_10d_open_return"
+    ],
+    "standard_feature_input": "quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>",
+    "standard_label_input": "quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>",
+    "standard_prediction_asset_root": "quant/data_file/production_assets/duckdb/"
+  },
+  "definitions": {
+    "score_coverage_window": "The date range in which the candidate score table contains predictions for the standard production factor universe.",
+    "evaluation_observation_window": "The date range in which both candidate scores and mature non-null prediction labels are available and can be evaluated.",
+    "mature_label_cutoff": "The latest trade_date with non-null label for the specific prediction horizon.",
+    "four_year_observation_period": "An evaluation_observation_window spanning at least four calendar years up to the mature_label_cutoff, with adequate trading-day count and no non-standard gaps."
+  },
+  "hard_constraints_for_production_promotion": {
+    "four_year_observation_required": true,
+    "minimum_calendar_years": 4.0,
+    "minimum_eval_trade_days": 900,
+    "candidate_and_baseline_same_observation_window": true,
+    "label_maturity_required": true,
+    "standard_chain_only": true,
+    "no_legacy_feature_or_prediction_inputs": true,
+    "latest_score_coverage_must_match_production_factor_latest": true,
+    "latest_day_rows_must_match_production_factor_rows": true,
+    "null_pred_prob_must_equal": 0,
+    "duplicate_key_groups_must_equal": 0
+  },
+  "research_stage_rules": {
+    "shorter_windows_allowed_for_experiment": true,
+    "must_label_shorter_window_as_non_four_year": true,
+    "must_not_claim_production_ready_from_shorter_window": true,
+    "must_report_observation_start_date": true,
+    "must_report_observation_end_date": true,
+    "must_report_eval_trade_days": true,
+    "must_report_mature_label_cutoff": true
+  },
+  "promotion_states": {
+    "short_window_research_only": "research_only_not_four_year_observed",
+    "four_year_research_candidate": "approved_for_l4_candidate_only_after_four_year_observation",
+    "production_ready_requires_audit": "approved_for_l5_after_four_year_observation_and_audit"
+  },
+  "current_known_status_20260627": {
+    "current_research_score_coverage_start": "20240604",
+    "current_research_score_coverage_latest": "20260625",
+    "current_evaluation_window_status": "not_four_year_observed",
+    "reason": "Current evaluated research assets cover roughly two years of score history and mature labels; they must not be described as four-year-observed assets."
+  },
+  "boundaries": {
+    "policy_only": true,
+    "no_training": true,
+    "no_prediction": true,
+    "no_formal_manifest_change": true,
+    "no_production_manifest_change": true,
+    "no_signal": true,
+    "no_backtest": true
+  }
+}
+

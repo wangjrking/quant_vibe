@@ -1,0 +1,100 @@
+{
+  "protocol_id": "strategy_research_sustainable_alpha_sleeves_v71_20260722",
+  "status": "frozen_waiting_for_independent_alpha_gate",
+  "research_only": true,
+  "frozen_at": "2026-07-22",
+  "research_question": "当前正式L4中是否至少存在两个成本后稳定、彼此前排不过度重合的Alpha来源，并能通过分袖组合降低单一模型和启动路径依赖",
+  "input_contract": {
+    "source_type": "duckdb_table",
+    "approval_status": "approved_for_l5",
+    "allow_legacy": false,
+    "allow_research_only_prediction": false,
+    "no_bj": true,
+    "manifest_sha256": {
+      "1d": "c8a888aea589f5f6a6e0d7f7009b75f77c467fd7d5507ecff3d639e71536cd5a",
+      "3d": "c39cfaf447f9eb2a40b3facafe17aba192eaaf5d3a8c2f9276f38f064e5bd1fc",
+      "5d": "adae02686decf9b22aa20aba87feb71896ec2f237108672359df2ebb78152ad5",
+      "10d": "00986257f2505525998184d64c2e6d035eb9f069e65e7fe8a0b1d704efdef1d9"
+    }
+  },
+  "time_contract": {
+    "strategy_selection_start": "20220606",
+    "strategy_selection_end": "20251231",
+    "known_contaminated_diagnostic_start": "20260101",
+    "known_contaminated_diagnostic_end": "20260720",
+    "true_unseen_forward_start": "20260721",
+    "rule": "2026-01-01至2026-07-20只作已知区间诊断，不得参与参数选择；2026-07-21之后保持未见，积累后一次性验收"
+  },
+  "alpha_gate": {
+    "round_trip_cost": 0.0066,
+    "topn": 3,
+    "required_positive_periods": ["2023", "2024", "2025", "recent120"],
+    "required_min_sources": 2,
+    "max_pairwise_daily_rank_correlation": 0.85,
+    "max_pairwise_top3_overlap": 0.5,
+    "fail_closed_on_missing_metric": true,
+    "failure_action": "stop_before_strategy_grid"
+  },
+  "portfolio_contract": {
+    "construction": "independent_horizon_sleeves",
+    "eligible_horizons": "only_horizons_passing_alpha_gate",
+    "sleeve_weights": [[0.5, 0.5], [0.6, 0.4]],
+    "names_per_sleeve": [2, 3],
+    "gross_exposure": 0.9,
+    "single_name_cap": 0.3,
+    "overlap_handling": "aggregate_same_stock_then_apply_single_name_cap_and_redistribute_within_passing_names",
+    "rebalance_frequency_days": [3, 5, 10],
+    "minimum_hold_days": 1,
+    "maximum_hold_days": [5, 10],
+    "rank_exit_percentile": [0.7, 0.8],
+    "replacement_rank_advantage": [0.02, 0.05],
+    "cash_allowed": true,
+    "market_timing_allowed": false,
+    "account_drawdown_scaling_allowed": false
+  },
+  "execution_contract": {
+    "initial_cash": 700000,
+    "signal_time": "T日收盘后",
+    "execution_time": "T+1开盘",
+    "factor_and_score_price_semantics": "qfq_explicit_only",
+    "execution_price_semantics": "raw_unadjusted_open",
+    "buy_slippage": 0.003,
+    "sell_slippage": 0.003,
+    "buy_limit_up_rejected": true,
+    "sell_limit_down_skipped": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delisting": true,
+    "exclude_suspended": true,
+    "t_plus_one_enforced": true
+  },
+  "selection_contract": {
+    "local_role": "prefilter_only",
+    "platform_authority": "juejin",
+    "primary_objective": "minimum_year_and_recent_window_robustness_before_full_period_return",
+    "tie_break_order": ["worst_period_return", "sharpe", "max_drawdown", "platform_linear_annual_non_cagr"],
+    "max_promoted_candidates": 12,
+    "preserve_all_failures": true
+  },
+  "admission_contract": {
+    "platform_linear_annual_non_cagr_min": 5.0,
+    "sharpe_min": 4.0,
+    "max_drawdown_max": 0.4,
+    "all_calendar_years_positive": true,
+    "recent60_positive": true,
+    "recent120_positive": true,
+    "parameter_neighborhood_required": true,
+    "start_date_sensitivity_required": true,
+    "contribution_stress_required": true,
+    "repeat_run_required": true,
+    "true_unseen_forward_required_for_production": true
+  },
+  "boundaries": {
+    "no_future_information": true,
+    "no_historical_signal_pool": true,
+    "no_realized_return_rule_mining": true,
+    "no_date_month_or_industry_answer_filter": true,
+    "no_production_change": true,
+    "no_formal_signal": true,
+    "no_l7_l8": true
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_fw_soft_deepdrop_weight_v20260706",
+  "strategy_name": "深跌低开软调仓",
+  "status": "production",
+  "model_input": {
+    "source": "approved active formal L4 DuckDB manifests inherited from current production signal lineage",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false
+  },
+  "selection_rule": {
+    "base_lineage": "prod_deepdrop_smallcap_refill_v20260704",
+    "max_names_per_signal_day": 3,
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "execution_price_semantics": "交易执行和涨跌停判断使用不复权真实 open/pre_close；因子和模型派生字段保留 qfq 语义。"
+  },
+  "position_rule": {
+    "daily_target_cap": 0.91,
+    "weak_signal_scale": 0.85,
+    "strong_signal_scale": 1.05,
+    "weak_signal_rule": "signal_pct_chg_raw >= -2.5 or buy_open_gap_raw_pct >= 0",
+    "strong_signal_rule": "signal_pct_chg_raw <= -5.0 and buy_open_gap_raw_pct <= -0.8 and turnover_rate >= 4.5",
+    "max_positions": 3
+  },
+  "holding_rule": {
+    "holding_days": 1,
+    "max_holding_days": 1,
+    "score_exit_entry_ratio": 0.96,
+    "min_holding_days_before_score_exit": 1,
+    "score_continue_entry_ratio": 9.99,
+    "signal_stop_loss_pct": 0.05,
+    "signal_take_profit_pct": 0.08
+  },
+  "validation_note": "用户接受降级发布，生产指标按当前 full-history 重建版掘金复跑记录，不沿用研究版 501% 指标。"
+}

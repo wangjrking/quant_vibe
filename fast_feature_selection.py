@@ -14,6 +14,10 @@ from leakage_guard import find_leaky_features
 from model_asset_route import (
     MODEL_FEATURE_MODE_LEGACY,
     MODEL_FEATURE_MODE_SPLIT,
+    resolve_model_feature_duckdb_path,
+    resolve_model_feature_duckdb_table,
+    resolve_model_label_duckdb_path,
+    resolve_model_label_duckdb_table,
 )
 
 
@@ -117,7 +121,7 @@ def score_features_fast(
 
 def _label_required_columns(label: str) -> list[str]:
     if label == "risk_adjusted_10d_yield_rate":
-        return ["10d_yield_rate", "atr_qfq", "close"]
+        return ["10d_yield_rate", "atr_qfq", "close_qfq"]
     if label == "executable_10d_open_return":
         return ["post_open", "post12_open"]
     if label == "executable_5d_open_return":
@@ -159,7 +163,7 @@ def _split_label_required_columns(label: str) -> list[str]:
 
 def _split_feature_required_columns(label: str) -> list[str]:
     if label == "risk_adjusted_10d_yield_rate":
-        return ["atr_qfq", "close"]
+        return ["atr_qfq", "close_qfq"]
     return []
 
 
@@ -181,6 +185,17 @@ def _parquet_schema_names(path: Path) -> list[str]:
     return list(pq.ParquetDataset(_stable_parquet_read_target(path)).schema.names)
 
 
+def _quote_ident(value: str) -> str:
+    return '"' + str(value).replace('"', '""') + '"'
+
+
+def _duckdb_schema_names(path: Path, table: str) -> list[str]:
+    import duckdb
+
+    with duckdb.connect(str(path), read_only=True) as conn:
+        return [str(row[0]) for row in conn.execute(f"DESCRIBE {_quote_ident(table)}").fetchall()]
+
+
 def _read_parquet_date_range(path: Path, columns: list[str], start: str | None, end: str | None) -> pd.DataFrame:
     target = _stable_parquet_read_target(path)
     filters = []
@@ -191,6 +206,31 @@ def _read_parquet_date_range(path: Path, columns: list[str], start: str | None, 
     if filters:
         return pd.read_parquet(target, columns=columns, filters=filters)
     return pd.read_parquet(target, columns=columns)
+
+
+def _read_duckdb_date_range(
+    path: Path,
+    table: str,
+    columns: list[str],
+    start: str | None,
+    end: str | None,
+) -> pd.DataFrame:
+    import duckdb
+
+    selected = ", ".join(_quote_ident(column) for column in columns)
+    where = []
+    params: list[str] = []
+    if start:
+        where.append("trade_date >= ?")
+        params.append(str(start))
+    if end:
+        where.append("trade_date <= ?")
+        params.append(str(end))
+    sql = f"SELECT {selected} FROM {_quote_ident(table)}"
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    with duckdb.connect(str(path), read_only=True) as conn:
+        return conn.execute(sql, params).fetchdf()
 
 
 def score_features_fast_parquet(
@@ -284,6 +324,8 @@ def score_features_fast_split(
     path: str | Path,
     *,
     label_path: str | Path,
+    feature_table: str | None = None,
+    label_table: str | None = None,
     label: str,
     start: str | None,
     end: str | None,
@@ -296,8 +338,20 @@ def score_features_fast_split(
 ) -> tuple[list[dict], list[str]]:
     feature_path = Path(path)
     label_path = Path(label_path)
-    feature_schema = _parquet_schema_names(feature_path)
-    label_schema = _parquet_schema_names(label_path)
+    if feature_path.suffix.lower() == ".duckdb":
+        feature_table = str(feature_table or resolve_model_feature_duckdb_table(None)).strip()
+        label_table = str(label_table or resolve_model_label_duckdb_table(None)).strip()
+        if not feature_table or not label_table:
+            raise RuntimeError("active L3 DuckDB assets are missing bound feature/label table names")
+        feature_schema = _duckdb_schema_names(feature_path, feature_table)
+        label_schema = _duckdb_schema_names(label_path, label_table)
+        read_feature_range = lambda columns: _read_duckdb_date_range(feature_path, feature_table, columns, start, end)
+        read_label_range = lambda columns: _read_duckdb_date_range(label_path, label_table, columns, start, end)
+    else:
+        feature_schema = _parquet_schema_names(feature_path)
+        label_schema = _parquet_schema_names(label_path)
+        read_feature_range = lambda columns: _read_parquet_date_range(feature_path, columns, start, end)
+        read_label_range = lambda columns: _read_parquet_date_range(label_path, columns, start, end)
 
     feature_base_columns = list(
         dict.fromkeys(["trade_date", "stock_code"] + _split_feature_required_columns(label))
@@ -310,8 +364,8 @@ def score_features_fast_split(
         )
     )
     label_columns = [column for column in label_columns if column in label_schema]
-    base_features = _read_parquet_date_range(feature_path, feature_base_columns, start, end)
-    base_labels = _read_parquet_date_range(label_path, label_columns, start, end)
+    base_features = read_feature_range(feature_base_columns)
+    base_labels = read_label_range(label_columns)
     base = base_features.merge(base_labels, on=["trade_date", "stock_code"], how="inner")
     base = prepare_selection_label(base, label)
     if label not in base.columns:
@@ -338,7 +392,7 @@ def score_features_fast_split(
             f"first={feature_chunk[0] if feature_chunk else ''} last={feature_chunk[-1] if feature_chunk else ''}",
             flush=True,
         )
-        frame = _read_parquet_date_range(feature_path, ["trade_date", "stock_code", *feature_chunk], start, end)
+        frame = read_feature_range(["trade_date", "stock_code", *feature_chunk])
         frame = base_keys.merge(frame, on=["trade_date", "stock_code"], how="left").reset_index(drop=True)
         for feature in feature_chunk:
             if feature not in frame.columns:
@@ -393,8 +447,8 @@ def write_score_csv(rows: list[dict], output_path: Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Fast time-fold IC feature selection.")
-    parser.add_argument("--data", default="data_file/production_factor_parts")
-    parser.add_argument("--labels", default="data_file/prediction_label_parts")
+    parser.add_argument("--data", default="")
+    parser.add_argument("--labels", default="")
     parser.add_argument(
         "--feature-source",
         default=MODEL_FEATURE_MODE_SPLIT,
@@ -429,9 +483,19 @@ def main(argv=None) -> int:
             exclude_prefixes=exclude_prefixes,
         )
     else:
+        feature_table = resolve_model_feature_duckdb_table(None)
+        label_table = resolve_model_label_duckdb_table(None)
+        if feature_table and label_table:
+            data_path = resolve_model_feature_duckdb_path(None, require_exists=True)
+            label_path = resolve_model_label_duckdb_path(None, require_exists=True)
+        else:
+            data_path = args.data
+            label_path = args.labels
         rows, selected = score_features_fast_split(
-            args.data,
-            label_path=args.labels,
+            data_path,
+            label_path=label_path,
+            feature_table=feature_table,
+            label_table=label_table,
             label=args.label,
             start=args.start,
             end=args.end,

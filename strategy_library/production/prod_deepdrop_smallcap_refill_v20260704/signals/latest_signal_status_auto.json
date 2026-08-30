@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+  "status": "pending_buy_day_hard_gate",
+  "signal_date": "20260703",
+  "buy_date": "20260706",
+  "latest_signal_date": "20260703",
+  "latest_buy_date": "20260706",
+  "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\latest_signal_20260703_for_20260706.csv",
+  "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_deepdrop_smallcap_refill_v20260704_latest.csv",
+  "row_count": 3,
+  "stock_count": 3,
+  "duplicate_signal_stock_keys": 0,
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "l7_execution_allowed": false,
+  "note": "buy_day_market_not_available; L5 candidate signal only; L7 execution is blocked.",
+  "audit": {
+    "universe_count": 3287,
+    "base_selected": 3,
+    "refill_selected": 0,
+    "target_topn": 3,
+    "actual_rows": 3,
+    "shortage": 0,
+    "signal_day_rejects": {
+      "after_l4_join_and_signal_day_filters": 3287,
+      "bj_rows_after_l4_join": 0
+    },
+    "full_history_update": {
+      "before_rows": 314,
+      "after_rows": 314,
+      "signal_days": 208,
+      "buy_days": 208,
+      "full_history": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\full_history_deepdrop_smallcap_refill.csv"
+    }
+  }
+}

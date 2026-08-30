@@ -1,6 +1,8 @@
 import unittest
 import sys
 import types
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pandas  # noqa: F401
 import pandas as pd
@@ -17,6 +19,7 @@ from build_production_factor_parts import (
     apply_industry_encode,
     extend_industry_encode_mapping,
     production_raw_columns,
+    update_industry_encode_mapping,
 )
 
 
@@ -27,12 +30,21 @@ class BuildProductionFactorPartsTests(unittest.TestCase):
             "custom_factor",
             "turnover_rate",
             "open",
+            "open_qfq",
             "high",
+            "high_qfq",
             "low",
+            "low_qfq",
             "close",
+            "close_qfq",
             "pre_close",
+            "pre_close_qfq",
             "amount",
             "vol",
+            "atr",
+            "atr_qfq",
+            "macd",
+            "macd_qfq",
             "winner_rate",
             "cost_5pct",
             "std_cost_95pct",
@@ -56,13 +68,22 @@ class BuildProductionFactorPartsTests(unittest.TestCase):
 
         self.assertIn("custom_factor", selected)
         self.assertIn("turnover_rate", selected)
-        self.assertIn("open", selected)
-        self.assertIn("high", selected)
-        self.assertIn("low", selected)
-        self.assertIn("close", selected)
-        self.assertIn("pre_close", selected)
+        self.assertIn("open_qfq", selected)
+        self.assertIn("high_qfq", selected)
+        self.assertIn("low_qfq", selected)
+        self.assertIn("close_qfq", selected)
+        self.assertIn("pre_close_qfq", selected)
+        self.assertNotIn("open", selected)
+        self.assertNotIn("high", selected)
+        self.assertNotIn("low", selected)
+        self.assertNotIn("close", selected)
+        self.assertNotIn("pre_close", selected)
         self.assertIn("amount", selected)
         self.assertIn("vol", selected)
+        self.assertIn("atr_qfq", selected)
+        self.assertIn("macd_qfq", selected)
+        self.assertNotIn("atr", selected)
+        self.assertNotIn("macd", selected)
         self.assertIn("gtja_alpha001", selected)
         self.assertNotIn("winner_rate", selected)
         self.assertNotIn("cost_5pct", selected)
@@ -80,6 +101,35 @@ class BuildProductionFactorPartsTests(unittest.TestCase):
         self.assertNotIn("top_list", selected)
         self.assertNotIn("post_open", selected)
         self.assertNotIn("10d_yield_rate", selected)
+
+    def test_production_raw_columns_requires_explicit_qfq_price_columns(self):
+        raw_columns = [
+            *KEY_COLUMNS,
+            "open",
+            "high",
+            "low",
+            "close",
+            "pre_close",
+            "turnover_rate",
+        ]
+
+        with self.assertRaisesRegex(ValueError, "missing explicit qfq columns"):
+            production_raw_columns(raw_columns)
+
+    def test_production_raw_columns_rejects_naked_front_adjusted_indicator_names(self):
+        raw_columns = [
+            *KEY_COLUMNS,
+            "open_qfq",
+            "high_qfq",
+            "low_qfq",
+            "close_qfq",
+            "pre_close_qfq",
+            "atr",
+            "turnover_rate",
+        ]
+
+        with self.assertRaisesRegex(ValueError, "naked front-adjusted indicator"):
+            production_raw_columns(raw_columns)
 
     def test_extend_industry_encode_mapping_only_appends_missing_values(self):
         mapping = {"": 0, "Bank": 1, "Tech": 2}
@@ -105,6 +155,20 @@ class BuildProductionFactorPartsTests(unittest.TestCase):
 
         self.assertEqual(result["industry"].tolist(), ["Tech", "", "Bank"])
         self.assertEqual(result["industry_encode"].tolist(), [2, 0, 1])
+
+    def test_update_industry_encode_mapping_reads_current_file_before_append(self):
+        with TemporaryDirectory() as tmpdir:
+            mapping_path = Path(tmpdir) / "mapping.json"
+            first = update_industry_encode_mapping(["Bank", "Tech", None], mapping_path)
+            second = update_industry_encode_mapping(["Auto", "Tech"], mapping_path)
+
+        self.assertEqual(first[""], 0)
+        self.assertEqual(first["Bank"], 1)
+        self.assertEqual(first["Tech"], 2)
+        self.assertEqual(second[""], 0)
+        self.assertEqual(second["Bank"], 1)
+        self.assertEqual(second["Tech"], 2)
+        self.assertEqual(second["Auto"], 3)
 
 
 if __name__ == "__main__":

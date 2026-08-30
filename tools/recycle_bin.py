@@ -151,6 +151,76 @@ def cleanup_recycle_bin(bin_root: Path, *, retention_days: int, dry_run: bool) -
     return removed
 
 
+def purge_recycle_bin(
+    bin_root: Path,
+    *,
+    actor: str,
+    reason: str,
+    batch_ids: set[str] | None = None,
+    original_prefixes: tuple[str, ...] = (),
+    dry_run: bool,
+) -> list[dict[str, str]]:
+    ensure_bin_layout(bin_root)
+    manifest = manifest_path(bin_root)
+    if not manifest.exists():
+        return []
+
+    now = utc_now()
+    purged: list[dict[str, str]] = []
+    seen_paths: set[str] = set()
+
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        record = json.loads(line)
+        if record.get("status") != "trashed":
+            continue
+
+        batch_id = str(record.get("batch_id", ""))
+        rel_path = str(record.get("original_relative_path", ""))
+        if batch_ids and batch_id not in batch_ids:
+            if not original_prefixes or not any(rel_path.startswith(prefix) for prefix in original_prefixes):
+                continue
+        elif original_prefixes and not any(rel_path.startswith(prefix) for prefix in original_prefixes):
+            continue
+
+        trashed_path = Path(record["trashed_path"])
+        if not trashed_path.exists():
+            continue
+        if str(trashed_path) in seen_paths:
+            continue
+
+        seen_paths.add(str(trashed_path))
+        purge_record = {
+            "status": "purged",
+            "actor": actor,
+            "reason": reason,
+            "purged_at": isoformat_z(now),
+            "batch_id": batch_id,
+            "original_path": str(record["original_path"]),
+            "original_relative_path": rel_path,
+            "trashed_path": str(trashed_path),
+            "dry_run": str(dry_run).lower(),
+        }
+        purged.append(purge_record)
+        if dry_run:
+            continue
+
+        if trashed_path.is_dir():
+            shutil.rmtree(trashed_path)
+        else:
+            trashed_path.unlink()
+
+    if purged:
+        with manifest.open("a", encoding="utf-8") as handle:
+            for record in purged:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        purge_log = bin_root / "logs" / f"purge_{now.strftime('%Y%m%dT%H%M%SZ')}.json"
+        purge_log.write_text(json.dumps(purged, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    return purged
+
+
 def list_recycle_bin(bin_root: Path) -> list[dict[str, str]]:
     manifest = manifest_path(bin_root)
     if not manifest.exists():
@@ -177,6 +247,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     cleanup_parser = subparsers.add_parser("cleanup", help="Delete recycle-bin entries older than retention window.")
     cleanup_parser.add_argument("--dry-run", action="store_true")
+
+    purge_parser = subparsers.add_parser("purge", help="Immediately purge selected recycle-bin entries.")
+    purge_parser.add_argument("--batch-id", action="append", dest="batch_ids")
+    purge_parser.add_argument("--original-prefix", action="append", dest="original_prefixes")
+    purge_parser.add_argument("--actor", required=True)
+    purge_parser.add_argument("--reason", required=True)
+    purge_parser.add_argument("--dry-run", action="store_true")
 
     subparsers.add_parser("list", help="List recycle-bin manifest entries.")
     return parser
@@ -208,6 +285,20 @@ def main(argv: list[str] | None = None) -> int:
             dry_run=bool(args.dry_run),
         )
         print(json.dumps(removed, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == "purge":
+        if not args.batch_ids and not args.original_prefixes:
+            parser.error("purge requires at least one --batch-id or --original-prefix")
+        purged = purge_recycle_bin(
+            bin_root,
+            actor=args.actor,
+            reason=args.reason,
+            batch_ids=set(args.batch_ids or []),
+            original_prefixes=tuple(args.original_prefixes or ()),
+            dry_run=bool(args.dry_run),
+        )
+        print(json.dumps(purged, ensure_ascii=False, indent=2))
         return 0
 
     if args.command == "list":

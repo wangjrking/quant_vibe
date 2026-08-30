@@ -1,0 +1,110 @@
+{
+  "config_id": "model_promotion_constraints_v2_four_year_observation_20260627",
+  "generated_at": "2026-06-27T11:25:00+08:00",
+  "actor": "model-agent",
+  "asset_role": "promotion_policy_config_not_formal",
+  "approval_status": "research_policy_only",
+  "purpose": "Define hard constraints and soft reminders for promoting model research assets into promotable formal candidates, with mandatory four-year observation-window checks.",
+  "standard_chain": {
+    "feature_input": "quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>",
+    "label_input": "quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>",
+    "prediction_asset_root": "quant/data_file/production_assets/duckdb/",
+    "forbidden_default_input_classes": [
+      "retired legacy parquet factor assets",
+      "retired legacy sqlite mixed prediction tables",
+      "retired standard_factor_by_date_parts directories"
+    ]
+  },
+  "hard_constraints": {
+    "governance": {
+      "required_candidate_approval_status": "research_only_not_approved_for_l4_or_l5",
+      "no_production_manifest_change_without_user_approval": true,
+      "no_l5_approval_without_audit_review": true,
+      "no_signal": true,
+      "no_backtest_conclusion": true
+    },
+    "coverage": {
+      "required_min_trade_date": "20240604",
+      "required_latest_day_source": "current_production_factor_latest_trade_date",
+      "latest_day_rows_must_match_production_factor_rows": true,
+      "null_pred_prob_must_equal": 0,
+      "duplicate_key_groups_must_equal": 0
+    },
+    "observation_window": {
+      "four_year_observation_required": true,
+      "minimum_calendar_years": 4.0,
+      "minimum_eval_trade_days": 900,
+      "same_observation_window_as_baseline_required": true,
+      "label_maturity_required": true
+    },
+    "reproducibility": {
+      "saved_model_files_required_for_train_candidates": true,
+      "model_params_required_for_train_candidates": true,
+      "selected_features_required_for_train_candidates": true,
+      "training_window_required_for_train_candidates": true,
+      "evaluation_report_required": true,
+      "candidate_manifest_required": true
+    },
+    "quality": {
+      "common": {
+        "full_top5_delta_floor": 0.0,
+        "recent63_top5_delta_floor": 0.0,
+        "recent20_top5_delta_floor": 0.0,
+        "positive_top5_periods_floor": 3
+      },
+      "by_label": {
+        "executable_1d_open_return": {
+          "full_rank_ic_delta_floor": 0.0,
+          "min_period_top5_delta_floor": 0.0
+        },
+        "executable_3d_open_return": {
+          "full_rank_ic_delta_floor": -0.0015,
+          "recent63_rank_ic_delta_floor": 0.0,
+          "min_period_top5_delta_floor": 0.0
+        },
+        "executable_5d_open_return": {
+          "full_rank_ic_delta_floor": -0.001,
+          "min_period_top5_delta_floor": 0.0
+        },
+        "executable_10d_open_return": {
+          "full_rank_ic_delta_floor": -0.0005,
+          "min_period_top5_delta_floor": 0.0
+        }
+      }
+    }
+  },
+  "soft_constraints": {
+    "recent_effectiveness": [
+      "recent63_top1_delta",
+      "recent63_top5_delta",
+      "recent20_top5_delta",
+      "recent63_rank_ic_delta",
+      "recent20_rank_ic_delta"
+    ],
+    "full_window_stability": [
+      "full_top10_delta",
+      "full_rank_ic_delta",
+      "min_period_rank_ic_delta",
+      "min_period_top5_delta"
+    ],
+    "engineering": [
+      "prefer_simpler_formula",
+      "prefer_fewer_active_days",
+      "prefer_fewer_upstream_sources",
+      "prefer_clearer_roll_back_path"
+    ],
+    "result_behavior": "soft_constraints_generate_reminders_only_and_do_not_block_promotion"
+  },
+  "promotion_states": {
+    "research_only": "research_only_not_approved_for_l4_or_l5",
+    "promotable_formal_candidate": "approved_for_l4_candidate_only_after_four_year_observation",
+    "production_ready": "approved_for_l5_after_four_year_observation_and_audit"
+  },
+  "boundaries": {
+    "no_training": true,
+    "no_prediction": true,
+    "no_production_manifest_change": true,
+    "no_signal": true,
+    "no_backtest": true
+  }
+}

@@ -35,10 +35,10 @@ It still checks:
 - L4 legacy prediction asset: data_file/odb.db::stock_predict_data_*
 
 Current standard layered defaults are:
-- L1: quant/data_file/raw_table_dbs/[table].DB
-- L2: quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA
-- L3 features: quant/data_file/production_factor_parts/
-- L3 labels: quant/data_file/prediction_label_parts/
+- L1: quant/data_file/production_assets/duckdb/l1_raw_tables/[table].duckdb
+- L2: quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb::STOCK_DAILY_DATA
+- L3 features: quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>
+- L3 labels: quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>
 - L5 automation entry: quant/main/run_production_tasks.py
 
 To run this historical path intentionally, pass --allow-legacy-asset-chain

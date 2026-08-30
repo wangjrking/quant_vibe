@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "purpose": "V260四表键域修复候选复现契约",
+  "reproduction_level": "process_reproducible_with_frozen_action_exact_repeat",
+  "source_of_truth": {
+    "formal_manifests": {
+      "1D": "quant/main/config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+      "3D": "quant/main/config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+      "5D": "quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+      "10D": "quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+    },
+    "key_domain": "inner_intersection_on_trade_date_stock_code",
+    "score_formula": "1.0 * daily_rank(10D pred_prob)",
+    "non_scoring_labels": [
+      "1D",
+      "3D",
+      "5D"
+    ],
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb",
+    "full_history_actions": "signals/full_history_actions.csv",
+    "juejin_executor": "code_snapshot/juejin_frozen_executor.py",
+    "production_exporter": "code_snapshot/export_v260_all4key_production_signals.py",
+    "source_snapshot": "code_snapshot/source_modules/",
+    "protocol": "inputs/preregistered_protocol.json",
+    "frozen_grid": "inputs/frozen_grid_before_known_2026.json"
+  },
+  "frozen_parameters": {
+    "position_warmup_days": 50,
+    "smooth_window": 7,
+    "current_weight": 0.1,
+    "weak_normal_strong_max_positions": [
+      14,
+      15,
+      16
+    ],
+    "fixed_slippage_each_side": 0.003,
+    "initial_cash": 700000
+  },
+  "expected_artifacts": {
+    "action_rows": 1563,
+    "action_sha256": "D02BB8B6384BE1B586FA39D2676CAE2E15495D35A39132C29279F65A173D516F",
+    "all4_rebuild_extra_action_keys": 0,
+    "all4_rebuild_missing_action_keys": 0,
+    "ten_d_only_action_rows_invalidated": 1569,
+    "ten_d_only_extra_action_keys": 107,
+    "ten_d_only_missing_action_keys": 101,
+    "juejin_platform_linear_annual": 1.900502577405542,
+    "juejin_sharpe": 1.5514961406711685,
+    "juejin_max_drawdown": 0.23529891580633588
+  },
+  "fail_closed_conditions": [
+    "任一1D/3D/5D/10D manifest不是approved_for_l5或不是duckdb_table",
+    "四表max_trade_date不一致",
+    "任一表存在重复trade_date加stock_code键",
+    "未使用四表键域内连接",
+    "1D/3D/5D评分被用于最终score",
+    "冻结动作行数或SHA256不一致",
+    "四表重建动作与冻结动作逐键不一致",
+    "源码快照哈希不一致",
+    "检测到legacy、SQLite或research-only生产输入",
+    "不复权执行价和qfq评分语义混用",
+    "候选及切换审计尚未通过"
+  ]
+}

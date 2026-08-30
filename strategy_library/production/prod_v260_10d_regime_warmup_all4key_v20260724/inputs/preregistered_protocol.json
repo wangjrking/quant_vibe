@@ -1,0 +1,66 @@
+{
+  "status": "preregistered_research_only",
+  "protocol_id": "active_l4_v258_position_warmup_v260_20260723",
+  "research_question": "新账户先维持16只上限，状态稳定后再启用弱14常态15强势16，能否兼顾V252启动稳健性与V258长期收益",
+  "input_cache": "quant/data_file/reports/strategy_agent_active_l4_liquidity_risk_v59_20260721/active_formal_rank_liquidity_arrays_v2.npz",
+  "observation_end": "20251231",
+  "known_stress_end": "20260720",
+  "development_start_groups": {
+    "2023年初": ["20230103", "20230104", "20230105", "20230106", "20230109"],
+    "2024年初": ["20240102", "20240103", "20240104", "20240105", "20240108"],
+    "2025年初": ["20250102", "20250103", "20250106", "20250107", "20250108"]
+  },
+  "known_stress_starts": ["20260105", "20260106", "20260107", "20260108", "20260109"],
+  "grid": {
+    "position_warmup_days": [30, 50, 70]
+  },
+  "fixed_universe": {
+    "listed_days_min": 5,
+    "amount_min": 90000,
+    "mv_min": 0,
+    "turnover_max": 20.0
+  },
+  "execution": {
+    "fixed_slippage_ratio": 0.003,
+    "commission_each_side": 0.0003,
+    "stamp_duty_sell": 0.0005,
+    "round_lot_100": true,
+    "initial_cash": 700000
+  },
+  "breadth": {
+    "score_threshold": 0.875
+  },
+  "breadth_state": {
+    "breadth_count_threshold": 300,
+    "high_when": "above",
+    "low_gross": 0.0,
+    "high_gross": 1.0
+  },
+  "fixed_definition": {
+    "min_hold_days": 4,
+    "max_hold_days": 20,
+    "sell_score_below": 0.85,
+    "replacement_advantage": 0.05,
+    "market_lookback": 10,
+    "market_return_min": 0.0,
+    "low_gross": 0.2,
+    "normal_target_pct": 0.25,
+    "weak_target_pct": 0.05,
+    "strong_target_pct": 0.375,
+    "smooth_window": 7,
+    "current_weight": 0.1,
+    "min_hold_policy": "strong_3_else_4",
+    "strong_return_min": 0.035,
+    "max_rank_deterioration": 0.1,
+    "max_positions": 16
+  },
+  "target_multiplier_floor": 0.9,
+  "target_multiplier_cap": 1.1,
+  "trend_warmup_days": 50,
+  "weak_max_positions_after_warmup": 14,
+  "normal_max_positions_after_warmup": 15,
+  "strong_max_positions_after_warmup": 16,
+  "selection_rule": "先冻结30、50、70日连续邻域并比较2023至2025的15起点最低、中位和平均收益，再统一打开2026压力结果",
+  "known_2026_is_independent_validation": false,
+  "production_change_allowed": false
+}

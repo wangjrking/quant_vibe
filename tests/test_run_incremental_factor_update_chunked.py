@@ -21,6 +21,8 @@ class RunIncrementalFactorUpdateChunkedTests(unittest.TestCase):
         args = parse_args(["--target-date", "20260622"])
         self.assertEqual(args.chunk_size, 130)
         self.assertEqual(args.workers, 4)
+        self.assertIsNone(args.raw_parts_dir)
+        self.assertIsNone(args.production_parts_dir)
 
     def test_build_chunk_command_contains_part_bounds(self):
         args = parse_args(["--target-date", "20260622", "--python-executable", "python"])

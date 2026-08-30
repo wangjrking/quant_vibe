@@ -38,7 +38,7 @@ def filter_frame_by_stock_pool(frame: pd.DataFrame, stock_pool: set[str] | None)
     return frame[frame["stock_code"].astype(str).str.upper().isin(stock_pool)].copy()
 
 
-def normalize_a_share_code(value, include_bj: bool = True) -> str | None:
+def normalize_a_share_code(value, include_bj: bool = False) -> str | None:
     code = str(value or "").strip().upper()
     if not code or code == "NAN":
         return None
@@ -49,7 +49,7 @@ def normalize_a_share_code(value, include_bj: bool = True) -> str | None:
     return code
 
 
-def build_all_a_stock_pool(stock_basic: pd.DataFrame, include_bj: bool = True) -> list[str]:
+def build_all_a_stock_pool(stock_basic: pd.DataFrame, include_bj: bool = False) -> list[str]:
     if "ts_code" not in stock_basic.columns:
         raise ValueError("stock_basic must contain ts_code")
     frame = stock_basic.copy()

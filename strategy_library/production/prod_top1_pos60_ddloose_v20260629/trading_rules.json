@@ -1,0 +1,67 @@
+{
+  "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+  "strategy_name": "Top1 60pct dd_loose",
+  "status": "production",
+  "model_input": {
+    "source": "formal L4 3D/5D/10D rank cache",
+    "weight_name": "w72_5d23_3d05",
+    "entry_weights": {
+      "10d": 0.72,
+      "5d": 0.23,
+      "3d": 0.05
+    },
+    "uses_1d": false
+  },
+  "selection_rule": {
+    "filter_name": "strict_amt150000_mv300000_pc150_no_bj_st_delist_limitup",
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "no_industry_filter": true,
+    "no_month_or_date_exclusion": true,
+    "no_latest_state_backfill": true,
+    "amount_min": 150000.0,
+    "total_mv_min": 300000.0,
+    "price_cap_signal_close": 150.0,
+    "price_cap_buy_open": 150.0,
+    "turnover_min": null
+  },
+  "position_rule": {
+    "max_positions": 1,
+    "target_position_pct": 0.6,
+    "cash_buffer_mode": "target_pct_explicit"
+  },
+  "holding_rule": {
+    "holding_name": "hold3m5_c097_e096",
+    "holding_days": 3,
+    "max_holding_days": 5,
+    "score_exit_entry_ratio": 0.96,
+    "score_continue_entry_ratio": 0.97,
+    "min_holding_days_before_score_exit": 1
+  },
+  "risk_rule": {
+    "equity_drawdown_risk_mode": true,
+    "dd_mode": "dd_loose",
+    "dd_soft_trigger": 0.08,
+    "dd_hard_trigger": 0.14,
+    "dd_recover_trigger": 0.04,
+    "dd_soft_scale": 0.8,
+    "dd_hard_scale": 0.6
+  },
+  "startup_rule": {
+    "mode": "warmup_state_rebuild",
+    "warmup_trade_days": 60,
+    "low_path_dependency_gate": "required",
+    "cold_start_without_warmup_is_not_default_production_entry": true
+  },
+  "execution_rule": {
+    "signal_date_rule": "Use T-day formal L4 score to generate next trading day open signal; pre-trade hard gate and realtime limit-up checks required.",
+    "adaptive_buy_slippage_order_value": 700000,
+    "sell_slippage_display": "low_friction_and_0p25_pressure",
+    "initial_cash": 600000,
+    "current_signal_status": "hard_gate_complete",
+    "signal_source": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_adaptive70w_fouryear_strict_neighbor_20260629\\signals\\w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60.csv"
+  },
+  "governance_note": "No BJ, no ST/risk warning, no delist, no open limit-up buy; approved by user as current production strategy on 2026-06-29."
+}

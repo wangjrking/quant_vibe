@@ -23,13 +23,10 @@ if str(MAIN_DIR) not in sys.path:
     sys.path.insert(0, str(MAIN_DIR))
 
 from build_manual_trade_package import (  # noqa: E402
-    current_production_strategy,
     load_latest_signal_batch,
-    load_registry,
-    load_strategy_manifest,
-    resolve_latest_signal_file,
 )
 from project_paths import resolve_data_path, resolve_project_path  # noqa: E402
+from strategy_asset_route import load_current_production_strategy_context  # noqa: E402
 from tools.qmt_holdings_api import build_report as build_qmt_report  # noqa: E402
 
 
@@ -82,24 +79,12 @@ def load_current_strategy(
     strategy_root: str | Path = DEFAULT_STRATEGY_ROOT,
     strategy_id: str | None = None,
 ) -> dict[str, Any]:
-    registry = load_registry(registry_file)
-    strategy_entry = current_production_strategy(registry, strategy_id)
-    resolved_strategy_dir = resolve_project_path(Path(strategy_root) / strategy_entry["strategy_id"])
-    manifest = load_strategy_manifest(resolved_strategy_dir)
-    signal_path = resolve_latest_signal_file(
-        strategy_entry["strategy_id"],
+    return load_current_production_strategy_context(
+        strategy_id=strategy_id,
+        registry_file=registry_file,
         signal_dir=signal_dir,
-        strategy_dir=resolved_strategy_dir,
+        strategy_root=strategy_root,
     )
-    signal_rows = load_signal_rows(signal_path)
-    return {
-        "registry": registry,
-        "strategy_entry": strategy_entry,
-        "strategy_manifest": manifest,
-        "strategy_dir": str(resolved_strategy_dir),
-        "signal_path": str(signal_path),
-        "signal_rows": signal_rows,
-    }
 
 
 def normalize_tick(raw_tick: dict[str, Any] | None) -> dict[str, Any]:

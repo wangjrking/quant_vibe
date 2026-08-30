@@ -11,8 +11,16 @@ from pathlib import Path
 
 import pandas as pd
 
+from adjustment_semantics import require_front_adjusted_column
 from leakage_guard import find_leaky_features
-from model_asset_route import MODEL_FEATURE_MODE_LEGACY, MODEL_FEATURE_MODE_SPLIT
+from model_asset_route import (
+    MODEL_FEATURE_MODE_LEGACY,
+    MODEL_FEATURE_MODE_SPLIT,
+    resolve_model_feature_duckdb_path,
+    resolve_model_feature_duckdb_table,
+    resolve_model_label_duckdb_path,
+    resolve_model_label_duckdb_table,
+)
 
 
 @dataclass
@@ -56,9 +64,14 @@ def prepare_selection_label(frame: pd.DataFrame, label: str) -> pd.DataFrame:
         return frame
     if label == "risk_adjusted_10d_yield_rate":
         base_return = pd.to_numeric(frame["10d_yield_rate"], errors="coerce")
+        close_column = require_front_adjusted_column(
+            frame.columns,
+            "close",
+            context="risk_adjusted_10d_yield_rate",
+        )
         atr_ratio = (
             pd.to_numeric(frame["atr_qfq"], errors="coerce")
-            / pd.to_numeric(frame["close"], errors="coerce")
+            / pd.to_numeric(frame[close_column], errors="coerce")
         ).clip(lower=0.01, upper=0.20)
         frame[label] = base_return / atr_ratio
     elif label == "executable_10d_open_return":
@@ -111,8 +124,55 @@ def _split_label_required_columns(label: str) -> list[str]:
 
 def _split_feature_required_columns(label: str) -> list[str]:
     if label == "risk_adjusted_10d_yield_rate":
-        return ["atr_qfq", "close"]
+        return ["atr_qfq", "close_qfq"]
     return []
+
+
+def _quote_ident(value: str) -> str:
+    return '"' + str(value).replace('"', '""') + '"'
+
+
+def _resolve_duckdb_binding(
+    data_path: str | Path | None,
+    label_path: str | Path | None,
+) -> tuple[Path, str, Path, str] | None:
+    explicit_feature = Path(data_path) if data_path not in (None, "") else None
+    explicit_label = Path(label_path) if label_path not in (None, "") else None
+    feature_table = resolve_model_feature_duckdb_table(None)
+    label_table = resolve_model_label_duckdb_table(None)
+    if not feature_table or not label_table:
+        return None
+    feature_db_path = (
+        explicit_feature
+        if explicit_feature and explicit_feature.suffix.lower() == ".duckdb"
+        else resolve_model_feature_duckdb_path(None, require_exists=True)
+    )
+    label_db_path = (
+        explicit_label
+        if explicit_label and explicit_label.suffix.lower() == ".duckdb"
+        else resolve_model_label_duckdb_path(None, require_exists=True)
+    )
+    return feature_db_path, feature_table, label_db_path, label_table
+
+
+def _duckdb_columns(db_path: Path, table: str) -> set[str]:
+    import duckdb
+
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        return {str(row[0]) for row in conn.execute(f"DESCRIBE {_quote_ident(table)}").fetchall()}
+
+
+def _read_duckdb_frame(
+    db_path: Path,
+    table: str,
+    columns: list[str],
+) -> pd.DataFrame:
+    import duckdb
+
+    selected = ", ".join(_quote_ident(column) for column in columns)
+    sql = f"SELECT {selected} FROM {_quote_ident(table)}"
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        return conn.execute(sql).fetchdf()
 
 
 def load_selection_frame(
@@ -124,6 +184,7 @@ def load_selection_frame(
 ) -> pd.DataFrame:
     if feature_source == MODEL_FEATURE_MODE_LEGACY:
         return pd.read_parquet(data_path)
+    duckdb_binding = _resolve_duckdb_binding(data_path, label_path)
     data_columns = ["trade_date", "stock_code", "name", "industry", "act_ent_type", *_split_feature_required_columns(label)]
     label_columns = [
         "trade_date",
@@ -133,8 +194,21 @@ def load_selection_frame(
         "10d_yield_rate",
         *_split_label_required_columns(label),
     ]
-    factors = pd.read_parquet(data_path, columns=list(dict.fromkeys(data_columns)))
-    labels = pd.read_parquet(label_path, columns=list(dict.fromkeys(label_columns)))
+    if duckdb_binding is not None:
+        feature_db_path, feature_table, label_db_path, label_table = duckdb_binding
+        feature_columns = [
+            column for column in list(dict.fromkeys(data_columns))
+            if column in _duckdb_columns(feature_db_path, feature_table)
+        ]
+        resolved_label_columns = [
+            column for column in list(dict.fromkeys(label_columns))
+            if column in _duckdb_columns(label_db_path, label_table)
+        ]
+        factors = _read_duckdb_frame(feature_db_path, feature_table, feature_columns)
+        labels = _read_duckdb_frame(label_db_path, label_table, resolved_label_columns)
+    else:
+        factors = pd.read_parquet(data_path, columns=list(dict.fromkeys(data_columns)))
+        labels = pd.read_parquet(label_path, columns=list(dict.fromkeys(label_columns)))
     return factors.merge(labels, on=["trade_date", "stock_code"], how="inner")
 
 
@@ -212,8 +286,8 @@ def write_score_csv(rows: list[dict], output_path: Path) -> None:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Select training features by daily IC.")
-    parser.add_argument("--data", default="data_file/production_factor_parts")
-    parser.add_argument("--labels", default="data_file/prediction_label_parts")
+    parser.add_argument("--data", default="")
+    parser.add_argument("--labels", default="")
     parser.add_argument(
         "--feature-source",
         default=MODEL_FEATURE_MODE_SPLIT,

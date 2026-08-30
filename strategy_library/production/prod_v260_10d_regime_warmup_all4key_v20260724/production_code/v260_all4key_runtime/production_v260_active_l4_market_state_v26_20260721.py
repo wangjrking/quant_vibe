@@ -1,0 +1,194 @@
+# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from . import production_v260_active_l4_agreement_v8_20260721 as agreement
+from . import production_v260_active_l4_agreement_health_v16_20260721 as candidate_health
+from . import production_v260_active_l4_continuous_exposure_v18_20260721 as continuous
+from . import production_v260_active_l4_yearly_robust_v11_20260721 as yearly
+from . import production_v260_preregistered_active_l4_rank_rotation_20260721 as core
+
+
+ROOT = Path(__file__).resolve().parents[7]
+REPORT_DIR = ROOT / "quant/data_file/reports/strategy_agent_active_l4_market_state_v26_20260721"
+PROTOCOL_PATH = REPORT_DIR / "preregistered_protocol.json"
+STAGE1_PATH = REPORT_DIR / "stage1.csv"
+STAGE2_PATH = REPORT_DIR / "stage2.csv"
+FROZEN_PATH = REPORT_DIR / "frozen_juejin_candidates.json"
+ACTION_DIR = REPORT_DIR / "juejin_actions"
+ACTION_MANIFEST = REPORT_DIR / "juejin_action_manifest.json"
+SUMMARY_PATH = REPORT_DIR / "research_summary.json"
+REPORT_PATH = REPORT_DIR / "市场状态仓位研究结论.md"
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def market_open_return(arrays):
+    opens = arrays["buy_open"]
+    result = np.full(len(opens), np.nan, dtype=np.float32)
+    for t in range(2, len(opens)):
+        previous_open = opens[t - 2]
+        current_open = opens[t - 1]
+        valid = np.isfinite(previous_open) & (previous_open > 0) & np.isfinite(current_open) & (current_open > 0)
+        if valid.any():
+            result[t] = float(np.median(current_open[valid] / previous_open[valid] - 1.0))
+    return result
+
+
+def market_exposure(market_return, lookback, threshold, floor):
+    result = np.full(len(market_return), floor, dtype=np.float32)
+    minimum = max(3, lookback // 4)
+    for t in range(len(market_return)):
+        values = market_return[max(0, t - lookback + 1):t + 1]
+        values = values[np.isfinite(values)]
+        if len(values) >= minimum:
+            result[t] = 1.0 if float(np.mean(values)) > threshold else floor
+    return result
+
+
+def state_id(lookback, threshold, floor, combination):
+    raw = json.dumps([lookback, threshold, floor, combination], separators=(",", ":"))
+    return "st_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+
+
+def case_id(profile, state):
+    raw = json.dumps({"profile": asdict(profile), "state_id": state}, sort_keys=True, separators=(",", ":"))
+    return "mk_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def evaluate(daily, folds):
+    result = yearly.evaluate(daily, folds)
+    result["min_year_cumulative_return"] = min(float(result[f"{fold['id']}_cumulative_return"]) for fold in folds)
+    return result
+
+
+def dual_track(frame, return_count, sharpe_count):
+    eligible = frame[frame.eligible & frame.all_year_positive]
+    by_return = eligible.sort_values(
+        ["full_cumulative_return", "full_sharpe", "min_year_cumulative_return", "case_id"],
+        ascending=[False, False, False, True]
+    ).head(return_count).assign(promotion_track="return")
+    by_sharpe = eligible.sort_values(
+        ["full_sharpe", "full_cumulative_return", "min_year_cumulative_return", "case_id"],
+        ascending=[False, False, False, True]
+    ).head(sharpe_count).assign(promotion_track="sharpe")
+    return pd.concat([by_return, by_sharpe], ignore_index=True).drop_duplicates("case_id")
+
+
+def main():
+    protocol = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+    cache = ROOT / protocol["input_cache"]["path"]
+    if protocol["status"] != "frozen_research_only" or digest(cache) != protocol["input_cache"]["sha256"]:
+        raise RuntimeError("冻结协议或输入缓存发生漂移")
+    with np.load(cache, allow_pickle=False) as saved:
+        arrays = {key: saved[key] for key in saved.files}
+
+    score = core.blend_scores(arrays, protocol["score_formula"])
+    order = np.argsort(-np.nan_to_num(score, nan=-np.inf), axis=1).astype(np.int32)
+    masked = agreement.masked_arrays(arrays, protocol["agreement"])
+    health_rule = protocol["model_health"]
+    quality = candidate_health.candidate_quality(masked, score, order, int(health_rule["shadow_top_n"]))
+    model_exposure = continuous.exposure_series(
+        quality, int(health_rule["rolling_lookback"]),
+        float(health_rule["floor_fraction"]), float(health_rule["scale_denominator"])
+    )
+    market_return = market_open_return(arrays)
+    market_rule = protocol["market_state"]
+    states, state_meta = {}, {}
+    for lookback in market_rule["rolling_lookback"]:
+        for threshold in market_rule["mean_return_threshold"]:
+            for floor in market_rule["risk_off_floor"]:
+                market = market_exposure(market_return, int(lookback), float(threshold), float(floor))
+                for combination in market_rule["combination"]:
+                    state = state_id(lookback, threshold, floor, combination)
+                    if combination == "market_only":
+                        exposure = market
+                    elif combination == "minimum_with_model_health":
+                        exposure = np.minimum(market, model_exposure)
+                    elif combination == "average_with_model_health":
+                        exposure = (market + model_exposure) / 2.0
+                    else:
+                        raise ValueError(combination)
+                    states[state] = exposure.astype(np.float32)
+                    state_meta[state] = {
+                        "market_lookback": lookback, "market_threshold": threshold,
+                        "market_floor": floor, "combination": combination,
+                        "mean_exposure": float(np.mean(exposure)),
+                        "full_exposure_days": int(np.sum(exposure >= 0.999))
+                    }
+
+    base = protocol["stage1"]["fixed_profile"]
+    rows = []
+    for state, exposure in states.items():
+        profile = continuous.ExposureProfile(
+            protocol["score_formula"]["id"], int(base["amount_min"]), int(base["total_mv_min"]),
+            int(base["top_n"]), float(base["entry_rank_min"]), int(health_rule["rolling_lookback"]),
+            float(health_rule["floor_fraction"]), float(health_rule["scale_denominator"]),
+            int(base["min_hold"]), int(base["max_hold"]), float(base["sell_rank_below"]),
+            float(base["replacement_advantage"]), float(base["invested_ratio"])
+        )
+        daily = continuous.simulate(masked, score, order, exposure, profile, protocol["observation_end"])
+        rows.append({"case_id": case_id(profile, state), "state_id": state, **state_meta[state], **asdict(profile), **evaluate(daily, protocol["year_folds"])})
+    stage1 = pd.DataFrame(rows)
+    stage1["eligible"] = (stage1.full_max_drawdown <= 0.40) & (stage1.full_trades >= 80)
+    stage1 = stage1.sort_values(["all_year_positive", "full_cumulative_return", "full_sharpe", "case_id"], ascending=[False, False, False, True])
+    stage1.to_csv(STAGE1_PATH, index=False, encoding="utf-8-sig")
+    seeds = dual_track(stage1, int(protocol["stage1"]["promote_return"]), int(protocol["stage1"]["promote_sharpe"]))
+
+    rows = []
+    for _, seed in seeds.iterrows():
+        for top_n in protocol["stage2"]["top_n"]:
+            for entry_rank_min in protocol["stage2"]["entry_rank_min"]:
+                for exit_rule in protocol["stage2"]["exit_profiles"]:
+                    profile = continuous.ExposureProfile(
+                        protocol["score_formula"]["id"], int(base["amount_min"]), int(base["total_mv_min"]),
+                        int(top_n), float(entry_rank_min), int(health_rule["rolling_lookback"]),
+                        float(health_rule["floor_fraction"]), float(health_rule["scale_denominator"]),
+                        int(exit_rule["min_hold"]), int(exit_rule["max_hold"]),
+                        float(exit_rule["sell_rank_below"]), float(exit_rule["replacement_advantage"]), 1.0
+                    )
+                    daily = continuous.simulate(masked, score, order, states[str(seed.state_id)], profile, protocol["observation_end"])
+                    rows.append({
+                        "case_id": case_id(profile, str(seed.state_id)), "seed_case_id": str(seed.case_id),
+                        "state_id": str(seed.state_id), "exit_profile_id": exit_rule["id"],
+                        **state_meta[str(seed.state_id)], **asdict(profile), **evaluate(daily, protocol["year_folds"])
+                    })
+    stage2 = pd.DataFrame(rows).drop_duplicates("case_id")
+    stage2["eligible"] = (stage2.full_max_drawdown <= 0.40) & (stage2.full_trades >= 80)
+    stage2 = stage2.sort_values(["all_year_positive", "full_cumulative_return", "full_sharpe", "case_id"], ascending=[False, False, False, True])
+    stage2.to_csv(STAGE2_PATH, index=False, encoding="utf-8-sig")
+    frozen = dual_track(stage2, int(protocol["stage2"]["promote_return"]), int(protocol["stage2"]["promote_sharpe"]))
+
+    payload = {"protocol_sha256": digest(PROTOCOL_PATH), "stage1_sha256": digest(STAGE1_PATH), "stage2_sha256": digest(STAGE2_PATH), "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"), "profiles": frozen.to_dict("records")}
+    FROZEN_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    ACTION_DIR.mkdir(parents=True, exist_ok=True)
+    action_rows, seen = [], set()
+    for item in payload["profiles"]:
+        profile = continuous.ExposureProfile(**{key: item[key] for key in continuous.ExposureProfile.__dataclass_fields__})
+        _, actions = continuous.simulate(masked, score, order, states[item["state_id"]], profile, protocol["observation_end"], record_actions=True)
+        content_hash = hashlib.sha256(actions.to_csv(index=False).encode("utf-8")).hexdigest()
+        if content_hash in seen:
+            continue
+        seen.add(content_hash)
+        path = ACTION_DIR / f"{item['case_id']}.csv"
+        actions.to_csv(path, index=False, encoding="utf-8-sig")
+        action_rows.append({"case_id": item["case_id"], "promotion_track": item["promotion_track"], "path": str(path.relative_to(ROOT)).replace("\\", "/"), "sha256": digest(path), "content_sha256": content_hash, "rows": len(actions), "buy_rows": int((actions.action == "BUY").sum()), "sell_rows": int((actions.action == "SELL").sum())})
+    ACTION_MANIFEST.write_text(json.dumps({"frozen_sha256": digest(FROZEN_PATH), "actions": action_rows}, ensure_ascii=False, indent=2), encoding="utf-8")
+    summary = {"status": "research_only_observation", "stage1_cases": len(stage1), "stage1_all_year_positive": int(stage1.all_year_positive.sum()), "stage2_cases": len(stage2), "stage2_all_year_positive": int(stage2.all_year_positive.sum()), "frozen_candidates": len(frozen), "unique_juejin_paths": len(action_rows), "best_return": frozen.sort_values("full_cumulative_return", ascending=False).head(1).to_dict("records"), "best_sharpe": frozen.sort_values("full_sharpe", ascending=False).head(1).to_dict("records"), "known_2026_used_for_selection": False, "production_changed": False}
+    SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    REPORT_PATH.write_text("\n".join(["# 市场状态仓位研究结论", "", "- 参数选择仅使用 `20220606-20251231`。", "- 市场状态只读取截至T日开盘的历史横截面，不读取T+1执行开盘。", "- 2026数据未参与筛选。", "- 本地只作预筛，正式结果以掘金为准。", "", f"第一阶段 {len(stage1)} 组，逐年为正 {int(stage1.all_year_positive.sum())} 组。", f"第二阶段 {len(stage2)} 组，逐年为正 {int(stage2.all_year_positive.sum())} 组。", f"冻结候选 {len(frozen)} 组，独立交易路径 {len(action_rows)} 条。", "", "本轮为research-only，未修改生产策略或正式信号。"]), encoding="utf-8")
+    print(json.dumps({key: value for key, value in summary.items() if key not in {"best_return", "best_sharpe"}}, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

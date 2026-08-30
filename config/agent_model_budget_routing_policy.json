@@ -1,0 +1,125 @@
+{
+  "schema_version": 3,
+  "policy_id": "gpt-5.6-terra-default-v1",
+  "fixed_dispatch": {
+    "enabled": true,
+    "model_key": "terra",
+    "thinking": "medium",
+    "reason": "owner-directed project-wide Terra medium default; an explicit frontend selection is the only override"
+  },
+  "models": {
+    "terra": {
+      "model": "gpt-5.6-terra",
+      "allowed_thinking": ["low", "medium", "high", "xhigh", "max"]
+    }
+  },
+  "complexity_profiles": {
+    "1": {
+      "description": "状态查询、格式化、机械检查、单步明确操作",
+      "default_model": "terra",
+      "default_thinking": "low",
+      "minimum_remaining_tokens": 400,
+      "minimum_remaining_seconds": 45
+    },
+    "2": {
+      "description": "小范围修改、清晰测试、普通文档或证据整理",
+      "default_model": "terra",
+      "default_thinking": "medium",
+      "minimum_remaining_tokens": 1200,
+      "minimum_remaining_seconds": 150
+    },
+    "3": {
+      "description": "标准开发、跨数个文件分析、常规调试与工作流推进",
+      "default_model": "terra",
+      "default_thinking": "high",
+      "minimum_remaining_tokens": 3500,
+      "minimum_remaining_seconds": 420
+    },
+    "4": {
+      "description": "复杂调试、跨层设计、生产候选、重大缺陷整改",
+      "default_model": "terra",
+      "default_thinking": "high",
+      "minimum_remaining_tokens": 8000,
+      "minimum_remaining_seconds": 900
+    },
+    "5": {
+      "description": "正式审计、生产切换、实盘、权限安全、不可逆或系统性决策",
+      "default_model": "terra",
+      "default_thinking": "xhigh",
+      "minimum_remaining_tokens": 14000,
+      "minimum_remaining_seconds": 1500
+    }
+  },
+  "speed_profiles": {
+    "immediate": {
+      "description": "目标在约两分钟内给出可用结果",
+      "low_risk_model_preference": "terra",
+      "thinking_cap": "medium"
+    },
+    "fast": {
+      "description": "目标在约十分钟内完成",
+      "low_risk_model_preference": "terra",
+      "thinking_cap": "high"
+    },
+    "normal": {
+      "description": "正确性优先的常规交付",
+      "low_risk_model_preference": null,
+      "thinking_cap": "xhigh"
+    },
+    "deep": {
+      "description": "允许充分推理与验证",
+      "low_risk_model_preference": null,
+      "thinking_cap": "ultra"
+    }
+  },
+  "risk_profiles": {
+    "low": {
+      "minimum_model": "terra"
+    },
+    "normal": {
+      "minimum_model": "terra"
+    },
+    "high": {
+      "minimum_model": "terra",
+      "minimum_thinking": "high"
+    },
+    "critical": {
+      "minimum_model": "terra",
+      "minimum_thinking": "xhigh",
+      "never_downgrade": true
+    }
+  },
+  "resource_bands": [
+    {
+      "minimum_effective_ratio": 0.5,
+      "maximum_model": "terra"
+    },
+    {
+      "minimum_effective_ratio": 0.25,
+      "maximum_model": "terra"
+    },
+    {
+      "minimum_effective_ratio": 0.1,
+      "maximum_model": "terra"
+    },
+    {
+      "minimum_effective_ratio": 0.0,
+      "maximum_model": null
+    }
+  ],
+  "hard_rules": {
+    "only_gpt_5_6_models": true,
+    "classify_prompt_before_dispatch": true,
+    "effective_ratio_is_minimum_of_known_token_and_time_ratios": true,
+    "unknown_budget_uses_complexity_default_and_is_reported": true,
+    "critical_risk_never_downgrades": true,
+    "terra_default": true,
+    "frontend_manual_override_only": true,
+    "fallback_model_allowed": false,
+    "runtime_identity_must_match_selected_model": true,
+    "insufficient_budget_blocks_instead_of_unsafe_downgrade": true,
+    "no_mid_task_model_or_thinking_downgrade": true,
+    "reserve_ratio_for_verification_and_closeout": 0.2,
+    "owner_override_is_single_dispatch_only_and_must_be_logged": true
+  }
+}

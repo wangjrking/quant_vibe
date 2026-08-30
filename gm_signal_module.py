@@ -8,6 +8,7 @@ import sqlite3
 from bisect import bisect_right
 from pathlib import Path
 
+from adjustment_semantics import validate_strategy_output_field_names
 from selection_module import SelectionConfig, select_candidates
 
 
@@ -72,111 +73,153 @@ def _merge_rows_with_market_snapshot(rows: list[dict], market_rows_for_date: dic
     return merged_rows
 
 
-def load_market_rows_by_trade_date(db_path: str | Path, start: str, end: str) -> dict[str, dict[str, dict]]:
-    """Load daily market rows keyed by trade_date -> stock_code."""
-    conn = sqlite3.connect(str(Path(db_path)))
-    try:
+def _load_market_rows_from_connection(conn, *, is_duckdb: bool, start: str, end: str) -> dict[str, dict[str, dict]]:
+    if is_duckdb:
+        tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
+    else:
         tables = {
             row[0]
             for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         }
-        if "STOCK_DAILY_DATA" in tables:
-            stock_daily_cols = {
-                row[1]
-                for row in conn.execute("PRAGMA table_info(STOCK_DAILY_DATA)").fetchall()
-            }
-            atr_expr = "atr_qfq" if "atr_qfq" in stock_daily_cols else "NULL AS atr_qfq"
-            st_type_expr = "ST_TYPE AS st_type" if "ST_TYPE" in stock_daily_cols else "NULL AS st_type"
-            st_type_name_expr = "ST_TYPE_name AS st_type_name" if "ST_TYPE_name" in stock_daily_cols else "NULL AS st_type_name"
-            query = """
-                SELECT trade_date, stock_code, name, pre_close, open, close,
-                       amount, turnover_rate, total_mv,
-                       {atr_expr},
-                       {st_type_expr}, {st_type_name_expr}, limit_times
-                FROM STOCK_DAILY_DATA
-                WHERE trade_date >= ? AND trade_date <= ?
-            """.format(atr_expr=atr_expr, st_type_expr=st_type_expr, st_type_name_expr=st_type_name_expr)
-        elif "stk_factor" in tables or "STK_FACTOR" in tables:
-            factor_table = "stk_factor" if "stk_factor" in tables else "STK_FACTOR"
-            query = f"""
-                SELECT f.trade_date,
-                       CASE
-                           WHEN f.ts_code LIKE '%.SH' THEN 'SHSE.' || substr(f.ts_code, 1, 6)
-                           WHEN f.ts_code LIKE '%.SZ' THEN 'SZSE.' || substr(f.ts_code, 1, 6)
-                           WHEN f.ts_code LIKE '%.BJ' THEN 'BJSE.' || substr(f.ts_code, 1, 6)
-                           ELSE f.ts_code
-                       END AS stock_code,
-                       b.name AS name,
-                       f.pre_close AS pre_close,
-                       f.open AS open,
-                       f.close AS close,
-                       NULL AS amount,
-                       NULL AS turnover_rate,
-                       NULL AS total_mv,
-                       NULL AS atr_qfq,
-                       NULL AS st_type,
-                       NULL AS st_type_name,
-                       NULL AS limit_times
-                FROM "{factor_table}" f
-                LEFT JOIN stock_basic_data b ON f.ts_code = b.ts_code
-                WHERE f.trade_date >= ? AND f.trade_date <= ?
-            """
-        else:
-            query = """
-                SELECT trade_date,
-                       CASE
-                           WHEN ts_code LIKE '%.SH' THEN 'SHSE.' || substr(ts_code, 1, 6)
-                           WHEN ts_code LIKE '%.SZ' THEN 'SZSE.' || substr(ts_code, 1, 6)
-                           WHEN ts_code LIKE '%.BJ' THEN 'BJSE.' || substr(ts_code, 1, 6)
-                           ELSE ts_code
-                       END AS stock_code,
-                       NULL AS name,
-                       pre_close,
-                       open,
-                       close,
-                       NULL AS amount,
-                       NULL AS turnover_rate,
-                       NULL AS total_mv,
-                       NULL AS atr_qfq,
-                       NULL AS st_type,
-                       NULL AS st_type_name,
-                       NULL AS limit_times
-                FROM daily_data
-                WHERE trade_date >= ? AND trade_date <= ?
-            """
-        cursor = conn.execute(query, (str(start), str(end)))
-        grouped: dict[str, dict[str, dict]] = {}
-        for (
-            trade_date,
-            stock_code,
-            name,
-            pre_close,
-            open_price,
-            close_price,
-            amount,
-            turnover_rate,
-            total_mv,
-            atr_qfq,
-            st_type,
-            st_type_name,
-            limit_times,
-        ) in cursor:
-            grouped.setdefault(str(trade_date), {})[str(stock_code)] = {
-                "trade_date": str(trade_date),
-                "stock_code": str(stock_code),
-                "name": name,
-                "pre_close": pre_close,
-                "open": open_price,
-                "close": close_price,
-                "amount": amount,
-                "turnover_rate": turnover_rate,
-                "total_mv": total_mv,
-                "atr_qfq": atr_qfq,
-                "st_type": st_type,
-                "st_type_name": st_type_name,
-                "limit_times": limit_times,
-            }
-        return grouped
+    if "STOCK_DAILY_DATA" in tables:
+        stock_daily_cols = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(STOCK_DAILY_DATA)").fetchall()
+        }
+        atr_expr = "atr_qfq" if "atr_qfq" in stock_daily_cols else "NULL AS atr_qfq"
+        open_qfq_expr = "open_qfq" if "open_qfq" in stock_daily_cols else "NULL AS open_qfq"
+        high_qfq_expr = "high_qfq" if "high_qfq" in stock_daily_cols else "NULL AS high_qfq"
+        low_qfq_expr = "low_qfq" if "low_qfq" in stock_daily_cols else "NULL AS low_qfq"
+        close_qfq_expr = "close_qfq" if "close_qfq" in stock_daily_cols else "NULL AS close_qfq"
+        pre_close_qfq_expr = "pre_close_qfq" if "pre_close_qfq" in stock_daily_cols else "NULL AS pre_close_qfq"
+        st_type_expr = "ST_TYPE AS st_type" if "ST_TYPE" in stock_daily_cols else "NULL AS st_type"
+        st_type_name_expr = "ST_TYPE_name AS st_type_name" if "ST_TYPE_name" in stock_daily_cols else "NULL AS st_type_name"
+        query = """
+            SELECT trade_date, stock_code, name, pre_close, open, close,
+                   {open_qfq_expr}, {high_qfq_expr}, {low_qfq_expr}, {close_qfq_expr}, {pre_close_qfq_expr},
+                   amount, turnover_rate, total_mv,
+                   {atr_expr},
+                   {st_type_expr}, {st_type_name_expr}, limit_times
+            FROM STOCK_DAILY_DATA
+            WHERE trade_date >= ? AND trade_date <= ?
+        """.format(
+            atr_expr=atr_expr,
+            open_qfq_expr=open_qfq_expr,
+            high_qfq_expr=high_qfq_expr,
+            low_qfq_expr=low_qfq_expr,
+            close_qfq_expr=close_qfq_expr,
+            pre_close_qfq_expr=pre_close_qfq_expr,
+            st_type_expr=st_type_expr,
+            st_type_name_expr=st_type_name_expr,
+        )
+    elif "stk_factor" in tables or "STK_FACTOR" in tables:
+        factor_table = "stk_factor" if "stk_factor" in tables else "STK_FACTOR"
+        query = f"""
+            SELECT f.trade_date,
+                   CASE
+                       WHEN f.ts_code LIKE '%.SH' THEN 'SHSE.' || substr(f.ts_code, 1, 6)
+                       WHEN f.ts_code LIKE '%.SZ' THEN 'SZSE.' || substr(f.ts_code, 1, 6)
+                       WHEN f.ts_code LIKE '%.BJ' THEN 'BJSE.' || substr(f.ts_code, 1, 6)
+                       ELSE f.ts_code
+                   END AS stock_code,
+                   b.name AS name,
+                   f.pre_close AS pre_close,
+                   f.open AS open,
+                   f.close AS close,
+                   NULL AS amount,
+                   NULL AS turnover_rate,
+                   NULL AS total_mv,
+                   NULL AS atr_qfq,
+                   NULL AS st_type,
+                   NULL AS st_type_name,
+                   NULL AS limit_times
+            FROM "{factor_table}" f
+            LEFT JOIN stock_basic_data b ON f.ts_code = b.ts_code
+            WHERE f.trade_date >= ? AND f.trade_date <= ?
+        """
+    else:
+        query = """
+            SELECT trade_date,
+                   CASE
+                       WHEN ts_code LIKE '%.SH' THEN 'SHSE.' || substr(ts_code, 1, 6)
+                       WHEN ts_code LIKE '%.SZ' THEN 'SZSE.' || substr(ts_code, 1, 6)
+                       WHEN ts_code LIKE '%.BJ' THEN 'BJSE.' || substr(ts_code, 1, 6)
+                       ELSE ts_code
+                   END AS stock_code,
+                   NULL AS name,
+                   pre_close,
+                   open,
+                   close,
+                   NULL AS amount,
+                   NULL AS turnover_rate,
+                   NULL AS total_mv,
+                   NULL AS atr_qfq,
+                   NULL AS st_type,
+                   NULL AS st_type_name,
+                   NULL AS limit_times
+            FROM daily_data
+            WHERE trade_date >= ? AND trade_date <= ?
+        """
+    cursor = conn.execute(query, (str(start), str(end)))
+    grouped: dict[str, dict[str, dict]] = {}
+    for (
+        trade_date,
+        stock_code,
+        name,
+        pre_close,
+        open_price,
+        close_price,
+        open_qfq,
+        high_qfq,
+        low_qfq,
+        close_qfq,
+        pre_close_qfq,
+        amount,
+        turnover_rate,
+        total_mv,
+        atr_qfq,
+        st_type,
+        st_type_name,
+        limit_times,
+    ) in cursor.fetchall():
+        grouped.setdefault(str(trade_date), {})[str(stock_code)] = {
+            "trade_date": str(trade_date),
+            "stock_code": str(stock_code),
+            "name": name,
+            "pre_close": pre_close,
+            "open": open_price,
+            "close": close_price,
+            "open_qfq": open_qfq,
+            "high_qfq": high_qfq,
+            "low_qfq": low_qfq,
+            "close_qfq": close_qfq,
+            "pre_close_qfq": pre_close_qfq,
+            "amount": amount,
+            "turnover_rate": turnover_rate,
+            "total_mv": total_mv,
+            "atr_qfq": atr_qfq,
+            "st_type": st_type,
+            "st_type_name": st_type_name,
+            "limit_times": limit_times,
+        }
+    return grouped
+
+
+def load_market_rows_by_trade_date(db_path: str | Path, start: str, end: str) -> dict[str, dict[str, dict]]:
+    """Load daily market rows keyed by trade_date -> stock_code."""
+    path = Path(db_path)
+    if path.suffix.lower() == ".duckdb":
+        import duckdb
+
+        conn = duckdb.connect(str(path), read_only=True)
+        try:
+            return _load_market_rows_from_connection(conn, is_duckdb=True, start=start, end=end)
+        finally:
+            conn.close()
+
+    conn = sqlite3.connect(str(path))
+    try:
+        return _load_market_rows_from_connection(conn, is_duckdb=False, start=start, end=end)
     finally:
         conn.close()
 
@@ -405,6 +448,7 @@ def write_gm_signals_csv(signals: list[dict], output_path: str | Path) -> None:
         for field in signal.keys():
             if field not in fieldnames:
                 fieldnames.append(field)
+    validate_strategy_output_field_names(fieldnames, context="gm signal output")
     with path.open("w", newline="", encoding="utf-8-sig") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()

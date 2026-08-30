@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "strategy_name": "10D平滑状态预热（四表键域）",
+  "name": "10D平滑状态预热（四表键域）",
+  "version": "20260724-all4key",
+  "status": "production_active",
+  "created_at": "2026-07-24",
+  "created_by": "strategy-agent",
+  "published_at": "2026-07-25",
+  "published_by": "strategy-agent",
+  "production_version": "20260724-all4key",
+  "source_research_strategy_id": "v260_748bdb6520590687",
+  "production_registry_updated": true,
+  "production_published": true,
+  "current_route_eligible": true,
+  "input_contract": {
+    "key_domain": "inner_intersection_on_trade_date_stock_code",
+    "key_domain_labels": [
+      "1D",
+      "3D",
+      "5D",
+      "10D"
+    ],
+    "score_labels": [
+      "10D"
+    ],
+    "non_scoring_labels": [
+      "1D",
+      "3D",
+      "5D"
+    ],
+    "formal_manifest_1d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "source_type": "duckdb_table",
+    "approval_status_required": "approved_for_l5",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false,
+    "market_db_path": "D:/work/quant/quant_mcp/quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb",
+    "active_universe_no_bj": true,
+    "market_field_semantics": {
+      "score_and_factor_price_semantics": "所有模型评分及技术派生输入使用显式 qfq 口径。",
+      "execution_price_semantics": "交易执行、涨跌停判断使用不复权真实 open/pre_close。",
+      "bare_price_field_policy": "裸 open/high/low/close/pre_close 仅解释为不复权真实行情。"
+    }
+  },
+  "strategy_files": {
+    "trading_rules": "trading_rules.json",
+    "validation": "validation.json",
+    "reproduction": "reproduction_v20260724.json",
+    "model_params": "model_params.json",
+    "factors": "factors.json",
+    "report": "report.md",
+    "full_history_actions": "signals/full_history_actions.csv",
+    "latest_status": "signals/latest_signal_status.json",
+    "production_exporter": "code_snapshot/export_v260_all4key_production_signals.py",
+    "juejin_log": "backtests/juejin_full_repeat_20260723.log",
+    "juejin_executor": "code_snapshot/juejin_frozen_executor.py",
+    "source_snapshot": "code_snapshot/source_modules/"
+  },
+  "latest_signal": {
+    "status": "pending_buy_day_hard_gate",
+    "signal_date": "20260828",
+    "buy_date": "20260831",
+    "buy_date_source": "official_tushare_sdk.trade_cal",
+    "buy_date_calendar_fact_sha256": "5BE59B14BDBB09BBD686E27F465E3C42874C6787E1F60ADF3332FDB379C8E875",
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "l7_execution_allowed": false,
+    "signal_semantics": "trade_actions_pending_buy_day_hard_gate",
+    "no_signal": false,
+    "hold_only": false,
+    "execution_allowed": false,
+    "approved_for_execution": false,
+    "auto_execution_allowed": false,
+    "live_execution_allowed": false,
+    "l5_audit_result": "pending",
+    "allow_L6": true
+  },
+  "current_signal": {
+    "status": "pending_buy_day_hard_gate",
+    "signal_date": "20260828",
+    "buy_date": "20260831",
+    "buy_date_source": "official_tushare_sdk.trade_cal",
+    "buy_date_calendar_fact_sha256": "5BE59B14BDBB09BBD686E27F465E3C42874C6787E1F60ADF3332FDB379C8E875",
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "l7_execution_allowed": false,
+    "signal_semantics": "trade_actions_pending_buy_day_hard_gate",
+    "no_signal": false,
+    "hold_only": false,
+    "execution_allowed": false,
+    "approved_for_execution": false,
+    "auto_execution_allowed": false,
+    "live_execution_allowed": false,
+    "l5_audit_result": "pending",
+    "allow_L6": true,
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_v260_10d_regime_warmup_all4key_v20260724_latest.csv",
+    "latest_signal_date": "20260828",
+    "latest_buy_date": "20260831"
+  },
+  "validation": {
+    "annual_return": 1.900502577405542,
+    "annual_return_semantics": "platform_linear_annual_non_cagr",
+    "cagr": 0.6967706495633565,
+    "sharpe": 1.5514961406711685,
+    "max_drawdown": 0.23529891580633588,
+    "validation_platform": "juejin"
+  },
+  "remaining_gates": [
+    "l6_validation",
+    "buy_day_hard_gate"
+  ],
+  "candidate_audit": {
+    "result": "passed",
+    "risk_level": "P2",
+    "allow_candidate_to_execute": true,
+    "audit_thread_id": "019ed091-89b0-73c2-b60b-e2ba1d6ac6d9"
+  },
+  "post_cutover_audit": {
+    "result": "passed",
+    "risk_level": "P2",
+    "allow_post_cutover_close": true,
+    "audit_thread_id": "019ed091-89b0-73c2-b60b-e2ba1d6ac6d9"
+  },
+  "remediated_issue": {
+    "source_strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+    "previous_severity": "P1",
+    "code": "hidden_all4_key_domain_dependency_remediated",
+    "invalidated_contract": "10D-only",
+    "corrected_contract": "1D/3D/5D/10D inner-join key domain with 10D score weight",
+    "ten_d_only_action_rows": 1569,
+    "frozen_action_rows": 1563,
+    "extra_action_keys": 107,
+    "missing_action_keys": 101,
+    "first_divergence_signal_date": "20221014",
+    "all4_action_rows": 1563,
+    "all4_extra_action_keys": 0,
+    "all4_missing_action_keys": 0,
+    "formal_signal_generated": true,
+    "l7_execution_allowed": false
+  }
+}

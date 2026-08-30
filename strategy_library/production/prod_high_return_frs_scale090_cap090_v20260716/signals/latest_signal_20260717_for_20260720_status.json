@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+  "status": "withdrawn_strategy_p1",
+  "withdrawn_at": "2026-07-21",
+  "withdrawal_reason": "P1 reproducibility audit failed; historical signal retained as evidence only.",
+  "signal_date": "20260717",
+  "buy_date": "20260720",
+  "buy_date_source": "weekday_estimate_l2_market_not_available",
+  "latest_signal_date": "20260717",
+  "latest_buy_date": "20260720",
+  "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\latest_signal_20260717_for_20260720.csv",
+  "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_high_return_frs_scale090_cap090_v20260716_latest.csv",
+  "row_count": 2,
+  "stock_count": 2,
+  "duplicate_signal_stock_keys": 0,
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "buy_day_realtime_checks_required": true,
+  "l7_execution_allowed": false,
+  "note": "Historical archived signal only. Strategy was withdrawn and is not eligible for L5-L8 execution.",
+  "freshness": {
+    "latest_signal_date": "20260717",
+    "latest_buy_date": "20260720",
+    "formal_manifest_checks": [
+      {
+        "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+        "max_trade_date": "20260717",
+        "latest_rows": 5195,
+        "duplicate_key_groups": 0
+      },
+      {
+        "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+        "max_trade_date": "20260717",
+        "latest_rows": 5195,
+        "duplicate_key_groups": 0
+      },
+      {
+        "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+        "max_trade_date": "20260717",
+        "latest_rows": 5195,
+        "duplicate_key_groups": 0
+      },
+      {
+        "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+        "max_trade_date": "20260717",
+        "latest_rows": 5195,
+        "duplicate_key_groups": 0
+      }
+    ]
+  },
+  "audit": {
+    "base_candidate_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_high_return_frs_incremental_20260717_recovery_20260718\\prod_high_return_frs_scale090_cap090_v20260716_fw_base_candidate_20260717.csv",
+    "base_candidate_rows": 3,
+    "mf_stage_rows": 2,
+    "final_signal_rows": 2,
+    "target_sum": 0.3783093050880001,
+    "bj_rows": 0,
+    "duplicate_buy_stock_keys_full_history": 0,
+    "full_history_rows": 541,
+    "full_history_signal_days": 448,
+    "full_history_buy_days": 448,
+    "legacy_or_research_only_input_used": false,
+    "input_mode": "active formal DuckDB manifests only; production strategy chain replayed without parameter changes",
+    "prod_fw_base_audit": {
+      "l4_join_count_no_bj": 5195,
+      "signal_day_market_rows": 5195,
+      "after_signal_day_filters": 3355,
+      "base_selected": 3,
+      "refill_selected": 0,
+      "target_topn": 3,
+      "actual_rows": 3,
+      "shortage": 0,
+      "bj_rows": 0,
+      "duplicate_signal_stock_keys": 0,
+      "latest_target_pct_sum": 0.91
+    },
+    "full_history_update": {
+      "before_rows": 539,
+      "after_rows": 541,
+      "signal_days": 448,
+      "buy_days": 448,
+      "duplicate_buy_stock_keys": 0,
+      "full_history": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\full_history_high_return_frs_scale090_cap090.csv"
+    }
+  }
+}

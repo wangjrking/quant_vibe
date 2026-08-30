@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+  "status": "pending_buy_day_hard_gate",
+  "signal_date": "20260715",
+  "buy_date": "20260716",
+  "buy_date_source": "research_refresh_signal_file; buy-day hard gate pending",
+  "latest_signal_date": "20260715",
+  "latest_buy_date": "20260716",
+  "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\latest_signal_20260715_for_20260716.csv",
+  "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_high_return_frs_scale090_cap090_v20260716_latest.csv",
+  "row_count": 2,
+  "stock_count": 2,
+  "duplicate_signal_stock_keys": 0,
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "l7_execution_allowed": false,
+  "note": "Published by user request from reproducible Juejin research candidate. Latest buy-day hard gate is still pending; do not execute without L7/trading audit.",
+  "audit": {
+    "full_history_rows": 537,
+    "signal_days": 446,
+    "buy_days": 446,
+    "stock_count_full_history": 370,
+    "duplicate_buy_stock_keys": 0,
+    "bj_rows": 0,
+    "latest_target_pct_sum": 0.5998561920000001,
+    "source_research_status": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_research_strategy_data_refresh_20260716\\experiment_highest_frs_scale090_cap090_refresh_status.json",
+    "juejin_refresh_log": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_research_strategy_data_refresh_20260716\\logs\\repro_refresh_frs_scale090_cap090_20260716_online.log"
+  }
+}

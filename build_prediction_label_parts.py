@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+from l3_duckdb_sync import l3_duckdb_sync_enabled, sync_label_parts_full_to_duckdb
+
 
 KEY_COLUMNS = ["trade_date", "stock_code"]
 
@@ -232,6 +234,12 @@ def main(argv=None):
             raw_columns,
             resume=not args.no_resume,
         )
+    if l3_duckdb_sync_enabled():
+        sync_result = sync_label_parts_full_to_duckdb(
+            data_dir=None,
+            parts_dir=output_dir,
+        )
+        print(json.dumps({"duckdb_sync": sync_result}, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

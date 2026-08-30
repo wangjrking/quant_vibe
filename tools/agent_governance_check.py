@@ -1,4 +1,4 @@
-"""Validate multi-agent governance scaffolding.
+﻿"""Validate multi-agent governance scaffolding.
 
 This tool is read-only. It checks agent packages, runtime workspace
 documentation, asset registry JSON files, platform AGENT entries, and
@@ -9,6 +9,7 @@ quant workflows.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 from pathlib import Path
 from typing import Iterable
@@ -20,7 +21,7 @@ AGENTS = [
     "audit-agent",
     "data-ingestion-agent",
     "data-integration-agent",
-    "data-warehouse-agent",
+    "mcp-agent",
     "factor-agent",
     "model-agent",
     "strategy-agent",
@@ -50,6 +51,7 @@ SPECIAL_FILES = [
     ".codex/agent_packages/workflow-skill-improvement-loop.md",
     ".codex/agent_packages/commander-agent/workflows.md",
     ".codex/agent_packages/commander-agent/dispatch-rules.md",
+    ".codex/agent_packages/strategy-agent/strategy-admission-standards.md",
     "quant/main/docs/governance/standard-agent-architecture.md",
     "quant/main/docs/governance/thread-based-agent-management.md",
     "quant/main/docs/governance/skill-system.md",
@@ -152,6 +154,15 @@ KEYWORD_CHECKS = {
         "详细流程见 `procedures.md`",
         "工具和脚本入口见 `tools.md`",
     ],
+    ".codex/agents/strategy-admission-standards.md": [
+        "本文件仅保留旧路径兼容",
+        ".codex/agent_packages/strategy-agent/strategy-admission-standards.md",
+    ],
+    ".codex/agent_packages/strategy-agent/strategy-admission-standards.md": [
+        "策略准入标准",
+        "production registry 和 L2 route contract",
+        "预先冻结、PIT、可复放且经只读审计的验证协议",
+    ],
 }
 
 FORBIDDEN_FACTOR_SKILL_MARKERS = [
@@ -160,6 +171,20 @@ FORBIDDEN_FACTOR_SKILL_MARKERS = [
     "停止条件：",
     "优先核查文件：",
 ]
+
+FORBIDDEN_GOVERNANCE_MARKERS = {
+    "WORKFLOW.md": [
+        "回测智能体",
+        "暂以已归档预测表/预测文件为准",
+        "?? workflow monitor ??",
+    ],
+    ".codex/agents/README.md": [
+        "默认称呼用户为",
+    ],
+    ".codex/agents/communication-layer.md": [
+        "默认称呼用户为",
+    ],
+}
 
 
 def project_root() -> Path:
@@ -329,6 +354,58 @@ def check_internal_skill_placement(root: Path, errors: list[str]) -> None:
                 )
 
 
+def check_forbidden_governance_markers(root: Path, errors: list[str]) -> None:
+    for path, markers in FORBIDDEN_GOVERNANCE_MARKERS.items():
+        full_path = rel(root, path)
+        if not full_path.is_file():
+            errors.append(f"missing forbidden-marker target: {path}")
+            continue
+        text = full_path.read_text(encoding="utf-8-sig")
+        for marker in markers:
+            if marker in text:
+                errors.append(f"stale governance marker in {path}: {marker}")
+
+
+def check_observability_agent_catalog(root: Path, errors: list[str]) -> None:
+    path = rel(root, "quant/main/agent_observability.py")
+    if not path.is_file():
+        errors.append("missing observability catalog: quant/main/agent_observability.py")
+        return
+
+    try:
+        module = ast.parse(path.read_text(encoding="utf-8-sig"))
+    except SyntaxError as exc:
+        errors.append(f"invalid observability module: {exc}")
+        return
+
+    catalog = None
+    for node in module.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if any(
+            isinstance(target, ast.Name)
+            and target.id == "CANONICAL_AGENT_LABELS"
+            for target in node.targets
+        ):
+            try:
+                catalog = ast.literal_eval(node.value)
+            except (ValueError, TypeError):
+                catalog = None
+            break
+
+    if not isinstance(catalog, dict):
+        errors.append("observability canonical agent catalog must be a literal dict")
+        return
+
+    actual = set(catalog)
+    expected = set(AGENTS)
+    if actual != expected:
+        errors.append(
+            "observability canonical agent catalog mismatch: "
+            f"missing={sorted(expected - actual)} extra={sorted(actual - expected)}"
+        )
+
+
 def run_check(root: Path) -> list[str]:
     errors: list[str] = []
     check_exists(root, SPECIAL_FILES, errors)
@@ -338,6 +415,8 @@ def run_check(root: Path) -> list[str]:
     check_thread_registry(root, errors)
     check_keywords(root, errors)
     check_internal_skill_placement(root, errors)
+    check_forbidden_governance_markers(root, errors)
+    check_observability_agent_catalog(root, errors)
     return errors
 
 
@@ -364,7 +443,9 @@ def main() -> int:
         f"json_files={len(JSON_FILES)} "
         "thread_registry=checked "
         "platform_agent_entries=checked "
-        "internal_skill_placement=checked"
+        "internal_skill_placement=checked "
+        "stale_governance_markers=checked "
+        "observability_catalog=checked"
     )
     return 0
 

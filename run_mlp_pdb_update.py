@@ -1,23 +1,37 @@
 from __future__ import annotations
 
 import argparse
-import sqlite3
 from pathlib import Path
+
+import duckdb
 
 from ai_module import get_factor_data
 from mlp_model_module import build_prediction_frame, predict_with_mlp
 from model_asset_route import (
-    MODEL_FEATURE_MODE_LEGACY,
     MODEL_FEATURE_MODE_SPLIT,
     MODEL_PREDICTION_MODE_INDEPENDENT,
-    MODEL_PREDICTION_MODE_LEGACY,
     require_legacy_model_asset_chain_opt_in,
-    resolve_legacy_prediction_db_path,
-    resolve_model_prediction_db_path,
     resolve_prediction_run_dir,
+    resolve_model_prediction_root,
     use_legacy_prediction_db,
     write_prediction_manifest,
 )
+
+
+def _quote_ident(value: str) -> str:
+    return '"' + value.replace('"', '""') + '"'
+
+
+def _prediction_duckdb_path(data_dir: Path, output_table: str) -> Path:
+    safe_table = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in output_table).strip("_")
+    return resolve_model_prediction_root(data_dir, create=True) / f"{safe_table}.duckdb"
+
+
+def _write_prediction_duckdb(pred_data, duckdb_path: Path, table_name: str) -> None:
+    duckdb_path.parent.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect(str(duckdb_path), read_only=False) as conn:
+        conn.register("_prediction_frame", pred_data)
+        conn.execute(f"CREATE OR REPLACE TABLE {_quote_ident(table_name)} AS SELECT * FROM _prediction_frame")
 
 
 def parse_args(argv=None):
@@ -35,12 +49,12 @@ def parse_args(argv=None):
     parser.add_argument(
         "--feature-source",
         default=None,
-        choices=[MODEL_FEATURE_MODE_SPLIT, MODEL_FEATURE_MODE_LEGACY],
+        choices=[MODEL_FEATURE_MODE_SPLIT],
     )
     parser.add_argument(
         "--prediction-output-mode",
         default=None,
-        choices=[MODEL_PREDICTION_MODE_INDEPENDENT, MODEL_PREDICTION_MODE_LEGACY],
+        choices=[MODEL_PREDICTION_MODE_INDEPENDENT],
     )
     return parser.parse_args(argv)
 
@@ -69,13 +83,11 @@ def main(argv=None):
     pred_data = build_prediction_frame(test_data, test_y, pred_y)
     if use_legacy_prediction_db(args.prediction_output_mode):
         require_legacy_model_asset_chain_opt_in(reason="legacy odb mlp prediction output")
-        db_path = resolve_legacy_prediction_db_path(data_dir)
-        prediction_mode = MODEL_PREDICTION_MODE_LEGACY
+        raise RuntimeError("legacy SQLite prediction output is disabled in the DuckDB-only architecture.")
     else:
-        db_path = resolve_model_prediction_db_path(data_dir, create_parent=True)
+        db_path = _prediction_duckdb_path(data_dir, args.output_table)
         prediction_mode = MODEL_PREDICTION_MODE_INDEPENDENT
-    with sqlite3.connect(db_path) as conn:
-        pred_data.to_sql(args.output_table, con=conn, if_exists="replace", index=False)
+    _write_prediction_duckdb(pred_data, db_path, args.output_table)
     run_dir = resolve_prediction_run_dir(data_dir, label=args.label, output_table=args.output_table, create=True)
     write_prediction_manifest(
         run_dir / "prediction_manifest.json",
@@ -83,7 +95,8 @@ def main(argv=None):
             "label": args.label,
             "feature_source": args.feature_source or MODEL_FEATURE_MODE_SPLIT,
             "prediction_mode": prediction_mode,
-            "prediction_db_path": str(db_path),
+            "source_type": "duckdb_table",
+            "prediction_duckdb_path": str(db_path),
             "prediction_table": args.output_table,
             "row_count": int(pred_data.shape[0]),
         },

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_repro500_p435_s96_p10d70_v20260702",
+  "status": "stale_no_current_signal",
+  "latest_signal_date": 20260528,
+  "latest_buy_date": 20260529,
+  "file_name": "latest_signal_20260528_for_20260529.csv",
+  "source_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_repro500_p435_s96_p10d70_v20260702\\signals\\latest_signal_20260528_for_20260529.csv",
+  "reason": "复现500版本的历史信号文件最新只到20260528/20260529，不能作为当前交易日L7输入。",
+  "l7_execution_allowed": false,
+  "published_at": "2026-07-02T23:15:49+08:00"
+}

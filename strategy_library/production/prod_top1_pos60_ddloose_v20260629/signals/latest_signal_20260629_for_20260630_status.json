@@ -1,0 +1,12 @@
+{
+  "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+  "signal_date": "20260629",
+  "buy_date": "20260630",
+  "latest_market_date": "20260629",
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "candidate_count_after_filters": 2400,
+  "skipped_candidates": [],
+  "selected_stock_code": "000636.SZ",
+  "selected_name": "风华高科"
+}

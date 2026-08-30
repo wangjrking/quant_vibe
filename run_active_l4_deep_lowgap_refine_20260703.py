@@ -1,0 +1,252 @@
+from __future__ import annotations
+
+import re
+import subprocess
+from pathlib import Path
+
+import duckdb
+import numpy as np
+import pandas as pd
+
+
+ROOT = Path(r"D:\work\quant\quant_mcp")
+MAIN = ROOT / "quant" / "main"
+PYTHON = ROOT / ".venv" / "Scripts" / "python.exe"
+REPORT_DIR = ROOT / "quant" / "data_file" / "reports" / "strategy_agent_active_l4_prod_repro_grid_20260703"
+CACHE_DB = REPORT_DIR / "active_l4_wide_cache.duckdb"
+SCORE_DB = REPORT_DIR / "score_current.duckdb"
+MARKET_DB = ROOT / "quant" / "data_file" / "production_assets" / "duckdb" / "l2_stock_daily_data.duckdb"
+STRATEGY_DIR = (
+    ROOT
+    / "quant"
+    / "data_file"
+    / "reports"
+    / "strategy_agent_latest_l4_weight_candidates_20260702"
+    / "postrank_open_filter_candidates"
+    / "code_snapshot_sell_available_safe_20260702"
+)
+OUT_DIR = REPORT_DIR / "variants_deep_lowgap_refine"
+RUN_DIR = REPORT_DIR / "juejin_runs_deep_lowgap_refine"
+MANIFEST_CSV = REPORT_DIR / "variants_deep_lowgap_refine_manifest.csv"
+RAW_CSV = REPORT_DIR / "juejin_deep_lowgap_refine_raw.csv"
+SUMMARY_CSV = REPORT_DIR / "juejin_deep_lowgap_refine_summary.csv"
+
+
+CASES = []
+for gap_min, gap_max in [
+    (-8.0, -1.0),
+    (-8.0, -1.5),
+    (-8.0, -2.0),
+    (-6.0, -1.0),
+    (-6.0, -1.5),
+    (-6.0, -2.0),
+    (-5.0, -1.0),
+    (-5.0, -1.5),
+    (-5.0, -2.0),
+    (-4.0, -1.0),
+    (-4.0, -1.5),
+    (-4.0, -2.0),
+    (-3.0, -1.0),
+    (-3.0, -1.5),
+    (-3.0, -2.0),
+]:
+    for hold in [2, 3]:
+        CASES.append((gap_min, gap_max, hold, 0.50))
+for gap_min, gap_max in [(-6.0, -1.5), (-5.0, -1.5), (-4.0, -1.5), (-3.0, -1.5)]:
+    CASES.append((gap_min, gap_max, 2, 0.45))
+
+
+def _indicator_from_log(text: str) -> dict:
+    match = re.search(r"GM_BACKTEST_INDICATOR:\s*(\{.*?\})(?:\r?\n|$)", text, re.S)
+    if not match:
+        return {}
+    raw = match.group(1)
+    out: dict[str, object] = {}
+    for key in [
+        "pnl_ratio",
+        "pnl_ratio_annual",
+        "sharp_ratio",
+        "max_drawdown",
+        "risk_ratio",
+        "open_count",
+        "close_count",
+        "win_count",
+        "lose_count",
+        "win_ratio",
+        "calmar_ratio",
+    ]:
+        value_match = re.search(rf"'{key}':\s*([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)", raw)
+        if value_match:
+            value = float(value_match.group(1))
+            out[key] = int(value) if key.endswith("_count") else value
+    return out
+
+
+def _case_name(gap_min: float, gap_max: float, hold: int, target: float) -> str:
+    def fmt(x: float) -> str:
+        return str(x).replace("-", "m").replace(".", "p")
+
+    return f"deepgap_{fmt(gap_min)}_{fmt(gap_max)}_h{hold}_t{int(target * 100)}"
+
+
+def export_case(con: duckdb.DuckDBPyConnection, gap_min: float, gap_max: float, hold: int, target: float) -> dict:
+    name = _case_name(gap_min, gap_max, hold, target)
+    ret_col = f"ret_h{hold}"
+    sig = con.execute(
+        f"""
+        WITH picked AS (
+            SELECT
+                *,
+                row_number() OVER (
+                    PARTITION BY buy_date
+                    ORDER BY buy_open_gap_raw_pct ASC, pred_prob DESC, stock_code
+                ) AS pick_rank
+            FROM active_l4_wide
+            WHERE score_pct_rank >= 0.95
+              AND signal_amount >= 50000
+              AND buy_amount >= 50000
+              AND {ret_col} IS NOT NULL
+              AND buy_open_gap_raw_pct >= {gap_min}
+              AND buy_open_gap_raw_pct <= {gap_max}
+        )
+        SELECT
+            signal_date,
+            buy_date,
+            stock_code,
+            name,
+            market,
+            pick_rank AS rank,
+            pred_prob,
+            score_pct_rank,
+            signal_pct_chg,
+            signal_open_gap_raw_pct,
+            buy_open_gap_raw_pct,
+            signal_amount,
+            buy_amount,
+            signal_turnover_rate,
+            buy_turnover_rate,
+            signal_total_mv,
+            buy_total_mv,
+            signal_atr_qfq,
+            buy_atr_qfq
+        FROM picked
+        WHERE pick_rank <= 1
+        ORDER BY buy_date, pick_rank
+        """
+    ).fetchdf()
+    sig["symbol"] = np.where(
+        sig["stock_code"].str.endswith(".SH"),
+        "SHSE." + sig["stock_code"].str.split(".").str[0],
+        "SZSE." + sig["stock_code"].str.split(".").str[0],
+    )
+    sig["target_pct"] = target
+    sig["holding_days"] = hold
+    sig["max_holding_days"] = hold
+    sig["score_exit_entry_ratio"] = 9.99
+    sig["min_holding_days_before_score_exit"] = hold
+    sig["score_continue_entry_ratio"] = 9.99
+    sig["buy_day_market_available"] = True
+    sig["buy_day_hard_gate_complete"] = True
+    sig["buy_day_st_rejected"] = False
+    sig["buy_day_open_limit_up_rejected"] = False
+    sig["latest_market_date"] = "20260702"
+    path = OUT_DIR / f"{name}.csv"
+    sig.to_csv(path, index=False, encoding="utf-8-sig")
+    return {
+        "name": name,
+        "signal_file": str(path),
+        "gap_min": gap_min,
+        "gap_max": gap_max,
+        "holding_days": hold,
+        "target": target,
+        "signal_rows": int(len(sig)),
+        "signal_buy_days": int(sig["buy_date"].nunique()),
+        "avg_buy_open_gap_raw_pct": float(sig["buy_open_gap_raw_pct"].mean()) if len(sig) else None,
+    }
+
+
+def run_juejin(row: dict) -> dict:
+    log_file = RUN_DIR / f"{row['name']}.log"
+    cmd = [
+        str(PYTHON),
+        str(MAIN / "run_juejin_signal_backtest.py"),
+        "--strategy-dir",
+        str(STRATEGY_DIR),
+        "--signal-file",
+        row["signal_file"],
+        "--log-file",
+        str(log_file),
+        "--max-positions",
+        "1",
+        "--holding-days",
+        str(int(row["holding_days"])),
+        "--target-position-pct",
+        f"{float(row['target']):.2f}",
+        "--score-db",
+        str(SCORE_DB),
+        "--score-table",
+        "score",
+        "--market-db",
+        str(MARKET_DB),
+        "--score-exit-entry-ratio",
+        "9.99",
+        "--min-holding-days-before-score-exit",
+        str(int(row["holding_days"])),
+        "--score-continue-entry-ratio",
+        "9.99",
+        "--max-holding-days",
+        str(int(row["holding_days"])),
+        "--light-stop-loss-pct",
+        "0.08",
+        "--min-holding-days-before-light-stop",
+        "1",
+        "--backtest-adjust",
+        "none",
+        "--backtest-slippage-ratio",
+        "0.0015",
+    ]
+    print(f"RUN {row['name']}", flush=True)
+    completed = subprocess.run(cmd, cwd=str(ROOT), text=True, capture_output=True, timeout=180)
+    text = log_file.read_text(encoding="utf-8", errors="ignore") if log_file.exists() else completed.stdout + completed.stderr
+    indicator = _indicator_from_log(text)
+    out = dict(row)
+    out.update({"log_file": str(log_file), "returncode": completed.returncode, "has_indicator": bool(indicator)})
+    out.update(indicator)
+    return out
+
+
+def main() -> int:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
+    con = duckdb.connect(str(CACHE_DB), read_only=True)
+    try:
+        manifest = [export_case(con, *case) for case in CASES]
+    finally:
+        con.close()
+    pd.DataFrame(manifest).to_csv(MANIFEST_CSV, index=False, encoding="utf-8-sig")
+    rows = [run_juejin(row) for row in manifest if row["signal_rows"] > 0]
+    raw = pd.DataFrame(rows)
+    raw.to_csv(RAW_CSV, index=False, encoding="utf-8-sig")
+    summary = raw.sort_values(
+        ["pnl_ratio_annual", "sharp_ratio", "max_drawdown"],
+        ascending=[False, False, True],
+    )
+    summary.to_csv(SUMMARY_CSV, index=False, encoding="utf-8-sig")
+    print(summary[[
+        "name",
+        "pnl_ratio_annual",
+        "sharp_ratio",
+        "max_drawdown",
+        "open_count",
+        "close_count",
+        "win_ratio",
+        "signal_rows",
+        "signal_buy_days",
+        "avg_buy_open_gap_raw_pct",
+    ]].to_string(index=False))
+    print(SUMMARY_CSV)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

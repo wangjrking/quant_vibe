@@ -44,7 +44,7 @@ def get_integ_data(data_file_url):
 
 
 
-def group_factor_eng(group_data):
+def group_factor_eng(group_data, *, include_future_labels=True):
 	"""对单个股票数据进行因子工程
 
 	Args:
@@ -53,6 +53,18 @@ def group_factor_eng(group_data):
 	Returns:
 		pd.DataFrame: 包含因子的股票数据
 	"""
+	group_data = group_data.copy()
+	for column in ("open_qfq", "high_qfq", "low_qfq", "close_qfq"):
+		if column not in group_data.columns:
+			base_column = column.removesuffix("_qfq")
+			if base_column in group_data.columns:
+				group_data[column] = group_data[base_column]
+	if "pre_close_qfq" not in group_data.columns and "close_qfq" in group_data.columns:
+		group_data["pre_close_qfq"] = group_data["close_qfq"].shift(1)
+	qfq_close = group_data["close_qfq"]
+	qfq_high = group_data["high_qfq"]
+	qfq_low = group_data["low_qfq"]
+
 	# 存储新列的字典
 	new_columns = {}
 
@@ -60,15 +72,15 @@ def group_factor_eng(group_data):
 
 	# 计算MACD指标
 	try:
-		macd_indicator = ta.trend.MACD(group_data['close'], window_fast=12, window_slow=26, window_sign=9)
-		new_columns['macd'] = macd_indicator.macd()
-		new_columns['macdsignal'] = macd_indicator.macd_signal()
-		new_columns['macdhist'] = macd_indicator.macd_diff()
+		macd_indicator = ta.trend.MACD(qfq_close, window_fast=12, window_slow=26, window_sign=9)
+		new_columns['macd_qfq'] = macd_indicator.macd()
+		new_columns['macdsignal_qfq'] = macd_indicator.macd_signal()
+		new_columns['macdhist_qfq'] = macd_indicator.macd_diff()
 	except:
 		# 如果计算失败，填充为NaN
-		new_columns['macd'] = np.nan
-		new_columns['macdsignal'] = np.nan
-		new_columns['macdhist'] = np.nan
+		new_columns['macd_qfq'] = np.nan
+		new_columns['macdsignal_qfq'] = np.nan
+		new_columns['macdhist_qfq'] = np.nan
 
 	# 计算各种移动平均线指标
 	new_columns['dema'] = dema(group_data['close'], length=30)  # 双指数移动平均线
@@ -87,7 +99,7 @@ def group_factor_eng(group_data):
 
 	# 计算其他技术指标
 	new_columns['rsi'] = rsi(group_data['close'], length=14)  # 相对强弱指标
-	new_columns['atr'] = atr(group_data['high'], group_data['low'], group_data['close'], length=14)  # 平均真实波动范围
+	new_columns['atr_qfq'] = atr(qfq_high, qfq_low, qfq_close, length=14)  # 前复权平均真实波动范围
 	new_columns['cmf'] = cmf(group_data['high'], group_data['low'], group_data['close'], group_data['vol'], length=14)  # 资金流量指标
 	new_columns['cci'] = cci(group_data['high'], group_data['low'], group_data['close'], length=14)  # 顺势指标
 

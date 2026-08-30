@@ -4,9 +4,10 @@ import argparse
 import csv
 import json
 import math
-import sqlite3
 from pathlib import Path
 from typing import Any
+
+import duckdb
 
 from gm_signal_module import build_gm_signal_rows, load_market_rows_by_trade_date, write_gm_signals_csv
 from prediction_manifest import load_prediction_source_manifest
@@ -162,13 +163,17 @@ def _quote_ident(value: str) -> str:
     return '"' + str(value).replace('"', '""') + '"'
 
 
-def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+def _duckdb_literal(path: Path | str) -> str:
+    return "'" + str(path).replace("\\", "/").replace("'", "''") + "'"
+
+
+def _table_columns(conn: duckdb.DuckDBPyConnection, table: str) -> set[str]:
     if "." in table:
         schema, table_name = table.split(".", 1)
-        sql = f"PRAGMA {_quote_ident(schema)}.table_info({_quote_ident(table_name)})"
+        sql = f"DESCRIBE {_quote_ident(schema)}.{_quote_ident(table_name)}"
     else:
-        sql = f"PRAGMA table_info({_quote_ident(table)})"
-    return {str(row[1]) for row in conn.execute(sql).fetchall()}
+        sql = f"DESCRIBE {_quote_ident(table)}"
+    return {str(row[0]) for row in conn.execute(sql).fetchall()}
 
 
 def _optional_column(columns: set[str], alias: str, column: str, output: str | None = None) -> str:
@@ -229,8 +234,7 @@ def _load_pool_rows(
     tier_offset: float,
 ) -> list[dict[str, Any]]:
     formula = _pool_formula_sql(pool)
-    conn = sqlite3.connect(fusion_db)
-    conn.row_factory = sqlite3.Row
+    conn = duckdb.connect(str(fusion_db), read_only=True)
     try:
         columns = _table_columns(conn, "fusion_rank_base")
         where, condition_values = _pool_condition_sql("b", pool, columns)
@@ -271,7 +275,8 @@ def _load_pool_rows(
             """,
             [str(start), str(end), *condition_values, int(pool["limit"])],
         ).fetchall()
-        return [dict(row) for row in rows]
+        columns = [str(item[0]) for item in rows.description]
+        return [dict(zip(columns, row)) for row in rows.fetchall()]
     finally:
         conn.close()
 
@@ -408,7 +413,7 @@ def _resolve_start_for_lookback(
 ) -> str:
     if lookback_trade_days is None or lookback_trade_days <= 0:
         return str(requested_start)
-    conn = sqlite3.connect(score_db)
+    conn = duckdb.connect(str(score_db), read_only=True)
     try:
         rows = conn.execute(
             f"""
@@ -429,10 +434,9 @@ def _resolve_start_for_lookback(
 
 
 def _load_rows(score_db: Path, score_table: str, fusion_db: Path, start: str, end: str) -> list[dict[str, Any]]:
-    conn = sqlite3.connect(score_db)
-    conn.row_factory = sqlite3.Row
+    conn = duckdb.connect(str(score_db), read_only=True)
     try:
-        conn.execute("ATTACH DATABASE ? AS fusion", (str(fusion_db),))
+        conn.execute(f"ATTACH {_duckdb_literal(fusion_db)} AS fusion (READ_ONLY)")
         columns = _table_columns(conn, "fusion.fusion_rank_base")
         st_type_select = _optional_column(columns, "f", "st_type")
         st_type_name_select = _optional_column(columns, "f", "st_type_name")
@@ -462,7 +466,9 @@ def _load_rows(score_db: Path, score_table: str, fusion_db: Path, start: str, en
             WHERE s.trade_date >= ? AND s.trade_date <= ?
             ORDER BY s.trade_date, s.pred_prob DESC, s.stock_code
         """
-        return [dict(row) for row in conn.execute(query, (str(start), str(end))).fetchall()]
+        cursor = conn.execute(query, [str(start), str(end)])
+        columns = [str(item[0]) for item in cursor.description]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
     finally:
         conn.close()
 

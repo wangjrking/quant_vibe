@@ -4,7 +4,6 @@ import argparse
 import csv
 import json
 import math
-import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -17,35 +16,32 @@ from project_paths import PROJECT_ROOT, resolve_data_dir
 
 SH_TZ = ZoneInfo("Asia/Shanghai")
 
-AGENT_LABELS = {
-    "audit-agent": "审计智能体",
-    "architect-agent": "架构师智能体",
-    "commander-agent": "指挥官智能体",
-    "orchestrator-agent": "主管智能体",
+CANONICAL_AGENT_LABELS = {
     "data-ingestion-agent": "数据接入智能体",
     "data-integration-agent": "数据整合智能体",
-    "deploy-agent": "部署智能体",
     "factor-agent": "因子智能体",
     "model-agent": "模型智能体",
-    "research-agent": "投研智能体",
     "strategy-agent": "策略智能体",
     "trading-agent": "交易智能体",
+    "audit-agent": "审计智能体",
+    "architect-agent": "架构师智能体",
+    "research-agent": "投研智能体",
+    "commander-agent": "指挥官智能体",
+    "mcp-agent": "MCP智能体",
 }
 
-AGENT_ORDER = [
-    "data-ingestion-agent",
-    "data-integration-agent",
-    "factor-agent",
-    "model-agent",
-    "strategy-agent",
-    "trading-agent",
-    "audit-agent",
-    "architect-agent",
-    "research-agent",
-    "commander-agent",
+LEGACY_AGENT_LABELS = {
     "orchestrator-agent",
     "deploy-agent",
-]
+}
+
+AGENT_LABELS = {
+    **CANONICAL_AGENT_LABELS,
+    "orchestrator-agent": "历史主管智能体",
+    "deploy-agent": "历史部署智能体",
+}
+
+AGENT_ORDER = list(CANONICAL_AGENT_LABELS)
 
 TOP_LEVEL_DATA_ASSETS = {
     "daily_data.parquet",
@@ -97,7 +93,7 @@ def observability_reports_dir(data_dir: Path) -> Path:
 
 
 def observability_db_path(data_dir: Path) -> Path:
-    return observability_runtime_dir(data_dir) / "agent_observability.db"
+    return observability_runtime_dir(data_dir) / "agent_observability.duckdb"
 
 
 def collaboration_requests_path(data_dir: Path) -> Path:
@@ -605,8 +601,8 @@ def build_daily_snapshot(
     }
 
 
-def ensure_db_schema(conn: sqlite3.Connection) -> None:
-    conn.executescript(
+def ensure_db_schema(conn) -> None:
+    statements = [
         """
         CREATE TABLE IF NOT EXISTS agent_daily_metrics (
             snapshot_date TEXT NOT NULL,
@@ -625,7 +621,9 @@ def ensure_db_schema(conn: sqlite3.Connection) -> None:
             output_bytes INTEGER NOT NULL,
             generated_at TEXT NOT NULL,
             PRIMARY KEY (snapshot_date, agent_id)
-        );
+        )
+        """,
+        """
         CREATE TABLE IF NOT EXISTS agent_output_events (
             snapshot_date TEXT NOT NULL,
             agent_id TEXT NOT NULL,
@@ -636,9 +634,11 @@ def ensure_db_schema(conn: sqlite3.Connection) -> None:
             byte_size INTEGER NOT NULL,
             source TEXT NOT NULL,
             PRIMARY KEY (snapshot_date, agent_id, relative_path, output_kind)
-        );
-        """
-    )
+        )
+        """,
+    ]
+    for statement in statements:
+        conn.execute(statement)
 
 
 def render_daily_markdown_report(snapshot: dict[str, Any]) -> str:
@@ -738,7 +738,9 @@ def write_daily_snapshot(
     reports_dir.mkdir(parents=True, exist_ok=True)
 
     db_path = observability_db_path(resolved_data_dir)
-    with sqlite3.connect(db_path) as conn:
+    import duckdb
+
+    with duckdb.connect(str(db_path)) as conn:
         ensure_db_schema(conn)
         conn.execute("DELETE FROM agent_daily_metrics WHERE snapshot_date = ?", (snapshot_date,))
         conn.execute("DELETE FROM agent_output_events WHERE snapshot_date = ?", (snapshot_date,))

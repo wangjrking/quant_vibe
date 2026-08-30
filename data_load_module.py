@@ -14,6 +14,7 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 
 from project_paths import load_config, resolve_data_dir
+from l1_universe_rules import filter_frame_no_bj
 from raw_table_db_module import replace_raw_table_full
 
 
@@ -23,7 +24,42 @@ def get_config():
 	return load_config()
 
 
-def get_pro(ts_token):
+def _normalize_tushare_pro_endpoint(endpoint):
+	if not endpoint:
+		return None
+	value = str(endpoint).strip().rstrip("/")
+	if not value:
+		return None
+	if not value.endswith("/dataapi"):
+		value = f"{value}/dataapi"
+	return value
+
+
+def _configured_tushare_pro_endpoint():
+	for env_name in ("TUSHARE_PRO_API_URL", "TUSHARE_API_URL"):
+		value = _normalize_tushare_pro_endpoint(os.environ.get(env_name))
+		if value:
+			return value
+	try:
+		config = load_config()
+	except Exception:
+		return None
+	return _normalize_tushare_pro_endpoint(
+		config.get("datasource", {}).get("tushare_pro_api_url")
+	)
+
+
+def configure_tushare_pro_endpoint(endpoint=None):
+	value = _normalize_tushare_pro_endpoint(endpoint or _configured_tushare_pro_endpoint())
+	if not value:
+		return None
+	from tushare.pro.client import DataApi
+	DataApi._DataApi__http_url = value
+	return value
+
+
+def get_pro(ts_token, endpoint=None):
+	configure_tushare_pro_endpoint(endpoint)
 	ts_pro = ts.pro_api(ts_token)
 	return ts_pro
 
@@ -403,7 +439,7 @@ def get_index_daily(data_start_dt, data_end_dt, ts_pro, stock_code_lst=None):
 def store_daily_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取日行情数据
-	daily_data = get_daily_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	daily_data = filter_frame_no_bj(get_daily_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：2.【日行情数据】读取完成--daily_data')
 	# daily_data.to_sql('daily_data', con=conn, if_exists='replace', index=False)
 	daily_data.to_parquet(data_file_url + '/daily_data.parquet',index=False)
@@ -415,7 +451,7 @@ def store_daily_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_
 def store_daily_index_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取每日基本面指标数据
-	daily_index_data = get_daily_index_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	daily_index_data = filter_frame_no_bj(get_daily_index_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：3.【基本面指标】读取完成--daily_index_data')
 	# daily_index_data.to_sql('daily_index_data', con=conn, if_exists='replace', index=False)
 	daily_index_data.to_parquet(data_file_url + '/daily_index_data.parquet',index=False)
@@ -427,7 +463,7 @@ def store_daily_index_data(stock_code_lst, data_start_dt, data_end_dt, ts_token,
 def store_stock_basic_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取股票基本信息
-	stock_basic_data = get_stock_basic_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	stock_basic_data = filter_frame_no_bj(get_stock_basic_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：4.【股票基本信息】读取完成--stock_basic_data')
 	# stock_basic_data.to_sql('stock_basic_data', con=conn, if_exists='replace', index=False)
 	stock_basic_data.to_parquet(data_file_url + '/stock_basic_data.parquet',index=False)
@@ -455,7 +491,7 @@ def store_finan_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_
 def store_limit_list_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取打板数据
-	limit_list_data = get_limit_list_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	limit_list_data = filter_frame_no_bj(get_limit_list_data(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：7.【股票打板指标】读取完成--limit_list_data')
 	# limit_list_data.to_sql('limit_list_data', con=conn, if_exists='replace', index=False)
 	limit_list_data.to_parquet(data_file_url + '/limit_list_data.parquet',index=False)
@@ -467,7 +503,7 @@ def store_limit_list_data(stock_code_lst, data_start_dt, data_end_dt, ts_token, 
 def store_adj_factor(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取复权因子
-	adj_factor = get_adj_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	adj_factor = filter_frame_no_bj(get_adj_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：8.【复权因子】读取完成--adj_factor')
 	# adj_factor.to_sql('adj_factor', con=conn, if_exists='replace', index=False)
 	adj_factor.to_parquet(data_file_url + '/adj_factor.parquet',index=False)
@@ -479,7 +515,7 @@ def store_adj_factor(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_
 def store_moneyflow(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取资金流向
-	moneyflow = get_moneyflow(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	moneyflow = filter_frame_no_bj(get_moneyflow(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：9.【资金流向】读取完成--moneyflow')
 	# moneyflow.to_sql('moneyflow', con=conn, if_exists='replace', index=False)
 	moneyflow.to_parquet(data_file_url + '/moneyflow.parquet',index=False)
@@ -491,7 +527,7 @@ def store_moneyflow(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_f
 def store_stk_factor(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 获取股票技术面因子
-	stk_factor = get_stk_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	stk_factor = filter_frame_no_bj(get_stk_factor(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：10.【股票技术面因子】读取完成--stk_factor')
 	# stk_factor.to_sql('stk_factor', con=conn, if_exists='replace', index=False)
 	stk_factor.to_parquet(data_file_url + '/stk_factor.parquet',index=False)
@@ -505,7 +541,7 @@ def store_stk_factor(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_
 def store_top_list(data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 龙虎榜数据
-	top_list = get_top_list(data_start_dt, data_end_dt, ts_pro)
+	top_list = filter_frame_no_bj(get_top_list(data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：14.【龙虎榜数据】读取完成--top_list')
 	# top_list.to_sql('top_list', con=conn, if_exists='replace', index=False)
 	top_list.to_parquet(data_file_url + '/top_list.parquet',index=False)
@@ -517,7 +553,7 @@ def store_top_list(data_start_dt, data_end_dt, ts_token, data_file_url):
 def store_ths_hot(data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 同花顺数据
-	ths_hot = get_ths_hot(data_start_dt, data_end_dt, ts_pro)
+	ths_hot = filter_frame_no_bj(get_ths_hot(data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：15.【同花顺热度】读取完成--ths_hot')
 	# ths_hot.to_sql('ths_hot', con=conn, if_exists='replace', index=False)
 	ths_hot.to_parquet(data_file_url + '/ths_hot.parquet',index=False)
@@ -529,7 +565,7 @@ def store_ths_hot(data_start_dt, data_end_dt, ts_token, data_file_url):
 def store_dc_hot(data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 东方财富热度
-	dc_hot = get_dc_hot(data_start_dt, data_end_dt, ts_pro)
+	dc_hot = filter_frame_no_bj(get_dc_hot(data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：16.【东方财富热度】读取完成--dc_hot')
 	# dc_hot.to_sql('dc_hot', con=conn, if_exists='replace', index=False)
 	dc_hot.to_parquet(data_file_url + '/dc_hot.parquet',index=False)
@@ -541,7 +577,7 @@ def store_dc_hot(data_start_dt, data_end_dt, ts_token, data_file_url):
 def store_cyq_perf(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# 筹码盘分布
-	cyq_perf = get_cyq_perf(stock_code_lst, data_start_dt, data_end_dt, ts_pro)
+	cyq_perf = filter_frame_no_bj(get_cyq_perf(stock_code_lst, data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：17.【筹码盘分布】读取完成--cyq_perf')
 	# cyq_perf.to_sql('cyq_perf', con=conn, if_exists='replace', index=False)
 	cyq_perf.to_parquet(data_file_url + '/cyq_perf.parquet',index=False)
@@ -554,7 +590,7 @@ def store_cyq_perf(stock_code_lst, data_start_dt, data_end_dt, ts_token, data_fi
 def store_stock_st(data_start_dt, data_end_dt, ts_token, data_file_url):
 	ts_pro = get_pro(ts_token)
 	# ST股票列表
-	stock_st = get_stock_st(data_start_dt, data_end_dt, ts_pro)
+	stock_st = filter_frame_no_bj(get_stock_st(data_start_dt, data_end_dt, ts_pro))
 	logging.info(f'数据接入模块：18.【ST股票列表】读取完成--stock_st')
 	# stock_st.to_sql('stock_st', con=conn, if_exists='replace', index=False)
 	stock_st.to_parquet(data_file_url + '/stock_st.parquet',index=False)

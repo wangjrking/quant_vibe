@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import sqlite3
 from pathlib import Path
 
+import duckdb
 
 ROOT = Path(r"D:\work\quant\quant_mcp")
 DATA_DIR = ROOT / "quant" / "data_file"
 MANIFEST_DIR = ROOT / "quant" / "main" / "config" / "prediction_manifests"
-DEFAULT_MODEL_DB = DATA_DIR / "model_predictions" / "MODEL_PREDICTIONS.db"
-DEFAULT_MARKET_DB = DATA_DIR / "STOCK_DAILY_DATA.db"
+DEFAULT_MARKET_DB = DATA_DIR / "production_assets" / "duckdb" / "l2_stock_daily_data.duckdb"
 DEFAULT_OUTPUT_DIR = (
     DATA_DIR / "reports" / "strategy_agent_model_application_20260619" / "published_asset_fusions_0618_refresh"
 )
@@ -38,7 +37,7 @@ COMBO_FORMULAS = {
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Build a research fusion score library from 3d/5d/10d prediction tables.")
-    parser.add_argument("--model-db", default=None)
+    parser.add_argument("--model-db", default=None, help="DuckDB file used when explicit table names are provided")
     parser.add_argument("--market-db", default=str(DEFAULT_MARKET_DB))
     parser.add_argument("--table-3d", default=None)
     parser.add_argument("--table-5d", default=None)
@@ -46,7 +45,7 @@ def parse_args(argv=None):
     parser.add_argument("--prediction-manifest-dir", default=str(MANIFEST_DIR))
     parser.add_argument("--min-trade-date", default=None)
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
-    parser.add_argument("--output-db-name", default="fusion_combos.db")
+    parser.add_argument("--output-db-name", default="fusion_combos.duckdb")
     return parser.parse_args(argv)
 
 
@@ -76,7 +75,7 @@ def resolve_prediction_inputs(
             continue
         if approval_status not in ALLOWED_APPROVALS:
             continue
-        if str(manifest.get("source_type") or "sqlite_table") != "sqlite_table":
+        if str(manifest.get("source_type") or "") != "duckdb_table":
             continue
         if not raw_db_path or not table:
             continue
@@ -106,12 +105,10 @@ def resolve_prediction_inputs(
             )
             raise RuntimeError(f"stale prediction manifest for min_trade_date={min_trade_date}: {stale_desc}")
 
-    db_paths = {Path(str(row["db_path"])) for row in rows.values()}
-    if len(db_paths) != 1:
-        raise RuntimeError(f"prediction manifests resolve to multiple db paths: {sorted(str(path) for path in db_paths)}")
-    only_db = next(iter(db_paths))
     return {
-        "model_db": only_db,
+        "source_3d": rows["executable_3d_open_return"],
+        "source_5d": rows["executable_5d_open_return"],
+        "source_10d": rows["executable_10d_open_return"],
         "table_3d": str(rows["executable_3d_open_return"]["table"]),
         "table_5d": str(rows["executable_5d_open_return"]["table"]),
         "table_10d": str(rows["executable_10d_open_return"]["table"]),
@@ -135,6 +132,15 @@ def _quote_literal(value: str) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
 
+def _duckdb_literal(path: Path | str) -> str:
+    return "'" + str(path).replace("\\", "/").replace("'", "''") + "'"
+
+
+def _attach_duckdb(conn: duckdb.DuckDBPyConnection, path: Path, alias: str, *, read_only: bool) -> None:
+    mode = " (READ_ONLY)" if read_only else ""
+    conn.execute(f"ATTACH {_duckdb_literal(path)} AS {_quote_ident(alias)}{mode}")
+
+
 def _rank_pct_sql(column: str) -> str:
     return f"""(
         CAST(RANK() OVER (PARTITION BY trade_date ORDER BY {column} ASC) AS REAL)
@@ -142,7 +148,7 @@ def _rank_pct_sql(column: str) -> str:
     ) / CAST(COUNT(*) OVER (PARTITION BY trade_date) AS REAL)"""
 
 
-def _table_stats(conn: sqlite3.Connection, table: str) -> dict[str, object]:
+def _table_stats(conn: duckdb.DuckDBPyConnection, table: str) -> dict[str, object]:
     row = conn.execute(
         f"SELECT COUNT(*), COUNT(DISTINCT trade_date), COUNT(DISTINCT stock_code), MIN(trade_date), MAX(trade_date) FROM {_quote_ident(table)}"
     ).fetchone()
@@ -164,10 +170,20 @@ def build_fusion_library(args) -> dict[str, object]:
             min_trade_date=(None if args.min_trade_date in (None, "") else str(args.min_trade_date)),
         )
 
-    model_db = Path(
-        args.model_db
-        or (resolved_inputs["model_db"] if resolved_inputs is not None else DEFAULT_MODEL_DB)
-    )
+    if resolved_inputs is not None:
+        sources = {
+            "3d": resolved_inputs["source_3d"],
+            "5d": resolved_inputs["source_5d"],
+            "10d": resolved_inputs["source_10d"],
+        }
+    else:
+        if not args.model_db:
+            raise RuntimeError("--model-db DuckDB path is required when explicit table names are provided")
+        sources = {
+            "3d": {"db_path": Path(args.model_db), "table": args.table_3d},
+            "5d": {"db_path": Path(args.model_db), "table": args.table_5d},
+            "10d": {"db_path": Path(args.model_db), "table": args.table_10d},
+        }
     table_3d_name = args.table_3d or str(resolved_inputs["table_3d"])
     table_5d_name = args.table_5d or str(resolved_inputs["table_5d"])
     table_10d_name = args.table_10d or str(resolved_inputs["table_10d"])
@@ -178,16 +194,18 @@ def build_fusion_library(args) -> dict[str, object]:
     if output_db.exists():
         output_db.unlink()
 
-    conn = sqlite3.connect(output_db)
+    conn = duckdb.connect(str(output_db))
     try:
-        conn.execute(f"ATTACH DATABASE {_quote_literal(str(model_db))} AS model")
-        conn.execute(f"ATTACH DATABASE {_quote_literal(str(Path(args.market_db)))} AS market")
+        _attach_duckdb(conn, Path(sources["3d"]["db_path"]), "pred3d", read_only=True)
+        _attach_duckdb(conn, Path(sources["5d"]["db_path"]), "pred5d", read_only=True)
+        _attach_duckdb(conn, Path(sources["10d"]["db_path"]), "pred10d", read_only=True)
+        _attach_duckdb(conn, Path(args.market_db), "market", read_only=True)
 
-        table_3d = _quote_ident(table_3d_name)
-        table_5d = _quote_ident(table_5d_name)
-        table_10d = _quote_ident(table_10d_name)
+        table_3d = f"pred3d.{_quote_ident(table_3d_name)}"
+        table_5d = f"pred5d.{_quote_ident(table_5d_name)}"
+        table_10d = f"pred10d.{_quote_ident(table_10d_name)}"
 
-        conn.executescript(
+        conn.execute(
             f"""
             DROP TABLE IF EXISTS fusion_rank_base;
 
@@ -216,11 +234,11 @@ def build_fusion_library(args) -> dict[str, object]:
                     m.st_type AS st_type,
                     d3.pred_prob AS pred_3d,
                     d5.pred_prob AS pred_5d
-                FROM model.{table_10d} d10
-                INNER JOIN model.{table_3d} d3
+                FROM {table_10d} d10
+                INNER JOIN {table_3d} d3
                     ON d10.trade_date = d3.trade_date
                    AND d10.stock_code = d3.stock_code
-                INNER JOIN model.{table_5d} d5
+                INNER JOIN {table_5d} d5
                     ON d10.trade_date = d5.trade_date
                    AND d10.stock_code = d5.stock_code
                 LEFT JOIN market.STOCK_DAILY_DATA m
@@ -246,7 +264,7 @@ def build_fusion_library(args) -> dict[str, object]:
         )
 
         for table_name, formula in COMBO_FORMULAS.items():
-            conn.executescript(
+            conn.execute(
                 f"""
                 DROP TABLE IF EXISTS {_quote_ident(table_name)};
                 CREATE TABLE {_quote_ident(table_name)} AS
@@ -327,11 +345,12 @@ def build_fusion_library(args) -> dict[str, object]:
                 for row in manifest_rows
             ],
         )
-        conn.commit()
-
         manifest = {
             "generated_from": {
-                "model_db": str(model_db),
+                "source_type": "duckdb_table",
+                "db_path_3d": str(Path(sources["3d"]["db_path"])),
+                "db_path_5d": str(Path(sources["5d"]["db_path"])),
+                "db_path_10d": str(Path(sources["10d"]["db_path"])),
                 "market_db": str(Path(args.market_db)),
                 "table_3d": table_3d_name,
                 "table_5d": table_5d_name,

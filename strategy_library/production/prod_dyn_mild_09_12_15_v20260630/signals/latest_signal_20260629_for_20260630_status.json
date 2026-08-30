@@ -1,0 +1,61 @@
+{
+  "strategy_id": "prod_dyn_mild_09_12_15_v20260630",
+  "status": "pending_buy_day_hard_gate",
+  "signal_date": "20260629",
+  "buy_date": "20260630",
+  "latest_signal_date": "20260629",
+  "latest_buy_date": "20260630",
+  "published_at": "2026-06-30T21:32:26+08:00",
+  "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dyn_mild_09_12_15_v20260630\\signals\\full_history_dyn_mild_09_12_15.csv",
+  "archive_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dyn_mild_09_12_15_v20260630\\signals\\latest_signal_20260629_for_20260630.csv",
+  "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dyn_mild_09_12_15_v20260630_latest.csv",
+  "row_count": 5,
+  "stock_count": 5,
+  "duplicate_signal_stock_keys": 0,
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "buy_day_realtime_checks_required": true,
+  "selected_rows": [
+    {
+      "rank": "1",
+      "stock_code": "000636.SZ",
+      "symbol": "SZSE.000636",
+      "name": "风华高科",
+      "target_pct": "0.15000",
+      "entry_score": "0.9893138500635323"
+    },
+    {
+      "rank": "2",
+      "stock_code": "688549.SH",
+      "symbol": "SHSE.688549",
+      "name": "中巨芯",
+      "target_pct": "0.15000",
+      "entry_score": "0.9807369758576874"
+    },
+    {
+      "rank": "3",
+      "stock_code": "688639.SH",
+      "symbol": "SHSE.688639",
+      "name": "华恒生物",
+      "target_pct": "0.15000",
+      "entry_score": "0.9640805953893627"
+    },
+    {
+      "rank": "4",
+      "stock_code": "603567.SH",
+      "symbol": "SHSE.603567",
+      "name": "珍宝岛",
+      "target_pct": "0.15000",
+      "entry_score": "0.9621401343256489"
+    },
+    {
+      "rank": "5",
+      "stock_code": "301225.SZ",
+      "symbol": "SZSE.301225",
+      "name": "恒勃股份",
+      "target_pct": "0.15000",
+      "entry_score": "0.9579669631512071"
+    }
+  ],
+  "note": "已补 L5 最新信号；20260630 买入日实时硬门禁仍需 L7/交易侧在当日行情可用后确认。"
+}

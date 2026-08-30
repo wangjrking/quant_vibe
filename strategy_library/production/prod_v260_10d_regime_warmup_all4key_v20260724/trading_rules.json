@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "strategy_name": "10D平滑状态预热（四表键域）",
+  "status": "production_active",
+  "model_input": {
+    "label": "executable_10d_open_return",
+    "score_field": "pred_prob",
+    "score_weight": 1.0,
+    "key_domain": "1D/3D/5D/10D formal inner intersection on trade_date and stock_code",
+    "manifests": {
+      "1D": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+      "3D": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+      "5D": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+      "10D": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+    },
+    "non_scoring_manifests": [
+      "1D",
+      "3D",
+      "5D"
+    ]
+  },
+  "score_rule": {
+    "cross_section_rank": true,
+    "smooth_window_trade_days": 7,
+    "current_day_weight": 0.1,
+    "historical_weight": 0.9,
+    "tie_breaker": "stock_code ascending"
+  },
+  "universe_rule": {
+    "listed_days_min": 5,
+    "amount_min": 90000,
+    "turnover_rate_max": 20.0,
+    "exclude_bj_upstream": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "exclude_suspended": true,
+    "skip_open_limit_up_buy": true
+  },
+  "entry_rule": {
+    "daily_new_name_count": 1,
+    "candidate_order": "smoothed_10d_rank descending",
+    "execution_time": "next_trade_day_open",
+    "execution_price": "raw_unadjusted_open"
+  },
+  "position_rule": {
+    "position_warmup_days": 50,
+    "startup_max_positions": 16,
+    "weak_max_positions_after_warmup": 14,
+    "normal_max_positions_after_warmup": 15,
+    "strong_max_positions_after_warmup": 16,
+    "weak_target_pct": 0.05,
+    "normal_target_pct": 0.25,
+    "strong_target_pct": 0.375,
+    "score_trend_multiplier_floor": 0.9,
+    "score_trend_multiplier_cap": 1.1,
+    "market_lookback_trade_days": 10,
+    "weak_market_return_threshold": 0.0,
+    "strong_market_return_threshold": 0.035
+  },
+  "exit_rule": {
+    "min_hold_days_strong_market": 3,
+    "min_hold_days_other_market": 4,
+    "max_hold_days": 20,
+    "sell_score_below": 0.85,
+    "replacement_advantage_min": 0.05,
+    "max_rank_deterioration": 0.1,
+    "execution_time": "next_trade_day_open",
+    "limit_down_sell_policy": "不能成交则保留持仓并留痕"
+  },
+  "cost_rule": {
+    "initial_cash": 700000,
+    "fixed_slippage_each_side": 0.003,
+    "commission_each_side": 0.0003,
+    "stamp_duty_sell": 0.0005,
+    "round_lot": 100,
+    "backtest_adjust": "none"
+  }
+}

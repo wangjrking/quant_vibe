@@ -1,0 +1,59 @@
+{
+  "config_id": "model_training_window_policy_v1_20260829",
+  "generated_at": "2026-08-29T00:00:00+08:00",
+  "actor": "commander-agent",
+  "asset_role": "model_governance_policy_config_not_formal",
+  "approval_status": "owner_directed_research_policy",
+  "purpose": "Make expanding training windows mandatory for all L4 horizons while reserving the four-year period for candidate observation and promotion review only.",
+  "scope": {
+    "layer": "L4 model research and retraining",
+    "horizons": ["1d", "3d", "5d", "10d"],
+    "labels": [
+      "executable_1d_open_return",
+      "executable_3d_open_return",
+      "executable_5d_open_return",
+      "executable_10d_open_return"
+    ]
+  },
+  "training_window_hard_constraints": {
+    "mode": "expanding_available_history",
+    "train_start_rule": "Use the same earliest jointly available, audited PIT feature-and-label history for every fold of a horizon; record the resolved date in the fold metadata.",
+    "train_end_rule": "Advance train_end with each later fold and stop before the fold test_start after the horizon-specific embargo.",
+    "fixed_four_year_training_cutoff_forbidden": true,
+    "all_horizons_must_use_same_window_policy": true,
+    "require_fold_metadata": ["train_start", "train_end", "test_start", "test_end", "embargo_rule", "mature_label_cutoff"],
+    "require_pit_and_same_key_coverage": true
+  },
+  "four_year_observation_hard_constraints": {
+    "purpose": "candidate_admission_and_promotion_observation_only",
+    "minimum_start": "20220101",
+    "end_rule": "current_mature_label_cutoff_for_horizon",
+    "required_outputs": [
+      "RankIC",
+      "Top1",
+      "Top3",
+      "Top5",
+      "Top10",
+      "Top20",
+      "recent20",
+      "recent63",
+      "recent126",
+      "annual_stability",
+      "monthly_stability"
+    ],
+    "cannot_be_used_as_training_truncation": true
+  },
+  "promotion_boundary": {
+    "research_only_candidate_requires_four_year_observation_pass": true,
+    "formal_or_production_replacement_requires_separate_user_authorization_and_audit": true,
+    "current_formal_models_unchanged_by_this_policy": true
+  },
+  "boundaries": {
+    "no_training": true,
+    "no_prediction": true,
+    "no_formal_manifest_change": true,
+    "no_production_model_change": true,
+    "no_signal": true,
+    "no_backtest": true
+  }
+}

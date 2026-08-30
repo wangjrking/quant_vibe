@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+  "status": "historical_latest_only_not_current_trade_day",
+  "signal_date": "20260528",
+  "buy_date": "20260529",
+  "latest_signal_date": "20260528",
+  "latest_buy_date": "20260529",
+  "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\latest_signal_20260528_for_20260529.csv",
+  "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_deepdrop_smallcap_refill_v20260704_latest.csv",
+  "row_count": 1,
+  "stock_count": 1,
+  "duplicate_signal_stock_keys": 0,
+  "buy_day_hard_gate_complete": false,
+  "l7_execution_allowed": false,
+  "note": "?????????? 20260528/20260529????????????? L5 ?????????????????????"
+}

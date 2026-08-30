@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+  "strategy_name": "高收益回调补位",
+  "status": "production",
+  "model_input": {
+    "source": "approved active formal L4 DuckDB manifests; signal lineage reconstructed from current production full history and refreshed research candidate",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false
+  },
+  "selection_rule": {
+    "source_candidate": "frs_scale090_cap090_refresh",
+    "max_names_per_signal_day": 2,
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "execution_price_semantics": "????????????????????? open/pre_close?????????????? qfq ???"
+  },
+  "position_rule": {
+    "feature_weight_scale": 0.85,
+    "daily_target_cap": 0.9,
+    "latest_actual_target_sum": 0.5998561920000001,
+    "max_positions": 2,
+    "target_pct_source": "signal file target_pct; latest around 29.99% per stock"
+  },
+  "holding_rule": {
+    "holding_days": 1,
+    "max_holding_days": 3,
+    "score_exit_entry_ratio": 0.98,
+    "min_holding_days_before_score_exit": 1,
+    "score_continue_entry_ratio": 1.02,
+    "signal_stop_loss_pct": 0.05,
+    "signal_take_profit_pct": 0.08
+  },
+  "risk_notes": [
+    "High return but Sharpe lower than previous production.",
+    "Latest refreshed run has open_count > close_count, so most recent positions are not fully matured.",
+    "L7 execution is blocked until buy-day hard gate and trading-agent review."
+  ]
+}

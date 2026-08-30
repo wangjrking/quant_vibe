@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "contract_type": "workflow_layer_handoff",
+  "workflow_template": "standard_incremental_trading_signal_l1_l8",
+  "workflow_run_id": "incremental-trading-signal-20260711",
+  "layer": "L1",
+  "owner_agent": "data-ingestion-agent",
+  "target_trade_date": "20260711",
+  "status": "ready_for_audit_review",
+  "ready_for_audit_review": true,
+  "allow_next_layer_continue": false,
+  "next_layer": "L2",
+  "hard_rules": [
+    "no-BJ",
+    "DuckDB-only",
+    "one-table-one-file",
+    "explicit-qfq",
+    "fail-closed"
+  ],
+  "contract": {
+    "active_input_assets": [
+      "tushare source APIs"
+    ],
+    "active_output_assets": [
+      "quant/data_file/production_assets/duckdb/l1_raw_tables/daily_data.duckdb"
+    ],
+    "gate_checks": [
+      {
+        "name": "source_alignment_complete",
+        "passed": true,
+        "severity": "blocker",
+        "detail": "source/raw parquet/active DuckDB 三面对齐成立"
+      }
+    ],
+    "handoff_constraints": [
+      "daily_data 仍是交易日历与股票集合驱动表",
+      "adj_factor 不得反向驱动交易日历"
+    ],
+    "evidence_paths": [
+      "quant/data_file/reports/l1_incremental_raw_ingest_20260711_complete.json"
+    ],
+    "residual_risk": [
+      {
+        "level": "P3",
+        "summary": "Markdown 人工可读性一般，但不影响 JSON 审计"
+      }
+    ],
+    "boundaries": {
+      "no_l2_trigger": true,
+      "no_factor_compute": true,
+      "no_signal_generation": true
+    }
+  },
+  "layer_payload": {
+    "status": "l1_complete_ready_for_audit",
+    "universe_rule": "no_bj",
+    "ready_for_audit_review": true
+  }
+}

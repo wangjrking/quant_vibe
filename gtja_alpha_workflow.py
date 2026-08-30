@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+from adjustment_semantics import NAKED_MARKET_PRICE_COLUMNS, explicit_qfq_column_name
 from stock_daily_data_route import connect_stock_daily_readonly, resolve_stock_daily_db_path
 
 from data_process_module import get_factor_data
@@ -37,11 +38,11 @@ RAW_FACTOR_INPUT_COLUMNS = [
     "name",
     "industry",
     "act_ent_type",
-    "open",
-    "close",
-    "high",
-    "low",
-    "pre_close",
+    "open_qfq",
+    "close_qfq",
+    "high_qfq",
+    "low_qfq",
+    "pre_close_qfq",
     "vol",
     "amount",
     "total_mv",
@@ -49,6 +50,10 @@ RAW_FACTOR_INPUT_COLUMNS = [
     "index_2000_open",
     "index_2000_close",
 ]
+
+QFQ_TO_BARE_MARKET_COLUMN_MAP = {
+    explicit_qfq_column_name(column): column for column in NAKED_MARKET_PRICE_COLUMNS
+}
 
 
 def audit_gtja_rank_scope(
@@ -158,6 +163,18 @@ def write_gtja_rank_audit(
     return audit
 
 
+def _normalize_front_adjusted_market_inputs(frame: pd.DataFrame, *, context: str) -> pd.DataFrame:
+    normalized = frame.copy()
+    for qfq_name, bare_name in QFQ_TO_BARE_MARKET_COLUMN_MAP.items():
+        if qfq_name in normalized.columns:
+            normalized[bare_name] = normalized[qfq_name]
+
+    missing = [col for col in required_official_gtja_raw_columns() if col not in normalized.columns]
+    if missing:
+        raise ValueError(f"{context} missing GTJA raw input columns after qfq normalization: {missing}")
+    return normalized
+
+
 def _read_raw_factor_input(data_dir: Path, source_parquet: Path | None, end_date: str | None = None) -> pd.DataFrame:
     if source_parquet and source_parquet.exists():
         schema_names = set(pq.ParquetFile(source_parquet).schema.names)
@@ -182,6 +199,7 @@ def _read_raw_factor_input(data_dir: Path, source_parquet: Path | None, end_date
         frame.columns = frame.columns.str.lower()
         frame = frame[[col for col in RAW_FACTOR_INPUT_COLUMNS if col in frame.columns]]
     frame.columns = frame.columns.str.lower()
+    frame = _normalize_front_adjusted_market_inputs(frame, context="full-market GTJA source")
     frame["trade_date"] = frame["trade_date"].astype(str)
     frame.sort_values(["stock_code", "trade_date"], inplace=True)
     return frame
@@ -216,7 +234,10 @@ def read_gtja_audit_frame(parquet_path: Path) -> pd.DataFrame:
 
 def required_gtja_raw_columns() -> list[str]:
     """Columns needed to recompute official GTJA Alpha formulas from raw factor parts."""
-    return required_official_gtja_raw_columns()
+    return [
+        explicit_qfq_column_name(column) if column in NAKED_MARKET_PRICE_COLUMNS else column
+        for column in required_official_gtja_raw_columns()
+    ]
 
 
 def compute_gtja_alpha_from_raw_factor(
@@ -225,14 +246,21 @@ def compute_gtja_alpha_from_raw_factor(
     encode: bool = True,
     drop_ts: bool = True,
     cross_sectional_rank_mode: str = "rank",
+    output_dates: list[str] | None = None,
+    alpha_batch_size: int = 16,
+    progress_callback=None,
 ) -> pd.DataFrame:
     """Compute official GTJA Alpha columns from raw factor data."""
     if cross_sectional_rank_mode not in {"rank", "identity"}:
         raise ValueError("cross_sectional_rank_mode must be 'rank' or 'identity'")
+    normalized = _normalize_front_adjusted_market_inputs(raw_factor, context="GTJA raw factor input")
     factor_data = append_official_gtja_alpha(
-        raw_factor,
+        normalized,
         cross_sectional_rank_mode=cross_sectional_rank_mode,
         benchmark_prefix="index_2000",
+        output_dates=output_dates,
+        alpha_batch_size=alpha_batch_size,
+        progress_callback=progress_callback,
     )
 
     if drop_ts:

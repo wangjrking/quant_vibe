@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+  "generated_at": "2026-07-24",
+  "file_count_before_hash_manifest": 53,
+  "tree_sha256_before_hash_manifest": "684DC68E95BEBA53D4E590A510646271603B5BF0E47D92E4D6D74B39DB8A7429",
+  "key_files": {
+    "signals/full_history_actions.csv": "D02BB8B6384BE1B586FA39D2676CAE2E15495D35A39132C29279F65A173D516F",
+    "backtests/juejin_full_repeat_20260723.log": "6FBB50BB699D5EDB94310166A3ED7126B832B7AC65F83549048F4612FF2A1A25",
+    "code_snapshot/juejin_frozen_executor.py": "F49BD410C0A9C8E807D71410448995CEB97ACF122AFB2CE65BF63AA15F8AB0D1",
+    "code_snapshot/verify_candidate.py": "DB2BDD7970A5B962CD942EFB9F1604E988675BC657A5D3265A3CC177B84AD898",
+    "code_snapshot/source_modules/research_active_l4_v258_position_warmup_v260_20260723.py": "9EFF158A16D844CDA1986CFB1D26F590CAD009E20CAA059B161BBB59569F1B3A",
+    "inputs/preregistered_protocol.json": "FC2D4012A2EB944B14EC0B260D23D8F97B61001175ADDDF919B04F0F708BEAE6",
+    "inputs/frozen_grid_before_known_2026.json": "F4FC3763D1AF64603B3C583DC514EBDC44E36610B6FC6FB63892E7D3228FC114"
+  }
+}

@@ -12,23 +12,34 @@ import pyarrow.parquet as pq
 
 from data_process_module import get_factor_data
 from gtja_alpha_workflow import read_gtja_audit_frame, rebuild_full_market_gtja, write_gtja_rank_audit
-from stock_daily_data_route import connect_stock_daily_readonly, resolve_stock_daily_db_path
+from stock_daily_data_route import connect_stock_daily_readonly
 
 
 TEXT_COLUMNS = {"stock_code", "trade_date", "name", "industry", "act_ent_type"}
 
 
-def _stock_codes(db_path: Path) -> list[str]:
-    with closing(connect_stock_daily_readonly(db_path=db_path)) as conn:
+def _stock_codes(
+    db_path: Path | None = None,
+    *,
+    data_dir: Path | None = None,
+) -> list[str]:
+    with closing(connect_stock_daily_readonly(data_dir=data_dir, db_path=db_path)) as conn:
         rows = conn.execute(
             'SELECT DISTINCT stock_code FROM STOCK_DAILY_DATA ORDER BY stock_code'
         ).fetchall()
     return [row[0] for row in rows]
 
 
-def _load_batch(db_path: Path, codes: list[str]) -> pd.DataFrame:
+def _load_batch(
+    db_path: Path | None = None,
+    codes: list[str] | None = None,
+    *,
+    data_dir: Path | None = None,
+) -> pd.DataFrame:
+    if not codes:
+        return pd.DataFrame()
     placeholders = ",".join(["?"] * len(codes))
-    with closing(connect_stock_daily_readonly(db_path=db_path)) as conn:
+    with closing(connect_stock_daily_readonly(data_dir=data_dir, db_path=db_path)) as conn:
         frame = pd.read_sql(
             f"""
             SELECT *
@@ -44,7 +55,8 @@ def _load_batch(db_path: Path, codes: list[str]) -> pd.DataFrame:
 
 
 def _normalize_types(frame: pd.DataFrame) -> pd.DataFrame:
-    frame["trade_date"] = frame["trade_date"].astype(str)
+    for col in TEXT_COLUMNS.intersection(frame.columns):
+        frame[col] = frame[col].astype("string")
     if "st_type" in frame.columns:
         st_as_text = frame["st_type"].astype("string")
         frame["st_type"] = np.where(st_as_text.eq("ST").fillna(False), 1.0, 0.0)
@@ -73,10 +85,9 @@ def rebuild(
     global_gtja: bool = True,
     gtja_audit_path: Path | None = None,
 ) -> Path:
-    db_path = resolve_stock_daily_db_path(data_dir=data_dir)
     output_dir = data_dir / "factor_rebuild_parts"
     output_dir.mkdir(parents=True, exist_ok=True)
-    codes = _stock_codes(db_path)
+    codes = _stock_codes(data_dir=data_dir)
     print(f"rebuild_start stocks={len(codes)} batch_size={batch_size}", flush=True)
 
     for batch_idx, batch_codes in _chunks(codes, batch_size):
@@ -89,7 +100,7 @@ def rebuild(
             print(f"batch_skip index={batch_idx} path={part_path}", flush=True)
             continue
         print(f"batch_start index={batch_idx} stocks={len(batch_codes)} first={batch_codes[0]} last={batch_codes[-1]}", flush=True)
-        integ = _load_batch(db_path, batch_codes)
+        integ = _load_batch(codes=batch_codes, data_dir=data_dir)
         factor = get_factor_data(integ)
         factor = _normalize_types(factor)
         factor.to_parquet(part_path, index=False)

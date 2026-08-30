@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import argparse
 import json
-import sqlite3
+import os
 from datetime import datetime
 from pathlib import Path
 
+import duckdb
 import numpy as np
 import pandas as pd
-import pyarrow.dataset as ds
 import xgboost as xgb
 
 from model_asset_route import (
     enrich_research_prediction_manifest,
-    resolve_model_prediction_db_path,
+    resolve_model_feature_duckdb_path,
+    resolve_model_feature_duckdb_table,
+    resolve_model_prediction_duckdb_path,
     resolve_prediction_run_dir,
     write_prediction_manifest,
 )
+from stock_daily_data_route import resolve_stock_daily_duckdb_path
 
 
 BASE_OUTPUT_COLUMNS = [
@@ -44,14 +47,10 @@ def _quote(name: str) -> str:
     return '"' + str(name).replace('"', '""') + '"'
 
 
-def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
-    row = conn.execute("select count(*) from sqlite_master where type='table' and name=?", (table,)).fetchone()
-    return bool(row and row[0])
-
-
-def _read_sql_table(db_path: Path, table: str, start: str, end: str) -> pd.DataFrame:
-    with sqlite3.connect(db_path) as conn:
-        if not _table_exists(conn, table):
+def _read_duckdb_table(db_path: Path, table: str, start: str, end: str) -> pd.DataFrame:
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        existing = {str(row[0]) for row in conn.execute("SHOW TABLES").fetchall()}
+        if table not in existing:
             raise RuntimeError(f"base table not found: {db_path}::{table}")
         query = f"""
             select *
@@ -59,7 +58,7 @@ def _read_sql_table(db_path: Path, table: str, start: str, end: str) -> pd.DataF
             where trade_date >= ? and trade_date <= ?
             order by trade_date, stock_code
         """
-        frame = pd.read_sql_query(query, conn, params=(start, end))
+        frame = conn.execute(query, [start, end]).fetchdf()
     if frame.empty:
         raise RuntimeError(f"base table has no rows in requested range: {start}-{end}")
     frame["trade_date"] = frame["trade_date"].astype(str)
@@ -74,23 +73,57 @@ def _dup_count(frame: pd.DataFrame) -> int:
     return int(frame.groupby(["stock_code", "trade_date"], sort=False).size().gt(1).sum())
 
 
-def _read_factor_dates(factor_dir: Path, dates: list[str], columns: list[str], *, optional_columns: set[str] | None = None) -> pd.DataFrame:
-    dataset = ds.dataset(str(factor_dir), format="parquet")
-    schema_names = set(dataset.schema.names)
-    optional_columns = optional_columns or set()
-    read_columns = [column for column in columns if column in schema_names]
-    missing = sorted(set(columns) - set(read_columns) - optional_columns)
-    if missing:
-        raise RuntimeError(f"production_factor_parts is missing required columns: {missing[:20]}")
-    table = dataset.to_table(
-        columns=read_columns,
-        filter=ds.field("trade_date").isin([str(date) for date in dates]),
-    )
-    frame = table.to_pandas()
+def _manifest_rel_path(path: Path, manifest_dir: Path) -> str:
+    return Path(os.path.relpath(path, start=manifest_dir)).as_posix()
+
+
+def _read_factor_dates_duckdb(
+    db_path: Path,
+    table: str,
+    dates: list[str],
+    columns: list[str],
+    *,
+    optional_columns: set[str] | None = None,
+) -> pd.DataFrame:
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        available_columns = {str(row[0]) for row in conn.execute(f"DESCRIBE {_quote(table)}").fetchall()}
+        optional_columns = optional_columns or set()
+        read_columns = [column for column in columns if column in available_columns]
+        missing = sorted(set(columns) - set(read_columns) - optional_columns)
+        if missing:
+            raise RuntimeError(f"production_factor_parts DuckDB table is missing required columns: {missing[:20]}")
+        selected = ", ".join(_quote(column) for column in read_columns)
+        sql = (
+            f"SELECT {selected} "
+            f"FROM {_quote(table)} "
+            "WHERE trade_date IN (SELECT unnest(?)) "
+            "ORDER BY trade_date, stock_code"
+        )
+        frame = conn.execute(sql, [[str(date) for date in dates]]).fetchdf()
     if frame.empty:
-        raise RuntimeError(f"no production_factor_parts rows found for dates: {dates}")
+        raise RuntimeError(f"no production_factor_parts DuckDB rows found for dates: {dates}")
     frame["trade_date"] = frame["trade_date"].astype(str)
     return frame.sort_values(["trade_date", "stock_code"]).reset_index(drop=True)
+
+
+def read_registered_factor_dates(
+    data_dir: Path,
+    dates: list[str],
+    columns: list[str],
+    *,
+    optional_columns: set[str] | None = None,
+) -> pd.DataFrame:
+    feature_table = resolve_model_feature_duckdb_table(data_dir)
+    if not feature_table:
+        raise RuntimeError("active L3 DuckDB feature table is required; Parquet fallback is disabled")
+    feature_db_path = resolve_model_feature_duckdb_path(data_dir, require_exists=True)
+    return _read_factor_dates_duckdb(
+        feature_db_path,
+        feature_table,
+        dates,
+        columns,
+        optional_columns=optional_columns,
+    )
 
 
 def _load_metadata(model_dir: Path, fold: int) -> dict:
@@ -124,11 +157,12 @@ def _predict_incremental(frame: pd.DataFrame, *, metadata: dict, label: str, out
     return out[output_columns]
 
 
-def _write_table(db_path: Path, table: str, frame: pd.DataFrame) -> None:
-    with sqlite3.connect(db_path, timeout=300) as conn:
-        conn.execute("PRAGMA busy_timeout=300000")
-        frame.to_sql(table, conn, if_exists="replace", index=False)
-        conn.commit()
+def _write_duckdb_table(db_path: Path, table: str, frame: pd.DataFrame) -> None:
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect(str(db_path)) as conn:
+        conn.register("_score_df", frame)
+        conn.execute(f'CREATE OR REPLACE TABLE "{table}" AS SELECT * FROM _score_df')
+        conn.unregister("_score_df")
 
 
 def _manifest_payload(
@@ -141,7 +175,12 @@ def _manifest_payload(
     model_metadata: dict,
     incremental_dates: list[str],
     generated_at: str,
+    output_db_path: Path,
+    manifest_dir: Path,
 ) -> dict:
+    source_type = "duckdb_table"
+    db_path = _manifest_rel_path(output_db_path, manifest_dir)
+    market_db_path = _manifest_rel_path(resolve_stock_daily_duckdb_path(), manifest_dir)
     return enrich_research_prediction_manifest(
         {
             "schema_version": 1,
@@ -149,12 +188,12 @@ def _manifest_payload(
             "model_track": "research_score_asset",
             "approval_status": "research_only_not_for_l5",
             "promotion_requires_user_confirmation": True,
-            "source_type": "sqlite_table",
+            "source_type": source_type,
             "label": label,
             "candidate_id": candidate_id,
-            "db_path": "../MODEL_PREDICTIONS.db",
+            "db_path": db_path,
             "table": output_table,
-            "market_db_path": "../../STOCK_DAILY_DATA.db",
+            "market_db_path": market_db_path,
             "generated_at": generated_at,
             "row_count": int(len(frame)),
             "trade_days": int(frame["trade_date"].nunique()),
@@ -193,12 +232,10 @@ def parse_args(argv=None) -> argparse.Namespace:
 def main(argv=None) -> int:
     args = parse_args(argv)
     data_dir = Path(args.data_dir)
-    db_path = resolve_model_prediction_db_path(data_dir, create_parent=True)
+    db_path = resolve_model_prediction_duckdb_path(data_dir, require_exists=False)
     model_dir = Path(args.model_dir)
-    factor_dir = data_dir / "production_factor_parts"
-
     model_metadata = _load_metadata(model_dir, args.model_fold)
-    base = _read_sql_table(db_path, args.base_table, args.score_start, args.score_end)
+    base = _read_duckdb_table(db_path, args.base_table, args.score_start, args.score_end)
     base_max = str(base["trade_date"].max())
     output_columns = [column for column in BASE_OUTPUT_COLUMNS if column in base.columns]
     if args.label in base.columns:
@@ -217,8 +254,8 @@ def main(argv=None) -> int:
     ]
     incremental = pd.DataFrame(columns=output_columns)
     if incremental_dates:
-        factors = _read_factor_dates(
-            factor_dir,
+        factors = read_registered_factor_dates(
+            data_dir,
             incremental_dates,
             factor_columns,
             optional_columns=optional_factor_columns | {args.label},
@@ -236,7 +273,7 @@ def main(argv=None) -> int:
     if str(combined["trade_date"].max()) != args.score_end:
         raise RuntimeError(f"unexpected max_trade_date: {combined['trade_date'].max()}")
 
-    _write_table(db_path, args.output_table, combined)
+    _write_duckdb_table(db_path, args.output_table, combined)
     generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
     manifest_dir = resolve_prediction_run_dir(data_dir, label=args.label, output_table=args.output_table, create=True)
     payload = _manifest_payload(
@@ -248,6 +285,8 @@ def main(argv=None) -> int:
         model_metadata=model_metadata,
         incremental_dates=incremental_dates,
         generated_at=generated_at,
+        output_db_path=db_path,
+        manifest_dir=manifest_dir,
     )
     manifest_path = write_prediction_manifest(manifest_dir / "prediction_manifest.json", payload)
     status = {

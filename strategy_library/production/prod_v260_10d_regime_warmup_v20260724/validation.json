@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+  "status": "production_blocked_p1_input_contract_mismatch",
+  "validation_platform": "juejin",
+  "backtest_window": {
+    "start": "2022-06-07 09:00:00",
+    "end": "2026-07-22 15:30:00"
+  },
+  "metrics": {
+    "annual_return": 1.900502577405542,
+    "pnl_ratio": 7.846732559315484,
+    "pnl_ratio_annual": 1.900502577405542,
+    "pnl_ratio_annual_semantics": "platform_linear_annual_non_cagr",
+    "cagr": 0.6967706495633566,
+    "sharpe": 1.5514961406711685,
+    "max_drawdown": 0.23529891580633588,
+    "calmar": 8.076971246946847,
+    "win_ratio": 0.5376623376623376,
+    "open_count": 781,
+    "close_count": 770
+  },
+  "reproducibility": {
+    "exact_repeat_match": true,
+    "action_rows": 1563,
+    "action_sha256": "D02BB8B6384BE1B586FA39D2676CAE2E15495D35A39132C29279F65A173D516F",
+    "juejin_log": "backtests/juejin_full_repeat_20260723.log"
+  },
+  "robustness": {
+    "development_15_starts_min_linear_annual_proxy": 0.6556595365061777,
+    "development_15_starts_median_linear_annual_proxy": 0.8413611855974028,
+    "development_15_starts_min_sharpe": 1.2383716807826617,
+    "development_15_starts_max_drawdown": 0.282346800052796,
+    "same_end_20_starts_min_linear_annual_proxy": 1.048466439270535,
+    "same_end_20_starts_median_linear_annual_proxy": 1.290391997078193,
+    "same_end_20_starts_min_sharpe": 1.4579072555084014,
+    "same_end_20_starts_max_drawdown": 0.282346800052796,
+    "continuous_restart_median_abs_gap": 0.18809140478309194,
+    "parameter_neighborhood_status": "passed_without_better_replacement",
+    "known_2026_independent_validation": false
+  },
+  "hard_gate_self_check": {
+    "active_formal_l4_duckdb_only": true,
+    "qfq_score_raw_execution_separated": true,
+    "t_plus_one_open_execution": true,
+    "no_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "future_information_rule_detected": false,
+    "production_archive_complete": true,
+    "independent_audit_complete": true,
+    "true_unseen_forward_sufficient": false
+  },
+  "admission": {
+    "production_admitted": false,
+    "ready_for_audit_review": true,
+    "production_current_cutover_allowed_before_audit": true,
+    "candidate_audit_result": "passed_p2_allow_candidate_to_execute",
+    "post_cutover_audit_pending": false,
+    "post_cutover_audit_result": "passed_p2_then_invalidated_by_l5_rebuild_p1",
+    "reason": "L5 latest 重建发现冻结动作暗含 1D/3D/5D/10D 四表键域交集，而生产契约声明为 10D-only。契约修复并重新审计前不得生成正式信号。"
+  },
+  "blocking_issue": {
+    "severity": "P1",
+    "code": "hidden_all4_key_domain_dependency",
+    "ten_d_only_action_rows": 1569,
+    "frozen_action_rows": 1563,
+    "extra_action_keys": 107,
+    "missing_action_keys": 101,
+    "first_divergence_signal_date": "20221014"
+  }
+}

@@ -41,7 +41,9 @@
 | `quant/main/docs/governance/project-structure-guide.md` | 项目目录导航 | 说明阅读顺序和主要目录定位 |
 | `quant/main/docs/governance/project-structure-reorganization.md` | 项目结构整理方案 | 说明 Keep / Move / Archive / Move to recycle bin 规则 |
 | `quant/main/docs/governance/runtime-governance.md` | runtime 目录治理规则 | 说明运行态目录保留、归档和回收规则 |
-| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 远程数仓 MCP 中台方案 | 说明 ClickHouse、PostgreSQL、对象存储、MCP 子服务、分层、权限、部署和验收 |
+| `quant/main/docs/governance/duckdb-materialization-readiness.md` | DuckDB 真实物化前准备规范 | 定义真实物化前送审包、证据字段、责任归口和审批边界 |
+| `quant/main/docs/governance/mcp-asset-gateway-platform.md` | MCP 资产网关中台方案 | 当前 L8 MCP 资产发布层主线，说明 PostgreSQL、MinIO/对象存储、MCP gateway、发布资产、权限和审计边界 |
+| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 历史远程数仓 MCP 中台方案 | 旧 ClickHouse 全量迁移和远程数据中心方向，当前仅作历史参考 |
 | `quant/main/docs/governance/history/` | 历史治理快照 | 只保留迁移前规则快照 |
 | `quant/data_file/reports/` | 审计、模型、策略、数据报告 | 运行证据，不作为规则主入口 |
 | `quant/data_file/runtime/` | 运行状态、监控、记忆、回收站 | 运行态记录 |

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_fw_soft_deepdrop_weight_v20260706",
+  "strategy_name": "深跌低开软调仓",
+  "name": "深跌低开软调仓",
+  "status": "production",
+  "created_at": "2026-07-06",
+  "published_at": "2026-07-06",
+  "published_at_iso": "2026-07-06T00:00:00+08:00",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_candidate": "fw_soft_all_weak85_strong105_from_current_production_full_history",
+  "source_report_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_active_l4_param_search_20260705",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\signals\\full_history_fw_soft_deepdrop_weight.csv",
+  "latest_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\signals\\latest_signal_20260715_for_20260716.csv",
+  "latest_signal_status": "pending_buy_day_hard_gate",
+  "input_contract": {
+    "formal_manifest_1d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb",
+    "source_type": "duckdb_table",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false,
+    "active_universe_no_bj": true,
+    "market_field_semantics": {
+      "qfq_fields": [
+        "atr_qfq",
+        "model/factor derived rank fields"
+      ],
+      "execution_price_rule": "交易执行、涨跌停和开盘缺口过滤使用不复权真实 open/pre_close。",
+      "bare_price_field_policy": "裸 open/high/low/close/pre_close 不得默认解释为 qfq。"
+    }
+  },
+  "metrics": {
+    "annual_return": 2.57064,
+    "pnl_ratio": 10.106487,
+    "sharpe": 3.645812,
+    "max_drawdown": 0.035646,
+    "win_ratio": 0.70418,
+    "open_count": 311,
+    "close_count": 311,
+    "calmar_ratio": 72.115135,
+    "risk_ratio": 0.0
+  },
+  "trading_rules_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\trading_rules.json",
+  "validation_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\validation.json",
+  "latest_signal_date": "20260715",
+  "latest_buy_date": "20260716",
+  "latest_signal_status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\signals\\latest_signal_20260715_for_20260716_status.json",
+  "style_exposure": {
+    "primary": "深跌反弹 + 低开软调仓",
+    "secondary": [
+      "小盘弹性",
+      "高换手",
+      "模型高分回调"
+    ],
+    "risk_notes": [
+      "用户接受降级发布",
+      "硬指标低于原研究版 501%",
+      "latest buy-day hard gate pending"
+    ]
+  },
+  "current_signal": {
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_fw_soft_deepdrop_weight_v20260706_latest.csv",
+    "archive_latest_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\signals\\latest_signal_20260715_for_20260716.csv",
+    "signal_date": "20260715",
+    "buy_date": "20260716",
+    "latest_signal_date": "20260715",
+    "latest_buy_date": "20260716",
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "l7_execution_allowed": false,
+    "status": "pending_buy_day_hard_gate"
+  },
+  "validation": {
+    "annual_return": 2.57064,
+    "sharpe": 3.645812,
+    "max_drawdown": 0.035646,
+    "validation_platform": "juejin",
+    "status": "production",
+    "note": "降级发布指标，以当前 full-history 重建版掘金复跑为准。"
+  }
+}

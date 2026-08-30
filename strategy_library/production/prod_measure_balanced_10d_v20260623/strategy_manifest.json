@@ -3,7 +3,7 @@
   "strategy_id": "prod_measure_balanced_10d_v20260623",
   "name": "稳健均衡10D",
   "code_name": "balanced_10d_sharpe",
-  "status": "blocked",
+  "status": "blocked_by_st_risk_warning_gate",
   "production_version": "v20260623",
   "published_at": "2026-06-23",
   "published_by": "strategy-agent",
@@ -32,7 +32,36 @@
       "unapproved research prediction asset",
       "1D model score"
     ],
-    "legacy_odb_forbidden_by_default": true
+    "legacy_odb_forbidden_by_default": true,
+    "adjustment_semantics": {
+      "explicit_front_adjusted_marker_required": true,
+      "front_adjusted_marker": "qfq",
+      "front_adjusted_column_suffix": "_qfq",
+      "front_adjusted_indicator_suffix": "_qfq",
+      "front_adjusted_factor_marker_required": true,
+      "forbidden_implicit_front_adjusted_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+    },
+    "market_field_semantics": {
+      "raw_price_output_suffix": "_raw",
+      "raw_market_price_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "front_adjusted_indicator_suffix": "_qfq",
+      "contract_rule": "strategy-side downstream assets must export raw market prices as *_raw; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+      "schema_kind": "strategy_output"
+    },
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb"
   },
   "governance": {
     "production_measurement": true,
@@ -53,7 +82,7 @@
     "note": "412.96% 年化、3.11 夏普、20.11% 最大回撤仅对该历史归档信号和对应掘金运行环境成立。"
   },
   "current_signal_status": {
-    "status": "blocked_until_same_contract_exporter_restored",
+    "status": "blocked_by_st_risk_warning_gate",
     "reason": "balanced_10d_formal_l4_20240604_20260622.csv 与 historical_repro_current_best.csv 在历史窗口交集为 0，不能作为旧最优策略的同口径延展信号。",
     "invalidated_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_measure_balanced_10d_v20260623\\signals\\balanced_10d_formal_l4_20240604_20260622.csv",
     "invalidated_backtest_log": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_l5_replay_20260623\\logs\\balanced_10d_formal_l4_20240604_20260622_repro_env.log"
@@ -73,4 +102,8 @@
     "source_of_truth": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db::STOCK_DAILY_DATA",
     "blocking_reason": "历史信号在 signal_date 和 buy_date 均存在 ST_TYPE='ST' / ST_TYPE_name='风险警示板' 命中，按项目硬门禁不得称为当前最优、可投产或适合交易交付。"
   }
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

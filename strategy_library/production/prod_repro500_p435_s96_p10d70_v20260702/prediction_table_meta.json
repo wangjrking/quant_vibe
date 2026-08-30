@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_repro500_p435_s96_p10d70_v20260702",
+  "formal_manifests": {
+    "formal_manifest_1d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json"
+  },
+  "source_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_latest_l4_weight_candidates_20260702\\postrank_open_filter_candidates\\qfq_rerank_refill_candidates\\reconstruct_500_from_p44_plus_1dge_m002\\signals.csv",
+  "note": "???????????????Juejin????????????????L4 active formal????????"
+}

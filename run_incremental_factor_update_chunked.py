@@ -12,20 +12,24 @@ from incremental_factor_update_target_date import (
     _raw_part_codes,
     _target_date_codes,
     process_new_stock_codes,
+    resolve_legacy_parquet_parts_dirs,
 )
+from l3_duckdb_sync import l3_duckdb_sync_enabled, sync_feature_parts_target_date_to_duckdb
 from project_paths import resolve_data_dir
-from stock_daily_data_route import resolve_stock_daily_db_path
+from stock_daily_data_route import resolve_stock_daily_duckdb_path
 
 
 def parse_args(argv=None):
-    data_dir = resolve_data_dir()
     parser = argparse.ArgumentParser(
-        description="Run target-date factor incremental update in part chunks to avoid long single-batch hangs."
+        description=(
+            "Legacy parquet-parts L3 chunk runner. Current production L3 is DuckDB-only; "
+            "this entrypoint requires explicit legacy opt-in."
+        )
     )
     parser.add_argument("--target-date", required=True)
-    parser.add_argument("--db-path", default=str(resolve_stock_daily_db_path()))
-    parser.add_argument("--raw-parts-dir", default=str(data_dir / "raw_factor_by_stock_parts"))
-    parser.add_argument("--production-parts-dir", default=str(data_dir / "production_factor_parts"))
+    parser.add_argument("--db-path", default=str(resolve_stock_daily_duckdb_path()))
+    parser.add_argument("--raw-parts-dir")
+    parser.add_argument("--production-parts-dir")
     parser.add_argument("--read-start", default="20250101")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--chunk-size", type=int, default=130)
@@ -76,10 +80,16 @@ def build_chunk_command(
         args.target_date,
         "--db-path",
         args.db_path,
-        "--raw-parts-dir",
-        args.raw_parts_dir,
-        "--production-parts-dir",
-        args.production_parts_dir,
+        *(
+            ["--raw-parts-dir", args.raw_parts_dir]
+            if args.raw_parts_dir
+            else []
+        ),
+        *(
+            ["--production-parts-dir", args.production_parts_dir]
+            if args.production_parts_dir
+            else []
+        ),
         "--read-start",
         args.read_start,
         "--start-part",
@@ -90,6 +100,7 @@ def build_chunk_command(
         str(args.workers),
         "--report-path",
         str(report_path),
+        "--skip-duckdb-sync",
     ]
 
 
@@ -99,7 +110,12 @@ def default_report_dir(target_date: str) -> Path:
 
 def main(argv=None):
     args = parse_args(argv)
-    raw_parts_dir = Path(args.raw_parts_dir)
+    raw_parts_dir, production_parts_dir = resolve_legacy_parquet_parts_dirs(
+        args.raw_parts_dir,
+        args.production_parts_dir,
+    )
+    args.raw_parts_dir = str(raw_parts_dir)
+    args.production_parts_dir = str(production_parts_dir)
     report_dir = Path(args.report_dir) if args.report_dir else default_report_dir(args.target_date)
     report_dir.mkdir(parents=True, exist_ok=True)
 
@@ -140,6 +156,13 @@ def main(argv=None):
             args.target_date,
             args.read_start,
         )
+    duckdb_sync_result = None
+    if not failures and l3_duckdb_sync_enabled():
+        duckdb_sync_result = sync_feature_parts_target_date_to_duckdb(
+            data_dir=resolve_data_dir(),
+            target_date=args.target_date,
+            parts_dir=args.production_parts_dir,
+        )
 
     report = {
         "target_date": args.target_date,
@@ -159,6 +182,7 @@ def main(argv=None):
         "chunk_reports": chunk_reports,
         "failed_chunks": failures,
         "new_stock_result": new_stock_result,
+        "duckdb_sync": duckdb_sync_result,
     }
     report_path = Path(args.report_path) if args.report_path else report_dir / "summary.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -2,12 +2,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 
 from light_factor_module import (
     build_light_factor_frame,
     find_unsupported_features,
     load_feature_list,
+    read_raw_frame,
     split_light_factor_data,
 )
 
@@ -206,6 +208,43 @@ class LightFactorModuleTests(unittest.TestCase):
         self.assertEqual(test_x.columns.tolist(), ["close", "pb"])
         self.assertEqual(train_y.tolist(), [0.1])
         self.assertEqual(test_data["trade_date"].tolist(), ["20260201"])
+
+    def test_read_raw_frame_supports_duckdb_stock_daily_table(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "quant_production.duckdb"
+            with duckdb.connect(str(db_path)) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE STOCK_DAILY_DATA AS
+                    SELECT * FROM (
+                        VALUES
+                        ('20260101', '000001.SZ', '000001.SZ', 10.0, 10.2, 10.3, 9.9, 100.0, 1000.0, NULL, NULL),
+                        ('20260102', '000001.SZ', '000001.SZ', 10.2, 10.4, 10.5, 10.1, 101.0, 1100.0, NULL, NULL)
+                    ) AS t(
+                        trade_date, stock_code, ts_code, open, close, high, low, amount, vol, name, industry
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE TABLE stock_basic_data AS
+                    SELECT * FROM (
+                        VALUES ('000001.SZ', 'PingAn', 'Bank')
+                    ) AS t(ts_code, name, industry)
+                    """
+                )
+
+            frame = read_raw_frame(
+                db_path,
+                start="20260101",
+                end="20260102",
+                needed_columns=["trade_date", "stock_code", "ts_code", "open", "close", "name", "industry"],
+            )
+
+            self.assertEqual(frame["trade_date"].tolist(), ["20260101", "20260102"])
+            self.assertEqual(frame["stock_code"].tolist(), ["000001.SZ", "000001.SZ"])
+            self.assertEqual(frame["name"].tolist(), ["PingAn", "PingAn"])
+            self.assertEqual(frame["industry"].tolist(), ["Bank", "Bank"])
 
 
 if __name__ == "__main__":

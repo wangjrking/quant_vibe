@@ -1,24 +1,132 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-26",
+  "updated_at": "2026-07-25",
   "production": {
-    "current": "prod_dynamic_top1_amt9w_warmup60_v20260626",
+    "current": "prod_v260_10d_regime_warmup_all4key_v20260724",
+    "state": "production_active",
     "strategies": [
       {
-        "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
-        "name": "单票动态Top1 量额90k warmup60",
-        "path": "strategy_library/production/prod_dynamic_top1_amt9w_warmup60_v20260626",
+        "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+        "name": "10D平滑状态预热（四表键域）",
+        "path": "strategy_library/production/prod_v260_10d_regime_warmup_all4key_v20260724",
         "status": "production",
-        "published_at": "2026-06-26",
-        "annual_return": 10.100743648504821,
-        "sharpe": 1.5900016821764518,
-        "max_drawdown": 0.39745866601968405,
-        "validation_platform": "juejin"
+        "published_at": "2026-07-25",
+        "annual_return": 1.900502577405542,
+        "sharpe": 1.5514961406711685,
+        "max_drawdown": 0.23529891580633588,
+        "validation_platform": "juejin",
+        "style_exposure": "10D平滑排名 + 状态仓位 + 14至16只分散持仓",
+        "reproducibility": "process_reproducible_with_frozen_action_exact_repeat",
+        "input_contract": "1D/3D/5D/10D共同键域，仅10D评分",
+        "audit_status": "post_cutover_audit_passed_p2_l5_l6_latest_pending_audit",
+        "l7_execution_allowed": false
       }
     ]
   },
   "historical_production": {
     "retained_directories": [
+      {
+        "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+        "name": "10D平滑状态预热",
+        "path": "strategy_library/production/prod_v260_10d_regime_warmup_v20260724",
+        "status": "invalidated_p1_hidden_all4_key_domain_dependency",
+        "published_at": "2026-07-24",
+        "removed_at": "2026-07-25",
+        "reason": "生产契约误写为10D-only，冻结动作实际依赖1D/3D/5D/10D共同键域；已由显式四表键域候选替代，旧归档仅保留审计与回滚。",
+        "validation_platform": "juejin",
+        "historical_snapshot_metrics": {
+          "pnl_ratio_annual": 1.900502577405542,
+          "pnl_ratio_annual_semantics": "platform_linear_annual_non_cagr",
+          "cagr": 0.6967706495633566,
+          "sharpe": 1.5514961406711685,
+          "max_drawdown": 0.23529891580633588
+        },
+        "audit_evidence": [
+          "quant/data_file/reports/strategy_agent_v260_l5_latest_blocker_20260724/blocker_report.json",
+          "quant/data_file/reports/strategy_agent_v260_all4key_production_candidate_20260724/self_audit.json"
+        ],
+        "note": "旧10D-only声明已作废，不得作为当前生产输入契约或信号来源。"
+      },
+      {
+        "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+        "name": "高收益回调补位",
+        "path": "strategy_library/production/prod_high_return_frs_scale090_cap090_v20260716",
+        "status": "withdrawn_unreproducible",
+        "published_at": "2026-07-16",
+        "removed_at": "2026-07-21",
+        "reason": "P1 reproducibility audit failed: the frozen historical signal snapshot cannot be rebuilt key-for-key from current active formal L4 and L2 assets.",
+        "validation_platform": "juejin",
+        "style_exposure": "高弹性回调 + 低候选补位 + 高换手",
+        "historical_snapshot_metrics": {
+          "pnl_ratio": 71.78887203236464,
+          "pnl_ratio_annual": 18.158654394880866,
+          "pnl_ratio_annual_semantics": "platform_linear_annual_non_cagr",
+          "sharpe": 2.9894989987447596,
+          "max_drawdown": 0.07585417925647757,
+          "display_policy": "historical_fixed_signal_snapshot_only_not_current_reproducible_return"
+        },
+        "audit_evidence": [
+          "quant/data_file/reports/strategy_agent_prod_high_return_frs_reproduction_20260720/reproduction_summary.json",
+          "quant/data_file/reports/strategy_agent_prod_high_return_frs_current_l4_rebuild_20260720/current_l4_rebuild_summary.json"
+        ],
+        "note": "用户于 2026-07-21 选择 withdrawal。历史证据保留，但不得作为当前生产策略、当前可复现收益或正式信号来源。"
+      },
+      {
+        "strategy_id": "prod_fw_soft_deepdrop_weight_v20260706",
+        "name": "深跌低开软调仓",
+        "path": "strategy_library/production/prod_fw_soft_deepdrop_weight_v20260706",
+        "status": "historical_archive",
+        "published_at": "2026-07-06",
+        "annual_return": 2.57064,
+        "sharpe": 3.645812,
+        "max_drawdown": 0.035646,
+        "validation_platform": "juejin",
+        "style_exposure": "深跌反弹 + 低开软调仓",
+        "admission_note": "用户接受降级发布；当前 full-history 重建版未达到原目标 500%/4。",
+        "removed_at": "2026-07-16",
+        "reason": "Superseded by prod_high_return_frs_scale090_cap090_v20260716 after user requested production replacement on 2026-07-16."
+      },
+      {
+        "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+        "path": "strategy_library/production/prod_deepdrop_smallcap_refill_v20260704",
+        "status": "historical_archive",
+        "removed_at": "2026-07-06",
+        "reason": "Superseded by prod_fw_soft_deepdrop_weight_v20260706 after user accepted downgraded publication."
+      },
+      {
+        "strategy_id": "prod_dyn_mild_09_12_15_v20260630",
+        "path": "strategy_library/production/prod_dyn_mild_09_12_15_v20260630",
+        "status": "removed_from_production_unreproducible",
+        "removed_at": "2026-07-04",
+        "reason": "no independent replay contract; validation source points to reports research grid/logs, so it is not a self-contained reproducible production package.",
+        "previous_registry_metrics": {
+          "annual_return": 5.731332542989966,
+          "sharpe": 1.8663811890630113,
+          "max_drawdown": 0.16397974934864862,
+          "validation_platform": "juejin"
+        },
+        "note": "Directory retained temporarily as audit/provenance evidence; not a production strategy and not eligible for automated signal export."
+      },
+      {
+        "strategy_id": "prod_repro500_p435_s96_p10d70_v20260702",
+        "path": "strategy_library/production/prod_repro500_p435_s96_p10d70_v20260702",
+        "status": "removed_from_production_unreproducible",
+        "removed_at": "2026-07-04",
+        "reason": "registered 500.50% metrics not reproduced by 20260704 replay contract; latest clean replay records annual_return=4.023543972280086 under required max_positions=3/no adaptive slippage.",
+        "previous_registry_metrics": {
+          "annual_return": 5.004967653460939,
+          "sharpe": 3.9058695428854118,
+          "max_drawdown": 0.0386954551286109,
+          "validation_platform": "juejin"
+        },
+        "note": "Directory retained temporarily as audit/provenance evidence; not a production strategy and not eligible for automated signal export."
+      },
+      {
+        "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
+        "path": "strategy_library/production/prod_dynamic_top1_amt9w_warmup60_v20260626",
+        "status": "historical_archive",
+        "reason": "Superseded by prod_top1_pos60_ddloose_v20260629 after user approval on 2026-06-29; retained for reproducibility."
+      },
       {
         "strategy_id": "prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
         "path": "strategy_library/production/prod_dynamic_top1_amt9p5w_dd08_115_v20260625",
@@ -84,6 +192,12 @@
         "path": "strategy_library/production/prod_measure_aggressive_top1_v20260623",
         "status": "historical_archive",
         "reason": "历史生产测量归档，保留用于审计复现，不作为当前生产策略。"
+      },
+      {
+        "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+        "path": "strategy_library/production/prod_top1_pos60_ddloose_v20260629",
+        "status": "historical_archive",
+        "reason": "Superseded by prod_dyn_mild_09_12_15_v20260630 after user approval on 2026-06-30; retained for reproducibility."
       }
     ]
   },

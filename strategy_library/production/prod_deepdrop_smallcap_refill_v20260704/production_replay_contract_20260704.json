@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+  "created_at": "2026-07-04T21:45:00+08:00",
+  "purpose": "?????????????",
+  "source_of_truth": {
+    "registry": "quant/main/strategy_library/registry.json",
+    "strategy_archive": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704",
+    "signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\full_history_deepdrop_smallcap_refill.csv",
+    "strategy_code": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\code_snapshot\\main.py",
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb"
+  },
+  "required_backtest_conditions": {
+    "validation_platform": "juejin",
+    "backtest_slippage_ratio": 0.003,
+    "adaptive_liquidity_slippage": false,
+    "backtest_adjust": "none",
+    "max_positions": 3
+  },
+  "latest_verified_juejin_log": "backtests/refill_mv45_deep82_basefirst_prodscore_slip0p0030.log",
+  "latest_verified_metrics": {
+    "annual_return": 3.4908,
+    "pnl_ratio": null,
+    "sharpe": 3.578,
+    "max_drawdown": 0.0418,
+    "win_ratio": 0.6955,
+    "open_count": 289,
+    "close_count": 289,
+    "calmar_ratio": null
+  },
+  "known_limitations": [
+    "?? latest ?????????",
+    "?????????????????"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "strategy_agent_factor_processing": false,
+  "key_domain_inputs": [
+    "1D formal prediction keys",
+    "3D formal prediction keys",
+    "5D formal prediction keys",
+    "10D formal prediction keys"
+  ],
+  "key_domain_operation": "inner intersection on trade_date and stock_code",
+  "inputs": [
+    {
+      "name": "10D formal model score",
+      "field": "pred_prob",
+      "semantics": "模型评分，模型和因子侧显式 qfq 口径"
+    },
+    {
+      "name": "amount",
+      "rule": "amount >= 90000",
+      "semantics": "对应历史交易日可得流动性字段"
+    },
+    {
+      "name": "turnover_rate",
+      "rule": "turnover_rate <= 20",
+      "semantics": "对应历史交易日可得换手率字段"
+    },
+    {
+      "name": "open/pre_close",
+      "semantics": "仅用于执行和涨跌停判断的不复权真实价格"
+    }
+  ]
+}

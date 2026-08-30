@@ -2,7 +2,7 @@
   "schema_version": 1,
   "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
   "strategy_name": "单票动态Top1 量额90k warmup60",
-  "status": "production",
+  "status": "historical_archive",
   "created_at": "2026-06-26",
   "published_at": "2026-06-26",
   "published_by": "strategy-agent",
@@ -16,8 +16,36 @@
     "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
     "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
     "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
-    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
-    "allow_legacy": false
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb",
+    "allow_legacy": false,
+    "adjustment_semantics": {
+      "explicit_front_adjusted_marker_required": true,
+      "front_adjusted_marker": "qfq",
+      "front_adjusted_column_suffix": "_qfq",
+      "front_adjusted_indicator_suffix": "_qfq",
+      "front_adjusted_factor_marker_required": true,
+      "forbidden_implicit_front_adjusted_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+    },
+    "market_field_semantics": {
+      "raw_price_output_suffix": "_raw",
+      "raw_market_price_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "front_adjusted_indicator_suffix": "_qfq",
+      "contract_rule": "strategy-side downstream assets must export raw market prices as *_raw; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+      "schema_kind": "strategy_output"
+    }
   },
   "startup_rule": {
     "mode": "warmup_state_rebuild",
@@ -34,4 +62,8 @@
     "buy_day_hard_gate_complete": false,
     "buy_day_realtime_checks_required": true
   }
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

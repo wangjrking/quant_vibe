@@ -6,7 +6,7 @@
     "3d": {
       "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
       "approval_status": "approved_for_l5",
-      "source_type": "sqlite_table",
+      "source_type": "historical_sqlite_snapshot",
       "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
       "table": "stock_predict_data_model_agent_best_full_20260623_executable_3d_open_return_formal",
       "summary": {
@@ -23,7 +23,7 @@
     "5d": {
       "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
       "approval_status": "approved_for_l5",
-      "source_type": "sqlite_table",
+      "source_type": "historical_sqlite_snapshot",
       "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
       "table": "stock_predict_data_model_agent_best_full_20260623_executable_5d_open_return_formal",
       "summary": {
@@ -40,7 +40,7 @@
     "10d": {
       "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
       "approval_status": "approved_for_l5",
-      "source_type": "sqlite_table",
+      "source_type": "historical_sqlite_snapshot",
       "db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\model_predictions\\MODEL_PREDICTIONS.db",
       "table": "stock_predict_data_model_agent_best_full_20260623_executable_10d_open_return_formal",
       "summary": {
@@ -56,4 +56,8 @@
     }
   },
   "legacy_odb_allowed": false
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical prediction metadata only; db_path records archived source context and must not be interpreted as current production routing"}

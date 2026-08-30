@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "asset_role": "l4_formal_prediction_asset",
+  "label": "executable_1d_open_return",
+  "approval_status": "approved_for_l5",
+  "source_type": "duckdb_table",
+  "db_path": "../../../data_file/production_assets/duckdb/l4_executable_1d_open_return_formal.duckdb",
+  "table": "stock_predict_data_model_agent_four_year_fullwindow_20260628_executable_1d_open_return_formal_candidate",
+  "market_db_path": "../../../data_file/production_assets/duckdb/l2_stock_daily_data.duckdb",
+  "audit_record": "../../../data_file/reports/l4_split_duckdb_active_cutover_20260701.md",
+  "duckdb_migration_manifest": "../../../data_file/reports/l4_split_duckdb_active_cutover_manifest_20260701.json",
+  "generated_at": "2026-07-01T12:02:35+08:00",
+  "row_count": 4692552,
+  "trade_days": 987,
+  "stock_count": 5534,
+  "min_trade_date": "20220606",
+  "max_trade_date": "20260630",
+  "latest_day_rows": 5508,
+  "latest_day_stock_count": 5508,
+  "duplicate_keys": 0,
+  "null_pred_prob": 0,
+  "pred_prob_sha256": "97d6ca43557da0a167b935ebc1a5652723345045fd0b4daf395867c8f092cfce",
+  "candidate_id": "model_agent_four_year_fullwindow_20260628_executable_1d_open_return",
+  "model_track": "formal_l5_consumable_four_year_fullwindow_aligned",
+  "score_formula": "latest_incremental_rows: score = savedmodel_completion",
+  "formula_sources": [
+    "savedmodel_completion"
+  ],
+  "full_coverage_release_report": "../../../data_file/reports/model_agent_four_year_formal_fullwindow_20260628/fullwindow_materialization_report.json",
+  "previous_formal_manifest_archive": "executable_1d_open_return_l4_formal_20260619_archive_before_20260628_four_year_fullwindow_alignment.json",
+  "governance_status": "approved_l5_consumable_four_year_fullwindow_aligned_20260628",
+  "l5_approved_at": "2026-06-29T00:41:52+08:00",
+  "l5_approval_basis": "user_directed_l4_formal_window_alignment_to_four_year_20260628",
+  "coverage_completion_method": "deterministic four-year fullwindow rebuild from canonical bestset plus savedmodel completion; no training and no backtest",
+  "release_boundary": {
+    "no_training": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "no_strategy_rule_change": true
+  },
+  "duckdb_unification_report": "../../../data_file/reports/model_agent_1d_formal_duckdb_unification_20260628/duckdb_unification_report.json",
+  "duckdb_unification_report_md": "../../../data_file/reports/model_agent_1d_formal_duckdb_unification_20260628/duckdb_unification_report.md",
+  "duckdb_unification_basis": null,
+  "notes": "已按当前 DuckDB 标准链路补齐 20260630 的 L4 formal 预测结果；本次只使用已保存生产模型和已批准 formal 评分公式做增量刷新，未训练、未调参、未生成交易信号、未运行回测。",
+  "latest_incremental_update": {
+    "trade_date": "20260630",
+    "rows": 5508,
+    "method": "saved_production_model_and_approved_formula_incremental_l4_scoring",
+    "production_factor_input": "quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::prod_l3_production_factor_parts_20260625",
+    "label_input": "quant/data_file/production_assets/duckdb/l3_label_current.duckdb::prod_l3_prediction_label_parts_current",
+    "no_training": true,
+    "no_new_research_model": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "report_path": "../../../data_file/reports/model_agent_formal_incremental_l4_20260630/formal_incremental_l4_20260630_report.json"
+  },
+  "previous_manifest_archive_before_incremental_l4_20260623": "executable_1d_open_return_l4_formal_20260619_archive_before_20260623_incremental_l4.json",
+  "previous_manifest_archive_before_incremental_l4_20260624": "executable_1d_open_return_l4_formal_20260619_archive_before_20260624_incremental_l4.json",
+  "previous_manifest_archive_before_incremental_l4_20260625": "executable_1d_open_return_l4_formal_20260619_archive_before_20260625_incremental_l4.json",
+  "previous_manifest_archive_before_duckdb_unification_20260628": "executable_1d_open_return_l4_formal_20260619_archive_before_20260628_duckdb_unification.json",
+  "lineage": "current_incremental_duckdb_only_savedmodel_completion",
+  "lineage_sources": {
+    "active_l3_feature_duckdb_asset": "quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::prod_l3_production_factor_parts_20260625",
+    "active_l3_label_duckdb_asset": "quant/data_file/production_assets/duckdb/l3_label_current.duckdb::prod_l3_prediction_label_parts_current",
+    "current_score_source": "savedmodel_completion",
+    "historical_release_lineage_archive": "executable_1d_open_return_l4_formal_20260619_archive_before_20260630_incremental_l4.json"
+  },
+  "full_coverage_materialization_report": "../../../data_file/reports/model_agent_four_year_formal_fullwindow_20260628/fullwindow_materialization_report.json",
+  "independent_eval_summary": "../../../data_file/reports/model_agent_four_year_formal_fullwindow_eval_20260628/fullwindow_eval_summary.json",
+  "independent_eval_report": "../../../data_file/reports/model_agent_four_year_formal_fullwindow_eval_20260628/fullwindow_eval_report.md",
+  "latest_formal_release": {
+    "released_at": "2026-06-29T00:41:52+08:00",
+    "method": "four_year_fullwindow_formal_alignment_publish",
+    "latest_trade_date": "20260626",
+    "latest_day_rows": 5513,
+    "no_training": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "no_l5_strategy_param_change": true
+  },
+  "model_eval_vs_previous_formal": {
+    "mature_label_min_trade_date": "20240604",
+    "mature_label_max_trade_date": "20260611",
+    "full_delta": {
+      "rank_ic": 0.012726359852223954,
+      "top1": -0.004894319541056613,
+      "top3": -0.002428375674231654,
+      "top5": -0.0022682267879102717,
+      "top10": 0.002326411953299826,
+      "top20": 0.003507871829268781
+    },
+    "recent20_delta": {
+      "rank_ic": 0.0031475828859065715,
+      "top1": 0.00513019871336199,
+      "top3": 0.008399235652780716,
+      "top5": 0.006469060566100332,
+      "top10": 0.015143479136387326,
+      "top20": 0.01234410206046119
+    },
+    "recent63_delta": {
+      "rank_ic": 0.010504942195183435,
+      "top1": -0.0055211123826456494,
+      "top3": 0.003881251110277189,
+      "top5": 0.00155648237133966,
+      "top10": 0.005375762713079055,
+      "top20": 0.007538321944788505
+    },
+    "recent126_delta": {
+      "rank_ic": 0.007982357323552122,
+      "top1": -0.008715278702617884,
+      "top3": -0.0010272503303595994,
+      "top5": -0.0015298123067974002,
+      "top10": 0.005451307001422546,
+      "top20": 0.006231748350605258
+    }
+  },
+  "approval_basis": "formal_release_four_year_fullwindow_with_overlap_score_change_20260629",
+  "fullwindow_release_semantics": "overlap_scores_changed",
+  "overlap_score_change_detected": true,
+  "previous_manifest_archive_before_incremental_l4_20260629": "executable_1d_open_return_l4_formal_20260619_archive_before_20260629_incremental_l4.json",
+  "previous_manifest_archive_before_incremental_l4_20260630": "executable_1d_open_return_l4_formal_20260619_archive_before_20260630_incremental_l4.json",
+  "adjustment_semantics": {
+    "explicit_front_adjusted_marker_required": true,
+    "front_adjusted_marker": "qfq",
+    "front_adjusted_column_suffix": "_qfq",
+    "front_adjusted_indicator_suffix": "_qfq",
+    "front_adjusted_factor_marker_required": true,
+    "forbidden_implicit_front_adjusted_columns": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "pre_close"
+    ],
+    "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+  },
+  "market_field_semantics": {
+    "raw_price_output_suffix": "_raw",
+    "raw_market_price_columns": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "pre_close"
+    ],
+    "front_adjusted_indicator_suffix": "_qfq",
+    "contract_rule": "raw market price fields must remain explicitly marked as *_raw in downstream strategy assets; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+    "schema_kind": "strategy_output"
+  },
+  "previous_manifest_archive_path": "executable_1d_open_return_l4_formal_20260619_archive_before_20260628_four_year_fullwindow_alignment.json",
+  "previous_manifest_archive_note": "?? manifest ?????????????????? DuckDB-only active formal manifest?"
+}

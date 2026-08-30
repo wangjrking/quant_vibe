@@ -1,0 +1,46 @@
+{
+  "config_id": "model_research_10d_liquidity_calibrator_20260721",
+  "status": "frozen_research_only",
+  "label": "executable_10d_open_return",
+  "observation_start": "20220606",
+  "mature_label_end": "20260528",
+  "selection_periods": {
+    "train_all": ["20220606", "20231229"],
+    "train_2022h2": ["20220606", "20221230"],
+    "train_2023": ["20230103", "20231229"]
+  },
+  "frozen_evaluation_periods": {
+    "full": ["20220606", "20260528"],
+    "validation_2024": ["20240102", "20241231"],
+    "validation_2025": ["20250102", "20251231"],
+    "recent_2026": ["20260105", "20260528"],
+    "recent60": ["20260302", "20260528"]
+  },
+  "amount_rank_weights": [0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.15],
+  "score_formula": "percent_rank(pred_prob) + amount_rank_weight * (percent_rank(amount) - 0.5)",
+  "round_trip_cost": 0.006,
+  "selection_rules": {
+    "train_2022h2_top3_net_min": 0.0,
+    "train_2023_top3_net_min": 0.0,
+    "train_rank_ic_delta_min": -0.002,
+    "top1_amount_percentile_improvement_min": 0.05
+  },
+  "post_selection_admission_rules": {
+    "validation_2024_top3_net_min": 0.0,
+    "validation_2025_top3_net_min": 0.0,
+    "recent60_top3_net_min": 0.0,
+    "full_rank_ic_delta_min": -0.002,
+    "full_top1_delta_min": -0.005,
+    "full_top3_delta_min": -0.005
+  },
+  "boundaries": {
+    "research_only": true,
+    "train_only_selection": true,
+    "holdout_not_used_for_selection": true,
+    "no_training": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "no_formal_change": true,
+    "no_production_manifest_change": true
+  }
+}

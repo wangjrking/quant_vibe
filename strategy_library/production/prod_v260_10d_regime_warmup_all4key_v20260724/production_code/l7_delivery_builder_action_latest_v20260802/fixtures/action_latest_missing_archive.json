@@ -1,0 +1,15 @@
+{
+  "case_id": "action_latest_missing_archive",
+  "strategy_manifest_latest_signal_file": null,
+  "latest_csv_rows": 2,
+  "actions": [
+    "BUY",
+    "SELL"
+  ],
+  "status": "pending_buy_day_hard_gate",
+  "signal_semantics": "trade_actions_pending_buy_day_hard_gate",
+  "no_signal": false,
+  "hold_only": false,
+  "execution_flags_must_be_false": true,
+  "expected_branch": "action_signals_pending_only"
+}

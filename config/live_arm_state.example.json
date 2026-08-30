@@ -1,0 +1,12 @@
+{
+  "enabled": false,
+  "arm_id": "REPLACE_WITH_UNIQUE_SHORT_LIVED_ARM_ID",
+  "owner_approval_id": "MUST_MATCH_EXECUTION_POLICY",
+  "account_id": "REPLACE_WITH_ACCOUNT_ID",
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "stage": "live",
+  "armed_by": "OWNER_ONLY",
+  "reason": "Short-lived live trading arm. Keep disabled until owner approval, audit close, and kill-switch checks are complete.",
+  "created_at": "2026-07-30T09:25:00+08:00",
+  "expires_at": "2026-07-30T15:05:00+08:00"
+}

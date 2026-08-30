@@ -4,7 +4,7 @@ import argparse
 import concurrent.futures
 import gc
 import json
-import sqlite3
+import os
 import time
 import warnings
 from datetime import datetime
@@ -18,12 +18,10 @@ from build_production_factor_parts import (
     KEY_COLUMNS,
     apply_industry_encode,
     default_industry_encode_mapping_path,
-    extend_industry_encode_mapping,
     is_future_or_label_column,
     is_source_limited_column,
-    load_industry_encode_mapping,
     production_raw_columns,
-    save_industry_encode_mapping,
+    update_industry_encode_mapping,
 )
 from data_process_module import group_factor_eng
 from gtja_alpha_workflow import (
@@ -32,11 +30,38 @@ from gtja_alpha_workflow import (
     required_gtja_raw_columns,
 )
 from project_paths import resolve_data_dir
+from l3_duckdb_sync import l3_duckdb_sync_enabled, sync_feature_parts_target_date_to_duckdb
 from rebuild_factor_data_batched import _normalize_types
-from stock_daily_data_route import resolve_stock_daily_db_path
+from stock_daily_data_route import resolve_stock_daily_duckdb_path
 
 
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
+
+
+STOCK_DAILY_TABLE = "STOCK_DAILY_DATA"
+ENV_ALLOW_LEGACY_L3_PARQUET_PARTS = "QUANT_ALLOW_LEGACY_L3_PARQUET_PARTS"
+
+
+def legacy_l3_parquet_parts_allowed() -> bool:
+    return str(os.environ.get(ENV_ALLOW_LEGACY_L3_PARQUET_PARTS, "")).strip() == "1"
+
+
+def resolve_legacy_parquet_parts_dirs(
+    raw_parts_dir: str | None,
+    production_parts_dir: str | None,
+    *,
+    data_dir: Path | None = None,
+) -> tuple[Path, Path]:
+    if not legacy_l3_parquet_parts_allowed():
+        raise RuntimeError(
+            "L3 parquet parts are retired from the standard DuckDB-only production workflow. "
+            f"Set {ENV_ALLOW_LEGACY_L3_PARQUET_PARTS}=1 and pass explicit --raw-parts-dir / "
+            "--production-parts-dir only for legacy reproduction."
+        )
+    root = data_dir or resolve_data_dir()
+    raw_path = Path(raw_parts_dir) if raw_parts_dir else root / "raw_factor_by_stock_parts"
+    production_path = Path(production_parts_dir) if production_parts_dir else root / "production_factor_parts"
+    return raw_path, production_path
 
 
 def _part_index(path: Path) -> int:
@@ -49,17 +74,19 @@ def _read_part_codes(raw_part_path: Path) -> list[str]:
 
 
 def _read_stock_daily(db_path: Path, codes: list[str], read_start: str, target_date: str) -> pd.DataFrame:
+    import duckdb
+
     placeholders = ",".join(["?"] * len(codes))
     query = f"""
         SELECT *
-        FROM STOCK_DAILY_DATA
+        FROM {STOCK_DAILY_TABLE}
         WHERE stock_code IN ({placeholders})
           AND trade_date >= ?
           AND trade_date <= ?
         ORDER BY stock_code, trade_date
     """
-    with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=120) as conn:
-        frame = pd.read_sql(query, conn, params=[*codes, read_start, target_date])
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        frame = conn.execute(query, [*codes, read_start, target_date]).fetchdf()
     frame.columns = frame.columns.str.lower()
     return frame
 
@@ -137,11 +164,10 @@ def _compute_production_target(raw_part_path: Path, target_date: str, read_start
     gtja_target = gtja[gtja["trade_date"].eq(target_date)].copy()
     gtja_keep = [*KEY_COLUMNS, *[column for column in GTJA_ALPHA_COLUMNS if column in gtja_target.columns]]
     merged = raw_target.merge(gtja_target[gtja_keep], on=KEY_COLUMNS, how="left", validate="one_to_one")
-    mapping = extend_industry_encode_mapping(
-        load_industry_encode_mapping(default_industry_encode_mapping_path()),
+    mapping = update_industry_encode_mapping(
         merged["industry"] if "industry" in merged.columns else [],
+        default_industry_encode_mapping_path(),
     )
-    save_industry_encode_mapping(mapping, default_industry_encode_mapping_path())
     merged = apply_industry_encode(merged, mapping)
     merged.replace([np.inf, -np.inf], np.nan, inplace=True)
     return merged
@@ -198,9 +224,11 @@ def process_part(
 
 
 def _target_date_codes(db_path: Path, target_date: str) -> set[str]:
-    with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=120) as conn:
+    import duckdb
+
+    with duckdb.connect(str(db_path), read_only=True) as conn:
         rows = conn.execute(
-            "SELECT stock_code FROM STOCK_DAILY_DATA WHERE trade_date = ?",
+            f"SELECT stock_code FROM {STOCK_DAILY_TABLE} WHERE trade_date = ?",
             [target_date],
         ).fetchall()
     return {str(row[0]) for row in rows}
@@ -267,11 +295,10 @@ def process_new_stock_codes(
         how="left",
         validate="one_to_one",
     )
-    mapping = extend_industry_encode_mapping(
-        load_industry_encode_mapping(default_industry_encode_mapping_path()),
+    mapping = update_industry_encode_mapping(
         production_target_new["industry"] if "industry" in production_target_new.columns else [],
+        default_industry_encode_mapping_path(),
     )
-    save_industry_encode_mapping(mapping, default_industry_encode_mapping_path())
     production_target_new = apply_industry_encode(production_target_new, mapping)
     production_target_new.replace([np.inf, -np.inf], np.nan, inplace=True)
 
@@ -330,11 +357,15 @@ def _audit_parts(parts_dir: Path, target_date: str) -> dict:
 
 
 def parse_args(argv=None):
-    data_dir = resolve_data_dir()
-    parser = argparse.ArgumentParser(description="Incrementally append one target date to raw and production factor parts.")
-    parser.add_argument("--db-path", default=str(resolve_stock_daily_db_path()))
-    parser.add_argument("--raw-parts-dir", default=str(data_dir / "raw_factor_by_stock_parts"))
-    parser.add_argument("--production-parts-dir", default=str(data_dir / "production_factor_parts"))
+    parser = argparse.ArgumentParser(
+        description=(
+            "Legacy parquet-parts L3 incremental updater. Current production L3 is DuckDB-only; "
+            "this entrypoint requires explicit legacy opt-in."
+        )
+    )
+    parser.add_argument("--db-path", default=str(resolve_stock_daily_duckdb_path()))
+    parser.add_argument("--raw-parts-dir")
+    parser.add_argument("--production-parts-dir")
     parser.add_argument("--target-date", required=True)
     parser.add_argument("--read-start", default="20250101")
     parser.add_argument("--start-part", type=int)
@@ -342,13 +373,16 @@ def parse_args(argv=None):
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--report-path")
     parser.add_argument("--no-new-stock-fill", action="store_true")
+    parser.add_argument("--skip-duckdb-sync", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
-    raw_parts_dir = Path(args.raw_parts_dir)
-    production_parts_dir = Path(args.production_parts_dir)
+    raw_parts_dir, production_parts_dir = resolve_legacy_parquet_parts_dirs(
+        args.raw_parts_dir,
+        args.production_parts_dir,
+    )
     part_indexes = _selected_parts(raw_parts_dir, args.start_part, args.end_part)
     if not part_indexes:
         raise RuntimeError(f"no raw parts selected: {raw_parts_dir}")
@@ -413,6 +447,12 @@ def main(argv=None):
         "results": results,
         "production_audit": audit,
     }
+    if not args.skip_duckdb_sync and l3_duckdb_sync_enabled():
+        report["duckdb_sync"] = sync_feature_parts_target_date_to_duckdb(
+            data_dir=resolve_data_dir(),
+            target_date=args.target_date,
+            parts_dir=production_parts_dir,
+        )
     if args.report_path:
         report_path = Path(args.report_path)
         report_path.parent.mkdir(parents=True, exist_ok=True)

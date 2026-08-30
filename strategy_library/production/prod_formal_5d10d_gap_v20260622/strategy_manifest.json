@@ -4,7 +4,7 @@
   "name": "??5D10D pred_gap ??????",
   "code_name": "formal_5d10d_gap_enhanced",
   "source_strategy": "gap_t0p03_g1p08_b0p88",
-  "status": "production",
+  "status": "historical_archive",
   "production_version": "V1.1",
   "version": "v20260622",
   "published_at": "2026-06-22",
@@ -21,7 +21,36 @@
       "stock_predict_data_* legacy table",
       "1D model score",
       "unapproved research prediction asset"
-    ]
+    ],
+    "adjustment_semantics": {
+      "explicit_front_adjusted_marker_required": true,
+      "front_adjusted_marker": "qfq",
+      "front_adjusted_column_suffix": "_qfq",
+      "front_adjusted_indicator_suffix": "_qfq",
+      "front_adjusted_factor_marker_required": true,
+      "forbidden_implicit_front_adjusted_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+    },
+    "market_field_semantics": {
+      "raw_price_output_suffix": "_raw",
+      "raw_market_price_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "front_adjusted_indicator_suffix": "_qfq",
+      "contract_rule": "strategy-side downstream assets must export raw market prices as *_raw; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+      "schema_kind": "strategy_output"
+    },
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb"
   },
   "prediction_assets": {
     "score_manifest_file": "predictions/l5_score_manifest.json",
@@ -70,12 +99,16 @@
     "production_task_config": "config/production_tasks.json"
   },
   "governance": {
-    "is_current_l5": true,
-    "is_only_registered_l5_production_strategy": true,
+    "is_current_l5": false,
+    "is_only_registered_l5_production_strategy": false,
     "no_calendar_filter": true,
     "no_industry_filter": true,
     "no_1d_model": true,
     "old_strategy_retained_as_historical_archive": "prod_formal_5d10d_best_v20260621",
     "target_300_4_80_all_hit": false
   }
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

@@ -40,7 +40,30 @@ class BuildResearchFusionLibraryTests(unittest.TestCase):
         self.assertEqual(
             resolved,
             {
-                "model_db": manifest_dir / "MODEL_PREDICTIONS.db",
+                "source_3d": {
+                    "label": "executable_3d_open_return",
+                    "db_path": manifest_dir / "executable_3d_open_return.duckdb",
+                    "table": "stock_predict_data_model_agent_toprank_latestfactor_20260618_executable_3d_open_return_score_20240604_20260618",
+                    "approval_status": "approved_for_l5",
+                    "max_trade_date": "20260618",
+                    "manifest_path": manifest_dir / "executable_3d_open_return_l4_formal_20260617.json",
+                },
+                "source_5d": {
+                    "label": "executable_5d_open_return",
+                    "db_path": manifest_dir / "executable_5d_open_return.duckdb",
+                    "table": "stock_predict_data_model_agent_standard_chain_tune_20260620_executable_5d_open_return_v3",
+                    "approval_status": "approved_for_l5",
+                    "max_trade_date": "20260618",
+                    "manifest_path": manifest_dir / "prod_liq_prime_one_v20260620_l4_formal.json",
+                },
+                "source_10d": {
+                    "label": "executable_10d_open_return",
+                    "db_path": manifest_dir / "executable_10d_open_return.duckdb",
+                    "table": "stock_predict_data_model_agent_standard_chain_tune_20260617_executable_10d_open_return",
+                    "approval_status": "approved_for_l4_only",
+                    "max_trade_date": "20260618",
+                    "manifest_path": manifest_dir / "executable_10d_open_return_l4_formal_20260617.json",
+                },
                 "table_3d": "stock_predict_data_model_agent_toprank_latestfactor_20260618_executable_3d_open_return_score_20240604_20260618",
                 "table_5d": "stock_predict_data_model_agent_standard_chain_tune_20260620_executable_5d_open_return_v3",
                 "table_10d": "stock_predict_data_model_agent_standard_chain_tune_20260617_executable_10d_open_return",
@@ -102,8 +125,8 @@ class BuildResearchFusionLibraryTests(unittest.TestCase):
                 {
                     "label": label,
                     "approval_status": approval_status,
-                    "source_type": "sqlite_table",
-                    "db_path": "MODEL_PREDICTIONS.db",
+                    "source_type": "duckdb_table",
+                    "db_path": f"{label}.duckdb",
                     "table": table,
                     "generated_at": generated_at,
                     "max_trade_date": max_trade_date,

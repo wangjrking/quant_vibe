@@ -265,7 +265,12 @@ class OfficialGtjaContext:
         if output_dates is not None:
             keep_dates = {str(date) for date in output_dates}
             frame = frame.loc[frame.index.isin(keep_dates)]
-        series = frame.stack(future_stack=True).rename(column_name)
+        try:
+            series = frame.stack(future_stack=True).rename(column_name)
+        except TypeError:
+            # pandas 1.x does not support future_stack; keep NaN rows so target-date
+            # alignment matches the newer implementation closely enough for merges.
+            series = frame.stack(dropna=False).rename(column_name)
         return series.reset_index().rename(columns={"level_0": "trade_date", "level_1": "stock_code"})
 
     def __call__(self, field: str) -> pd.DataFrame:
@@ -436,23 +441,50 @@ def append_official_gtja_alpha(
     cross_sectional_rank_mode: str = "rank",
     benchmark_prefix: str = "index_2000",
     output_dates: Iterable[str] | None = None,
+    alpha_batch_size: int = 16,
+    progress_callback=None,
 ) -> pd.DataFrame:
     ctx = OfficialGtjaContext(
         frame,
         cross_sectional_rank_mode=cross_sectional_rank_mode,
         benchmark_prefix=benchmark_prefix,
     )
-    parts: list[pd.DataFrame] = []
-    for no in range(1, 192):
-        fn = getattr(official_alpha191, f"alpha_{no:03d}")
-        part = ctx.to_long(fn(ctx), f"gtja_alpha{no:03d}", output_dates=output_dates)
-        parts.append(part)
+    batch_size = max(1, int(alpha_batch_size))
+    alpha_numbers = list(range(1, 192))
+    total_batches = (len(alpha_numbers) + batch_size - 1) // batch_size
+    batch_frames: list[pd.DataFrame] = []
 
-    merged = parts[0]
-    for part in parts[1:]:
-        merged = merged.merge(part, on=["trade_date", "stock_code"], how="outer", sort=False)
+    for batch_index, start in enumerate(range(0, len(alpha_numbers), batch_size), start=1):
+        batch_numbers = alpha_numbers[start : start + batch_size]
+        indexed_parts = []
+        for no in batch_numbers:
+            fn = getattr(official_alpha191, f"alpha_{no:03d}")
+            part = ctx.to_long(fn(ctx), f"gtja_alpha{no:03d}", output_dates=output_dates)
+            value_columns = [column for column in part.columns if column not in {"trade_date", "stock_code"}]
+            indexed = part.set_index(["trade_date", "stock_code"])
+            if len(value_columns) != 1:
+                raise ValueError(f"unexpected GTJA projection columns: {value_columns}")
+            indexed_parts.append(indexed[value_columns])
+        batch_frame = pd.concat(indexed_parts, axis=1, sort=False)
+        batch_frames.append(batch_frame)
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "batch_index": batch_index,
+                    "total_batches": total_batches,
+                    "alpha_start": batch_numbers[0],
+                    "alpha_end": batch_numbers[-1],
+                    "batch_columns": len(batch_numbers),
+                    "rows": int(batch_frame.shape[0]),
+                }
+            )
+
+    merged = pd.concat(batch_frames, axis=1, sort=False).reset_index()
 
     result = frame.copy()
     result["trade_date"] = result["trade_date"].astype(str)
     result["stock_code"] = result["stock_code"].astype(str)
+    if output_dates is not None:
+        keep_dates = {str(date) for date in output_dates}
+        result = result[result["trade_date"].isin(keep_dates)].copy()
     return result.merge(merged, on=["trade_date", "stock_code"], how="left", validate="many_to_one")

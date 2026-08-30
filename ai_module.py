@@ -16,10 +16,21 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
+from adjustment_semantics import (
+    NAKED_FRONT_ADJUSTED_INDICATOR_COLUMNS,
+    NAKED_MARKET_PRICE_COLUMNS,
+    explicit_qfq_column_name,
+    require_front_adjusted_column,
+)
+
 from model_asset_route import (
     require_legacy_model_asset_chain_opt_in,
     resolve_legacy_mixed_factor_path,
+    resolve_model_feature_duckdb_path,
+    resolve_model_feature_duckdb_table,
     resolve_legacy_prediction_db_path,
+    resolve_model_label_duckdb_path,
+    resolve_model_label_duckdb_table,
     resolve_model_feature_path,
     resolve_model_label_path,
     resolve_model_prediction_db_path,
@@ -28,6 +39,8 @@ from model_asset_route import (
     use_legacy_prediction_db,
     write_prediction_manifest,
 )
+from l4_duckdb_sync import l4_duckdb_sync_enabled, sync_prediction_table_full_to_duckdb
+from l3_duckdb_sync import GTJA_QFQ_COLUMN_MAP
 from project_paths import resolve_data_dir
 
 
@@ -46,6 +59,58 @@ from leakage_guard import validate_no_leakage
 from light_factor_module import get_light_factor_data
 from stock_pool_module import filter_frame_by_stock_pool, load_stock_pool
 from sklearn.model_selection import TimeSeriesSplit
+
+
+LEGACY_FRONT_ADJUSTED_ALIAS_BASES = set(NAKED_MARKET_PRICE_COLUMNS) | set(NAKED_FRONT_ADJUSTED_INDICATOR_COLUMNS) | {
+    "macdsignal",
+    "macdhist",
+    "macd_dea",
+    "macd_dif",
+    "rsi",
+    "tema",
+    "dema",
+    "dema_10",
+    "t3",
+}
+
+
+def resolve_selected_feature_alias(feature_name, available_columns):
+    feature = str(feature_name)
+    available = {str(column) for column in available_columns}
+    if feature in available:
+        return feature
+    qfq_gtja = GTJA_QFQ_COLUMN_MAP.get(feature)
+    if qfq_gtja and qfq_gtja in available:
+        return qfq_gtja
+    if feature in LEGACY_FRONT_ADJUSTED_ALIAS_BASES:
+        qfq_name = explicit_qfq_column_name(feature)
+        if qfq_name in available:
+            return qfq_name
+    return None
+
+
+def resolve_selected_feature_aliases(requested_columns, available_columns):
+    query_columns = []
+    alias_pairs = []
+    missing = []
+    seen = set()
+
+    for column in requested_columns:
+        resolved = resolve_selected_feature_alias(column, available_columns)
+        if resolved is None:
+            missing.append(str(column))
+            continue
+        if resolved not in seen:
+            query_columns.append(resolved)
+            seen.add(resolved)
+        if resolved != column:
+            alias_pairs.append((str(column), str(resolved)))
+
+    return {
+        "query_columns": query_columns,
+        "alias_pairs": alias_pairs,
+        "missing": missing,
+    }
 
 
 
@@ -470,10 +535,22 @@ def incre_fit(model, train_x, train_y, test_x, test_y, data_file_url, save_shap=
     fit_kwargs = {"verbose": 100}
     if sample_weight is not None:
         fit_kwargs["sample_weight"] = sample_weight
-    if eval_data is not None:
-        model.fit(fit_train_x, fit_train_y, eval_set=[eval_data], **fit_kwargs)
-    else:
-        model.fit(fit_train_x, fit_train_y, **fit_kwargs)
+    original_early_stopping_rounds = None
+    early_stopping_temporarily_disabled = False
+    if eval_data is None and hasattr(model, "get_params") and hasattr(model, "set_params"):
+        model_params = model.get_params()
+        original_early_stopping_rounds = model_params.get("early_stopping_rounds")
+        if original_early_stopping_rounds is not None:
+            early_stopping_temporarily_disabled = True
+            model.set_params(early_stopping_rounds=None)
+    try:
+        if eval_data is not None:
+            model.fit(fit_train_x, fit_train_y, eval_set=[eval_data], **fit_kwargs)
+        else:
+            model.fit(fit_train_x, fit_train_y, **fit_kwargs)
+    finally:
+        if early_stopping_temporarily_disabled:
+            model.set_params(early_stopping_rounds=original_early_stopping_rounds)
     _save_model_artifacts(model, fit_train_x.columns)
     print('?????????')
 
@@ -605,7 +682,12 @@ def prepare_training_label(factor_data, label):
     if label == "risk_adjusted_10d_yield_rate":
         base_return = pd.to_numeric(factor_data["10d_yield_rate"], errors="coerce")
         atr = pd.to_numeric(factor_data["atr_qfq"], errors="coerce")
-        close = pd.to_numeric(factor_data["close"], errors="coerce")
+        close_column = require_front_adjusted_column(
+            factor_data.columns,
+            "close",
+            context="risk_adjusted_10d_yield_rate",
+        )
+        close = pd.to_numeric(factor_data[close_column], errors="coerce")
         atr_ratio = (atr / close).clip(lower=0.01, upper=0.20)
         factor_data[label] = base_return / atr_ratio
     elif label == "executable_10d_open_return":
@@ -681,7 +763,7 @@ def load_selected_features(data_file_url, label):
 
 def label_required_columns(label):
     if label == "risk_adjusted_10d_yield_rate":
-        return ["10d_yield_rate", "atr_qfq", "close"]
+        return ["10d_yield_rate", "atr_qfq", "close_qfq"]
     if label == "executable_10d_open_return":
         return ["post_open", "post12_open"]
     if label == "executable_5d_open_return":
@@ -723,12 +805,16 @@ def split_label_required_columns(label):
 
 def split_feature_required_columns(label):
     if label == "risk_adjusted_10d_yield_rate":
-        return ["atr_qfq", "close"]
+        return ["atr_qfq", "close_qfq"]
     return []
 
 
 def _schema_columns(path: Path) -> set[str]:
     return set(ds.dataset(path, format="parquet").schema.names)
+
+
+def _quote_ident(value: str) -> str:
+    return '"' + str(value).replace('"', '""') + '"'
 
 
 def _read_parquet_with_fragment_fallback(path: Path, columns: list[str], filters):
@@ -751,19 +837,102 @@ def _read_parquet_with_fragment_fallback(path: Path, columns: list[str], filters
         return pd.concat(frames, ignore_index=True)
 
 
-def _read_split_factor_data(data_start_dt, label, data_file_url, selected_features=None):
-    feature_path = resolve_model_feature_path(data_file_url, require_exists=True)
-    label_path = resolve_model_label_path(data_file_url, require_exists=True)
-    feature_columns_available = _schema_columns(feature_path)
-    label_columns_available = _schema_columns(label_path)
-    filters = [("trade_date", ">=", str(data_start_dt))]
+def _duckdb_table_columns(db_path: Path, table: str) -> set[str]:
+    import duckdb
+
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        return {str(row[0]) for row in conn.execute(f"DESCRIBE {_quote_ident(table)}").fetchall()}
+
+
+def _read_duckdb_frame(db_path: Path, table: str, columns: list[str], *, data_start_dt: str) -> pd.DataFrame:
+    import duckdb
+
+    selected = ", ".join(_quote_ident(column) for column in columns)
+    sql = (
+        f"SELECT {selected} "
+        f"FROM {_quote_ident(table)} "
+        "WHERE trade_date >= ?"
+    )
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        return conn.execute(sql, [str(data_start_dt)]).fetchdf()
+
+
+def _read_duckdb_factor_data(data_start_dt, label, data_file_url, selected_features=None):
+    feature_db_path = resolve_model_feature_duckdb_path(data_file_url, require_exists=True)
+    label_db_path = resolve_model_label_duckdb_path(data_file_url, require_exists=True)
+    feature_table = resolve_model_feature_duckdb_table(data_file_url)
+    label_table = resolve_model_label_duckdb_table(data_file_url)
+    if not feature_table or not label_table:
+        raise RuntimeError("active L3 DuckDB assets are missing bound feature/label table names")
+
+    feature_columns_available = _duckdb_table_columns(feature_db_path, feature_table)
+    label_columns_available = _duckdb_table_columns(label_db_path, label_table)
+    requested_selected_features = list(selected_features or [])
+    resolved_selected = resolve_selected_feature_aliases(
+        requested_selected_features,
+        feature_columns_available,
+    )
 
     feature_columns = list(
         dict.fromkeys(
             ["stock_code", "trade_date"]
             + split_feature_required_columns(label)
             + model_output_columns(label)
-            + list(selected_features or [])
+            + resolved_selected["query_columns"]
+        )
+    )
+    feature_columns = [column for column in feature_columns if column in feature_columns_available]
+
+    label_columns = list(
+        dict.fromkeys(
+            ["stock_code", "trade_date", "5d_yield_rate", "open6_yield_rate", "10d_yield_rate"]
+            + split_label_required_columns(label)
+        )
+    )
+    label_columns = [column for column in label_columns if column in label_columns_available]
+    missing_label_columns = [
+        column for column in split_label_required_columns(label) if column not in label_columns
+    ]
+    if missing_label_columns:
+        raise ValueError(
+            f"prediction_label_parts DuckDB table missing required columns for {label}: {missing_label_columns}"
+        )
+
+    feature_frame = _read_duckdb_frame(
+        feature_db_path,
+        feature_table,
+        feature_columns,
+        data_start_dt=data_start_dt,
+    )
+    for requested_name, source_name in resolved_selected["alias_pairs"]:
+        feature_frame[requested_name] = feature_frame[source_name]
+    label_frame = _read_duckdb_frame(
+        label_db_path,
+        label_table,
+        label_columns,
+        data_start_dt=data_start_dt,
+    )
+    return feature_frame.merge(label_frame, on=["stock_code", "trade_date"], how="inner")
+
+
+def _read_split_factor_data(data_start_dt, label, data_file_url, selected_features=None):
+    feature_path = resolve_model_feature_path(data_file_url, require_exists=True)
+    label_path = resolve_model_label_path(data_file_url, require_exists=True)
+    feature_columns_available = _schema_columns(feature_path)
+    label_columns_available = _schema_columns(label_path)
+    filters = [("trade_date", ">=", str(data_start_dt))]
+    requested_selected_features = list(selected_features or [])
+    resolved_selected = resolve_selected_feature_aliases(
+        requested_selected_features,
+        feature_columns_available,
+    )
+
+    feature_columns = list(
+        dict.fromkeys(
+            ["stock_code", "trade_date"]
+            + split_feature_required_columns(label)
+            + model_output_columns(label)
+            + resolved_selected["query_columns"]
         )
     )
     feature_columns = [column for column in feature_columns if column in feature_columns_available]
@@ -786,6 +955,8 @@ def _read_split_factor_data(data_start_dt, label, data_file_url, selected_featur
     feature_frame = _read_parquet_with_fragment_fallback(
         feature_path, columns=feature_columns, filters=filters
     )
+    for requested_name, source_name in resolved_selected["alias_pairs"]:
+        feature_frame[requested_name] = feature_frame[source_name]
     label_frame = _read_parquet_with_fragment_fallback(
         label_path, columns=label_columns, filters=filters
     )
@@ -869,12 +1040,22 @@ def get_factor_data(
             filters=read_filters,
         )
     else:
-        factor_data = _read_split_factor_data(
-            data_start_dt,
-            label,
-            data_file_url,
-            selected_features=selected_features,
-        )
+        feature_duckdb_table = resolve_model_feature_duckdb_table(data_file_url)
+        label_duckdb_table = resolve_model_label_duckdb_table(data_file_url)
+        if feature_duckdb_table and label_duckdb_table:
+            factor_data = _read_duckdb_factor_data(
+                data_start_dt,
+                label,
+                data_file_url,
+                selected_features=selected_features,
+            )
+        else:
+            factor_data = _read_split_factor_data(
+                data_start_dt,
+                label,
+                data_file_url,
+                selected_features=selected_features,
+            )
     if stock_pool_path:
         stock_pool = load_stock_pool(stock_pool_path)
         factor_data = filter_frame_by_stock_pool(factor_data, stock_pool)
@@ -1132,10 +1313,18 @@ def download_pred_data(data, label, data_file_url, output_table=None, prediction
 	if use_legacy_prediction_db(prediction_output_mode):
 		require_legacy_model_asset_chain_opt_in(reason="legacy odb prediction output")
 		db_path = resolve_legacy_prediction_db_path(data_file_url)
+		duckdb_sync = None
 	else:
 		db_path = resolve_model_prediction_db_path(data_file_url, create_parent=True)
+		duckdb_sync = None
 	with sqlite3.connect(db_path) as conn:
 		data.to_sql(table_name, con=conn, if_exists='replace', index=False)
+	if not use_legacy_prediction_db(prediction_output_mode) and l4_duckdb_sync_enabled():
+		duckdb_sync = sync_prediction_table_full_to_duckdb(
+			data_dir=data_file_url,
+			sqlite_db_path=db_path,
+			table_name=table_name,
+		)
 	if not use_legacy_prediction_db(prediction_output_mode):
 		run_dir = resolve_prediction_run_dir(data_file_url, label=label, output_table=table_name, create=True)
 		write_prediction_manifest(
@@ -1146,6 +1335,7 @@ def download_pred_data(data, label, data_file_url, output_table=None, prediction
 				"prediction_db": str(db_path),
 				"prediction_table": table_name,
 				"row_count": int(len(data)),
+				"duckdb_sync": duckdb_sync,
 			},
 		)
 

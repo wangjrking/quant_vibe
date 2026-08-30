@@ -24,6 +24,8 @@ def parse_args(argv=None):
     parser.add_argument("--score-db")
     parser.add_argument("--score-table")
     parser.add_argument("--market-db")
+    parser.add_argument("--disable-score-db", action="store_true")
+    parser.add_argument("--disable-market-db", action="store_true")
     parser.add_argument("--score-stop-loss-pred", type=float)
     parser.add_argument("--score-take-profit-pred", type=float)
     parser.add_argument("--score-stop-loss-ratio", type=float)
@@ -57,6 +59,17 @@ def extract_indicator(log_text: str):
             except Exception:
                 return payload
     return None
+
+
+def has_gm_runtime_error(log_text: str) -> bool:
+    error_markers = [
+        "Traceback (most recent call last):",
+        "gm.api._errors.GmError",
+        "GmError:",
+        '"status": 1026',
+        "terminal service",
+    ]
+    return any(marker in log_text for marker in error_markers)
 
 
 def infer_backtest_window(signal_file: Path, holding_days: int | None) -> tuple[str, str]:
@@ -99,11 +112,16 @@ def main(argv=None):
         env["GM_STOP_LOSS_PCT"] = str(args.stop_loss_pct)
     if args.take_profit_pct is not None:
         env["GM_TAKE_PROFIT_PCT"] = str(args.take_profit_pct)
-    if args.score_db:
+    if args.disable_score_db:
+        env["GM_SCORE_DB"] = ""
+        env["GM_SCORE_TABLE"] = ""
+    elif args.score_db:
         env["GM_SCORE_DB"] = str(Path(args.score_db).resolve())
     if args.score_table:
         env["GM_SCORE_TABLE"] = str(args.score_table)
-    if args.market_db:
+    if args.disable_market_db:
+        env["GM_MARKET_DB"] = ""
+    elif args.market_db:
         env["GM_MARKET_DB"] = str(Path(args.market_db).resolve())
     if args.score_stop_loss_pred is not None:
         env["GM_SCORE_STOP_LOSS_PRED"] = str(args.score_stop_loss_pred)
@@ -162,8 +180,11 @@ def main(argv=None):
         )
     text = log_file.read_text(encoding="utf-8", errors="ignore")
     indicator = extract_indicator(text)
+    effective_returncode = proc.returncode
+    if indicator is None and has_gm_runtime_error(text):
+        effective_returncode = effective_returncode or 1
     summary = {
-        "returncode": proc.returncode,
+        "returncode": effective_returncode,
         "strategy_dir": str(strategy_dir),
         "signal_file": str(signal_file),
         "log_file": str(log_file),
@@ -172,8 +193,8 @@ def main(argv=None):
         "indicator": indicator,
     }
     print(json.dumps(summary, ensure_ascii=False, default=str))
-    if proc.returncode != 0:
-        raise SystemExit(proc.returncode)
+    if effective_returncode != 0:
+        raise SystemExit(effective_returncode)
 
 
 if __name__ == "__main__":

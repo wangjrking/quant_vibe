@@ -1,0 +1,72 @@
+{
+  "strategy_id": "prod_dyn_mild_09_12_15_v20260630",
+  "strategy_name": "动态Top5高收益 dyn_mild_09_12_15",
+  "status": "production",
+  "model_input": {
+    "source": "formal L4 3D/5D/10D rank cache",
+    "weight_name": "w72_23_05_amt150_mv30",
+    "entry_weights": {
+      "10d": 0.72,
+      "5d": 0.23,
+      "3d": 0.05
+    },
+    "uses_1d": false
+  },
+  "selection_rule": {
+    "filter_name": "cool2d10",
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "no_industry_filter": true,
+    "no_month_or_date_exclusion": true,
+    "no_latest_state_backfill": true,
+    "amount_min": 150000.0,
+    "total_mv_min": 300000.0,
+    "price_cap_signal_close": 150.0,
+    "price_cap_buy_open": 150.0,
+    "two_day_cap": 0.1,
+    "turnover_min": null
+  },
+  "position_rule": {
+    "topn": 5,
+    "max_positions": 5,
+    "target_position_pct_mode": "dynamic_mild_09_12_15",
+    "target_position_pct_values": {
+      "mild_low": 0.09,
+      "mild_mid": 0.12,
+      "mild_high": 0.15
+    },
+    "target_counts": {
+      "0.15000": 3926,
+      "0.09000": 888,
+      "0.12000": 116
+    },
+    "cash_buffer_mode": "target_pct_explicit"
+  },
+  "holding_rule": {
+    "holding_name": "h2m3_e097_c098_daydrop99",
+    "holding_days": 2,
+    "max_holding_days": 3,
+    "score_exit_entry_ratio": 0.97,
+    "score_continue_entry_ratio": 0.98,
+    "min_holding_days_before_score_exit": 1,
+    "signal_stop_loss_pct": 0.05,
+    "signal_take_profit_pct": 0.08
+  },
+  "risk_rule": {
+    "adaptive_buy_slippage_order_value": 700000,
+    "sell_slippage_assumption": "0 in source backtest log unless platform execution differs",
+    "equity_drawdown_risk_mode": true,
+    "dd_mode": "dynamic_slippage_code_snapshot_default"
+  },
+  "execution_rule": {
+    "signal_date_rule": "使用 T 日 formal L4 3D/5D/10D 评分生成下一交易日开盘候选信号。",
+    "latest_signal_status": "pending_buy_day_hard_gate",
+    "initial_cash": 600000,
+    "signal_source": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dyn_mild_09_12_15_v20260630\\signals\\full_history_dyn_mild_09_12_15.csv",
+    "signal_exporter": "export_latest_signal_from_strategy_archive.py",
+    "automation_note": "当前 exporter 从归档完整信号抽取最新日；若 formal L4 日期前进而归档信号未更新，将 fail-closed。"
+  },
+  "governance_note": "按用户最新口径以收益指标最高为主目标；开盘极端弱势和独立卖出规则作为风险提示，不作为本次否决条件。"
+}

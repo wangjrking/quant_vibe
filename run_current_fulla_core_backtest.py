@@ -1,6 +1,6 @@
 """Fast reproducible core backtests for current full-A model search.
 
-This runner intentionally reads exactly one prediction table from odb.db.
+This runner intentionally reads exactly one prediction table from a DuckDB file.
 It does not discover or fall back to older temporary prediction tables.
 """
 
@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import duckdb
 import json
-import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -51,12 +51,10 @@ def _load_top_rows(db_path: Path, table: str, start: str, end: str, top_n_per_da
         WHERE rn <= ?
         ORDER BY trade_date, pred_prob DESC
     """
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    try:
-        rows = [dict(row) for row in conn.execute(sql, (start, end, int(top_n_per_day))).fetchall()]
-    finally:
-        conn.close()
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        result = conn.execute(sql, [start, end, int(top_n_per_day)])
+        columns = [item[0] for item in result.description]
+        rows = [dict(zip(columns, row)) for row in result.fetchall()]
     for row in rows:
         row.pop("rn", None)
     return rows

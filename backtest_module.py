@@ -396,7 +396,43 @@ def run_backtest(rows, config=None):
     return BacktestResult(metrics=metrics, daily_returns=daily_returns, trades=trades)
 
 
-def read_prediction_rows(db_path, table, start_date=None, end_date=None, stock_pool_path=None):
+def _read_prediction_rows_duckdb(db_path, table, start_date=None, end_date=None, stock_pool_path=None):
+    import duckdb
+
+    conn = duckdb.connect(str(Path(db_path)), read_only=True)
+    try:
+        where = []
+        params = []
+        if start_date:
+            where.append("trade_date >= ?")
+            params.append(start_date)
+        if end_date:
+            where.append("trade_date <= ?")
+            params.append(end_date)
+        sql = f'SELECT * FROM "{table}"'
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY trade_date, pred_prob DESC"
+        cursor = conn.execute(sql, params)
+        columns = [item[0] for item in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        if stock_pool_path:
+            stock_pool = load_stock_pool(stock_pool_path)
+            rows = [row for row in rows if str(row.get("stock_code", "")).upper() in stock_pool]
+        return rows
+    finally:
+        conn.close()
+
+
+def read_prediction_rows(db_path, table, start_date=None, end_date=None, stock_pool_path=None, source_type="sqlite_table"):
+    if source_type == "duckdb_table" or str(db_path).lower().endswith(".duckdb"):
+        return _read_prediction_rows_duckdb(
+            db_path,
+            table,
+            start_date=start_date,
+            end_date=end_date,
+            stock_pool_path=stock_pool_path,
+        )
     path = Path(db_path)
     try:
         conn = sqlite3.connect(path.resolve().as_uri() + "?mode=ro&immutable=1", uri=True, timeout=30)

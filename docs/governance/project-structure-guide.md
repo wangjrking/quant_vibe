@@ -8,7 +8,8 @@
 2. `quant/main/AGENTS.md`
 3. `quant/main/docs/governance/project-doc-map.md`
 4. `quant/main/docs/governance/project-structure-reorganization.md`
-5. `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md`
+5. `quant/main/docs/governance/mcp-asset-gateway-platform.md`
+6. `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md`
 6. `.codex/agents/README.md`
 7. `.codex/agents/communication-layer.md`
 8. 与任务相关的 `.codex/agent_packages/<agent-id>/README.md`
@@ -27,7 +28,8 @@
 | `quant/main/research/` | 研究、调参、候选探索脚本 | research-only，不作为生产入口 |
 | `quant/main/legacy/` | 旧链路、回滚、历史复现入口 | 必须显式 legacy，默认不使用 |
 | `quant/main/docs/governance/` | 项目治理文档 | 新增或改写 Markdown 默认中文 |
-| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 远程数仓 MCP 中台方案 | 供另一台服务器部署 ClickHouse、PostgreSQL、对象存储和 MCP 数据服务时使用 |
+| `quant/main/docs/governance/mcp-asset-gateway-platform.md` | MCP 资产网关中台方案 | 当前 L8 MCP 资产发布层主线，使用 PostgreSQL、MinIO/对象存储和 MCP gateway 发布已审计资产 |
+| `quant/main/docs/governance/cloud-data-warehouse-mcp-platform.md` | 历史远程数仓 MCP 中台方案 | 旧 ClickHouse 全量迁移和远程数据中心方向，当前仅作历史参考 |
 | `quant/data_file/reports/` | 审计、模型、策略、数据报告 | 作为证据保留，不作为规则主入口 |
 | `quant/data_file/runtime/` | 运行态记忆、监控、回收站和临时留痕 | 按 runtime 治理规则处理 |
 
@@ -35,11 +37,11 @@
 
 | 层级 | 当前默认入口 |
 | --- | --- |
-| L1 原始数据 | `quant/data_file/raw_table_dbs/[table].DB` |
-| L2 综合底表 | `quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA` |
-| L3 生产特征 | `quant/data_file/production_factor_parts/` |
-| L3 标签 | `quant/data_file/prediction_label_parts/` |
-| L4 正式预测 | `quant/data_file/model_predictions/` 与 approved formal manifest |
+| L1 原始数据 | `quant/data_file/production_assets/duckdb/l1_raw_tables/[table].duckdb::[table]` |
+| L2 综合底表 | `quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb::STOCK_DAILY_DATA` |
+| L3 生产特征 | `quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::prod_l3_production_factor_parts_20260625` |
+| L3 标签 | `quant/data_file/production_assets/duckdb/l3_label_current.duckdb::prod_l3_prediction_label_parts_current` |
+| L4 正式预测 | `quant/main/config/prediction_manifests/*.json` 指向的 split DuckDB formal 表 |
 | L5/L6 策略与回测 | `quant/main/strategy_library/` 和标准 L5 入口 |
 | L7 交易交付 | 交易智能体维护的平台交付目录 |
 
@@ -48,6 +50,8 @@
 以下资产只能用于 legacy、审计、回滚或历史复现，不应作为新链路默认输入：
 
 - `quant/data_file/odb.db`
+- `quant/data_file/STOCK_DAILY_DATA.db`
+- `quant/data_file/model_predictions/MODEL_PREDICTIONS.db`
 - `quant/data_file/stock_factor_data.parquet`
 - `odb.db.stock_predict_data_*`
 - 未审批的 research-only manifest

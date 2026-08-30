@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+  "strategy_name": "????????",
+  "status": "production",
+  "validation_platform": "juejin",
+  "metrics": {
+    "annual_return": 3.4908,
+    "pnl_ratio": null,
+    "sharpe": 3.578,
+    "max_drawdown": 0.0418,
+    "win_ratio": 0.6955,
+    "open_count": 289,
+    "close_count": 289,
+    "calmar_ratio": null
+  },
+  "source_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\full_history_deepdrop_smallcap_refill.csv",
+  "source_log_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\backtests\\refill_mv45_deep82_basefirst_prodscore_slip0p0030.log",
+  "date_coverage": {
+    "signal_date_min": "20220811",
+    "signal_date_max": "20260703",
+    "buy_date_max": "20260706"
+  },
+  "signal_audit": {
+    "signal_rows": 314,
+    "signal_days": 208,
+    "buy_days": 208,
+    "latest_signal_rows": 3,
+    "duplicate_key_groups": 0,
+    "bj_rows": 0
+  },
+  "admission_note": "??????????? L5/L6 ??????????? 20260706 ????????",
+  "latest_signal_status": {
+    "schema_version": 1,
+    "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+    "status": "pending_buy_day_hard_gate",
+    "signal_date": "20260703",
+    "buy_date": "20260706",
+    "latest_signal_date": "20260703",
+    "latest_buy_date": "20260706",
+    "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\latest_signal_20260703_for_20260706.csv",
+    "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_deepdrop_smallcap_refill_v20260704_latest.csv",
+    "row_count": 3,
+    "stock_count": 3,
+    "duplicate_signal_stock_keys": 0,
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "l7_execution_allowed": false,
+    "note": "buy_day_market_not_available; L5 candidate signal only; L7 execution is blocked.",
+    "audit": {
+      "universe_count": 3287,
+      "base_selected": 3,
+      "refill_selected": 0,
+      "target_topn": 3,
+      "actual_rows": 3,
+      "shortage": 0,
+      "signal_day_rejects": {
+        "after_l4_join_and_signal_day_filters": 3287,
+        "bj_rows_after_l4_join": 0
+      },
+      "full_history_update": {
+        "before_rows": 314,
+        "after_rows": 314,
+        "signal_days": 208,
+        "buy_days": 208,
+        "full_history": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\full_history_deepdrop_smallcap_refill.csv"
+      }
+    }
+  },
+  "validation_evidence": {
+    "full_backtest_log": "backtests/refill_mv45_deep82_basefirst_prodscore_slip0p0030.log",
+    "slice_summary": "backtests/slice_refill_mv45_basefirst_slip0p0030_summary.csv",
+    "contribution": "backtests/refill_mv45_basefirst_contribution_20260704.json",
+    "neighborhood": "backtests/refined_refill_basefirst_prodscore_slip0p0030_summary.csv",
+    "report": "refined_optimization_validation_20260704.md"
+  }
+}

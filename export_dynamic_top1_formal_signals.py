@@ -4,11 +4,20 @@ import argparse
 import csv
 import json
 import math
-import sqlite3
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from prediction_manifest import load_prediction_source_manifest
+import duckdb
+from adjustment_semantics import (
+    MARKET_FIELD_SCHEMA_KIND_STRATEGY,
+    same_adjustment_semantics,
+    same_market_field_semantics,
+    validate_strategy_output_field_names,
+    validate_adjustment_semantics,
+    validate_market_field_semantics,
+)
+from prediction_manifest import load_prediction_source_manifest, resolve_market_db_path
 from project_paths import resolve_project_path
 
 
@@ -33,6 +42,12 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _validate_strategy_output_rows(rows: list[dict[str, Any]], *, context: str) -> None:
+    if not rows:
+        return
+    validate_strategy_output_field_names(rows[0].keys(), context=context)
 
 
 def _quote_ident(value: str) -> str:
@@ -71,6 +86,13 @@ def _to_gm_symbol(stock_code: str) -> str:
     if code.startswith(("8", "4")):
         return f"BJSE.{code[:6]}"
     return f"SZSE.{code[:6]}"
+
+
+def _format_optional_ratio(value: Any) -> str:
+    number = _as_float(value)
+    if number is None:
+        return ""
+    return f"{float(number):.5f}"
 
 
 def _is_bj(stock_code: str) -> bool:
@@ -125,11 +147,16 @@ def _load_manifest(path_str: str) -> dict[str, Any]:
         require_approved=True,
         allow_legacy=False,
     )
+    if source["source_type"] != "duckdb_table":
+        raise ValueError(f"formal prediction manifest must be duckdb_table, got {source['source_type']}")
     return {
         "manifest_path": source["manifest_path"],
+        "source_type": source["source_type"],
         "db_path": source["db_path"],
         "table": source["table"],
         "market_db_path": source["market_db_path"],
+        "adjustment_semantics": source.get("adjustment_semantics"),
+        "market_field_semantics": source.get("market_field_semantics"),
     }
 
 
@@ -137,24 +164,69 @@ def _load_strategy(strategy_dir: Path) -> tuple[dict[str, Any], dict[str, Any], 
     manifest = _load_json(strategy_dir / "strategy_manifest.json")
     rules = _load_json(strategy_dir / "trading_rules.json")
     contract = manifest["input_contract"]
+    contract_adjustment_semantics = validate_adjustment_semantics(
+        contract.get("adjustment_semantics"),
+        context="strategy_manifest.input_contract",
+    )
+    contract_market_field_semantics = validate_market_field_semantics(
+        contract.get("market_field_semantics"),
+        context="strategy_manifest.input_contract",
+        expected_schema_kind=MARKET_FIELD_SCHEMA_KIND_STRATEGY,
+    )
     sources = {
         "3d": _load_manifest(contract["formal_manifest_3d"]),
         "5d": _load_manifest(contract["formal_manifest_5d"]),
         "10d": _load_manifest(contract["formal_manifest_10d"]),
     }
+    for label, source in sources.items():
+        if not same_adjustment_semantics(contract_adjustment_semantics, source.get("adjustment_semantics")):
+            raise RuntimeError(
+                f"{label} manifest adjustment_semantics does not match strategy input contract"
+            )
+        if not same_market_field_semantics(
+            contract_market_field_semantics,
+            source.get("market_field_semantics"),
+            expected_schema_kind=MARKET_FIELD_SCHEMA_KIND_STRATEGY,
+        ):
+            raise RuntimeError(
+                f"{label} manifest market_field_semantics does not match strategy input contract"
+            )
     return manifest, rules, sources
+
+
+def _connect_readonly(db_path: Path, source_type: str):
+    if source_type != "duckdb_table" or db_path.suffix.lower() != ".duckdb":
+        raise ValueError(f"DuckDB-only source required, got {source_type} at {db_path}")
+    return duckdb.connect(str(db_path), read_only=True)
+
+
+def _fetch_scalar(db_path: Path, source_type: str, sql: str, params: Iterable[Any] | None = None) -> Any:
+    conn = _connect_readonly(db_path, source_type)
+    try:
+        row = conn.execute(sql, list(params or [])).fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def _fetch_rows(db_path: Path, source_type: str, sql: str, params: Iterable[Any] | None = None) -> list[dict[str, Any]]:
+    conn = _connect_readonly(db_path, source_type)
+    try:
+        cursor = conn.execute(sql, list(params or []))
+        columns = [str(item[0]) for item in cursor.description]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+    finally:
+        conn.close()
 
 
 def _common_latest_trade_date(sources: dict[str, dict[str, Any]]) -> str:
     latest_dates: list[str] = []
     for item in sources.values():
-        conn = sqlite3.connect(str(item["db_path"]))
-        try:
-            latest = conn.execute(
-                f"SELECT MAX(trade_date) FROM {_quote_ident(item['table'])}"
-            ).fetchone()[0]
-        finally:
-            conn.close()
+        latest = _fetch_scalar(
+            Path(str(item["db_path"])),
+            str(item["source_type"]),
+            f"SELECT MAX(trade_date) FROM {_quote_ident(item['table'])}",
+        )
         if not latest:
             raise RuntimeError(f"prediction table has no trade_date: {item['table']}")
         latest_dates.append(str(latest))
@@ -162,40 +234,109 @@ def _common_latest_trade_date(sources: dict[str, dict[str, Any]]) -> str:
 
 
 def _next_trade_date(market_db: Path, signal_date: str) -> tuple[str | None, str]:
-    conn = sqlite3.connect(str(market_db))
-    try:
-        latest_market_date = str(conn.execute("SELECT MAX(trade_date) FROM STOCK_DAILY_DATA").fetchone()[0] or "")
-        next_row = conn.execute(
-            """
-            SELECT MIN(trade_date)
-            FROM STOCK_DAILY_DATA
-            WHERE trade_date > ?
-            """,
-            (str(signal_date),),
-        ).fetchone()[0]
-    finally:
-        conn.close()
+    market_source_type = "duckdb_table"
+    latest_market_date = str(
+        _fetch_scalar(
+            market_db,
+            market_source_type,
+            "SELECT MAX(trade_date) FROM STOCK_DAILY_DATA",
+        )
+        or ""
+    )
+    next_row = _fetch_scalar(
+        market_db,
+        market_source_type,
+        """
+        SELECT MIN(trade_date)
+        FROM STOCK_DAILY_DATA
+        WHERE trade_date > ?
+        """,
+        [str(signal_date)],
+    )
     return (str(next_row) if next_row else None), latest_market_date
 
 
 def _load_buy_day_market_row(market_db: Path, buy_date: str | None, stock_code: str) -> dict[str, Any] | None:
     if not buy_date:
         return None
-    conn = sqlite3.connect(str(market_db))
-    conn.row_factory = sqlite3.Row
-    try:
-        row = conn.execute(
-            """
-            SELECT trade_date, stock_code, name, pre_close, open, close, limit_times,
-                   ST_TYPE AS st_type, ST_TYPE_name AS st_type_name
-            FROM STOCK_DAILY_DATA
-            WHERE trade_date = ? AND stock_code = ?
-            """,
-            (str(buy_date), str(stock_code)),
-        ).fetchone()
-        return dict(row) if row else None
-    finally:
-        conn.close()
+    market_source_type = "duckdb_table" if market_db.suffix.lower() == ".duckdb" else "sqlite_table"
+    rows = _fetch_rows(
+        market_db,
+        market_source_type,
+        """
+        SELECT trade_date, stock_code, name, pre_close, open, close, limit_times,
+               ST_TYPE AS st_type, ST_TYPE_name AS st_type_name
+        FROM STOCK_DAILY_DATA
+        WHERE trade_date = ? AND stock_code = ?
+        """,
+        [str(buy_date), str(stock_code)],
+    )
+    return rows[0] if rows else None
+
+
+def _percent_rank_map(rows: list[dict[str, Any]], field: str) -> dict[str, float]:
+    if not rows:
+        return {}
+    pairs = []
+    for row in rows:
+        value = _as_float(row.get(field))
+        if value is None:
+            continue
+        pairs.append((str(row.get("stock_code") or ""), value))
+    if not pairs:
+        return {}
+    pairs.sort(key=lambda item: item[1])
+    count = len(pairs)
+    if count == 1:
+        return {pairs[0][0]: 0.0}
+    first_rank_by_value: dict[float, int] = {}
+    for index, (_, value) in enumerate(pairs, start=1):
+        first_rank_by_value.setdefault(value, index)
+    return {
+        stock_code: (first_rank_by_value[value] - 1) / (count - 1)
+        for stock_code, value in pairs
+    }
+
+
+def _load_prediction_rows(source: dict[str, Any], signal_date: str) -> list[dict[str, Any]]:
+    return _fetch_rows(
+        Path(str(source["db_path"])),
+        str(source["source_type"]),
+        f"""
+        SELECT trade_date, stock_code, pred_prob
+        FROM {_quote_ident(source['table'])}
+        WHERE trade_date = ?
+        """,
+        [str(signal_date)],
+    )
+
+
+def _load_market_rows_for_date(market_db: Path, signal_date: str) -> dict[str, dict[str, Any]]:
+    market_source_type = "duckdb_table" if market_db.suffix.lower() == ".duckdb" else "sqlite_table"
+    rows = _fetch_rows(
+        market_db,
+        market_source_type,
+        """
+        SELECT
+            trade_date,
+            stock_code,
+            name,
+            pre_close,
+            open,
+            close,
+            amount,
+            turnover_rate,
+            total_mv,
+            atr_qfq,
+            limit_times,
+            ST_TYPE AS st_type,
+            ST_TYPE_name AS st_type_name
+        FROM STOCK_DAILY_DATA
+        WHERE trade_date = ?
+        """,
+        [str(signal_date)],
+    )
+    return {str(row.get("stock_code") or ""): row for row in rows}
 
 
 def _build_candidates(
@@ -205,48 +346,48 @@ def _build_candidates(
     market_db: Path,
     signal_date: str,
 ) -> list[dict[str, Any]]:
-    conn = sqlite3.connect(str(source_10d["db_path"]))
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.execute("ATTACH DATABASE ? AS pred3d", (str(source_3d["db_path"]),))
-        conn.execute("ATTACH DATABASE ? AS pred5d", (str(source_5d["db_path"]),))
-        conn.execute("ATTACH DATABASE ? AS market", (str(market_db),))
-        rows = conn.execute(
-            f"""
-            SELECT
-                t10.trade_date,
-                t10.stock_code,
-                t3.pred_prob AS pred_3d,
-                t5.pred_prob AS pred_5d,
-                t10.pred_prob AS pred_10d,
-                PERCENT_RANK() OVER (PARTITION BY t10.trade_date ORDER BY t3.pred_prob) AS rank_3d,
-                PERCENT_RANK() OVER (PARTITION BY t10.trade_date ORDER BY t5.pred_prob) AS rank_5d,
-                PERCENT_RANK() OVER (PARTITION BY t10.trade_date ORDER BY t10.pred_prob) AS rank_10d,
-                m.name,
-                m.pre_close,
-                m.open,
-                m.close,
-                m.amount,
-                m.turnover_rate,
-                m.total_mv,
-                m.atr_qfq,
-                m.limit_times,
-                m.ST_TYPE AS st_type,
-                m.ST_TYPE_name AS st_type_name
-            FROM {_quote_ident(source_10d['table'])} t10
-            JOIN pred5d.{_quote_ident(source_5d['table'])} t5
-              ON t10.trade_date = t5.trade_date AND t10.stock_code = t5.stock_code
-            JOIN pred3d.{_quote_ident(source_3d['table'])} t3
-              ON t10.trade_date = t3.trade_date AND t10.stock_code = t3.stock_code
-            LEFT JOIN market.STOCK_DAILY_DATA m
-              ON t10.trade_date = m.trade_date AND t10.stock_code = m.stock_code
-            WHERE t10.trade_date = ?
-            """,
-            (str(signal_date),),
-        ).fetchall()
-    finally:
-        conn.close()
-    return [dict(row) for row in rows]
+    rows_3d = _load_prediction_rows(source_3d, signal_date)
+    rows_5d = _load_prediction_rows(source_5d, signal_date)
+    rows_10d = _load_prediction_rows(source_10d, signal_date)
+    by_3d = {str(row.get("stock_code") or ""): row for row in rows_3d}
+    by_5d = {str(row.get("stock_code") or ""): row for row in rows_5d}
+    by_10d = {str(row.get("stock_code") or ""): row for row in rows_10d}
+    market_rows = _load_market_rows_for_date(market_db, signal_date)
+    rank_3d = _percent_rank_map(rows_3d, "pred_prob")
+    rank_5d = _percent_rank_map(rows_5d, "pred_prob")
+    rank_10d = _percent_rank_map(rows_10d, "pred_prob")
+
+    candidates: list[dict[str, Any]] = []
+    common_codes = sorted(set(by_3d) & set(by_5d) & set(by_10d))
+    for stock_code in common_codes:
+        pred3 = by_3d[stock_code]
+        pred5 = by_5d[stock_code]
+        pred10 = by_10d[stock_code]
+        market = market_rows.get(stock_code, {})
+        candidates.append(
+            {
+                "trade_date": str(pred10.get("trade_date") or signal_date),
+                "stock_code": stock_code,
+                "pred_3d": pred3.get("pred_prob"),
+                "pred_5d": pred5.get("pred_prob"),
+                "pred_10d": pred10.get("pred_prob"),
+                "rank_3d": rank_3d.get(stock_code, 0.0),
+                "rank_5d": rank_5d.get(stock_code, 0.0),
+                "rank_10d": rank_10d.get(stock_code, 0.0),
+                "name": market.get("name"),
+                "pre_close": market.get("pre_close"),
+                "open": market.get("open"),
+                "close": market.get("close"),
+                "amount": market.get("amount"),
+                "turnover_rate": market.get("turnover_rate"),
+                "total_mv": market.get("total_mv"),
+                "atr_qfq": market.get("atr_qfq"),
+                "limit_times": market.get("limit_times"),
+                "st_type": market.get("st_type"),
+                "st_type_name": market.get("st_type_name"),
+            }
+        )
+    return candidates
 
 
 def _apply_filters(rows: list[dict[str, Any]], rules: dict[str, Any]) -> list[dict[str, Any]]:
@@ -325,8 +466,8 @@ def _build_signal_row(
         "score_exit_entry_ratio": f"{float(holding['score_exit_entry_ratio']):.5f}",
         "min_holding_days_before_score_exit": int(holding["min_holding_days_before_score_exit"]),
         "score_continue_entry_ratio": f"{float(holding['score_continue_entry_ratio']):.5f}",
-        "signal_stop_loss_pct": f"{float(risk['intraday_stop_loss_pct']):.5f}",
-        "signal_take_profit_pct": f"{float(risk['take_profit_pct']):.5f}",
+        "signal_stop_loss_pct": _format_optional_ratio(risk.get("intraday_stop_loss_pct")),
+        "signal_take_profit_pct": _format_optional_ratio(risk.get("take_profit_pct")),
         "strategy_variant": manifest["strategy_id"],
         "filter_name": rules["selection_rule"]["filter_name"],
         "entry_weight_name": rules["model_input"]["weight_name"],
@@ -347,7 +488,11 @@ def export_signals(
     buy_date: str | None = None,
 ) -> dict[str, Any]:
     manifest, rules, sources = _load_strategy(strategy_dir)
-    market_db = Path(str(resolve_project_path(manifest["input_contract"]["market_db_path"])))
+    market_source = sources["10d"]
+    market_db = resolve_market_db_path(
+        market_source,
+        manifest.get("input_contract", {}).get("market_db_path"),
+    )
     actual_signal_date = str(signal_date or _common_latest_trade_date(sources))
     auto_buy_date, latest_market_date = _next_trade_date(market_db, actual_signal_date)
     actual_buy_date = str(buy_date or auto_buy_date or "")
@@ -389,6 +534,7 @@ def export_signals(
         latest_market_date,
     )
     rows = [row]
+    _validate_strategy_output_rows(rows, context="export_dynamic_top1_formal_signals.output_rows")
     _write_csv(output, rows)
 
     status = {

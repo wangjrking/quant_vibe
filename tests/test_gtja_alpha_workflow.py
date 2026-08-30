@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 
 from data_process_module import get_factor_data
-from gtja_alpha_workflow import audit_gtja_rank_scope, compute_gtja_alpha_from_raw_factor, write_gtja_rank_audit
+from gtja_alpha_workflow import (
+    audit_gtja_rank_scope,
+    compute_gtja_alpha_from_raw_factor,
+    required_gtja_raw_columns,
+    write_gtja_rank_audit,
+)
 
 
 class GtjaAlphaWorkflowTests(unittest.TestCase):
@@ -190,6 +195,61 @@ class GtjaAlphaWorkflowTests(unittest.TestCase):
         alpha030_last = result.loc[result["trade_date"].eq(last_date), "gtja_alpha030"]
 
         self.assertGreater(int(alpha030_last.notna().sum()), 0)
+
+    def test_compute_gtja_alpha_from_raw_factor_output_dates_limits_projection_only(self):
+        raw = self._build_raw_panel()
+        last_date = raw["trade_date"].max()
+
+        result = compute_gtja_alpha_from_raw_factor(
+            raw,
+            encode=False,
+            drop_ts=True,
+            output_dates=[last_date],
+        )
+
+        self.assertEqual(sorted(result["trade_date"].astype(str).unique().tolist()), [last_date])
+        actual = result.loc[result["trade_date"].eq(last_date), ["stock_code", "gtja_alpha191"]].set_index("stock_code")[
+            "gtja_alpha191"
+        ]
+        expected = self._alpha191_expected(raw)
+        pd.testing.assert_series_equal(actual.sort_index(), expected.sort_index(), check_names=False, atol=1e-10, rtol=1e-10)
+
+    def test_required_gtja_raw_columns_requires_explicit_qfq_market_inputs(self):
+        columns = required_gtja_raw_columns()
+
+        for base_name in ("open", "high", "low", "close", "pre_close"):
+            self.assertNotIn(base_name, columns)
+            self.assertIn(f"{base_name}_qfq", columns)
+
+    def test_compute_gtja_alpha_from_raw_factor_accepts_explicit_qfq_market_inputs(self):
+        raw = self._build_raw_panel().rename(
+            columns={
+                "open": "open_qfq",
+                "high": "high_qfq",
+                "low": "low_qfq",
+                "close": "close_qfq",
+                "pre_close": "pre_close_qfq",
+            }
+        )
+
+        result = compute_gtja_alpha_from_raw_factor(raw, encode=False, drop_ts=True)
+        last_date = raw["trade_date"].max()
+        actual = result.loc[result["trade_date"].eq(last_date), ["stock_code", "gtja_alpha191"]].set_index("stock_code")[
+            "gtja_alpha191"
+        ]
+        expected = self._alpha191_expected(
+            raw.rename(
+                columns={
+                    "open_qfq": "open",
+                    "high_qfq": "high",
+                    "low_qfq": "low",
+                    "close_qfq": "close",
+                    "pre_close_qfq": "pre_close",
+                }
+            )
+        )
+
+        pd.testing.assert_series_equal(actual.sort_index(), expected.sort_index(), check_names=False, atol=1e-10, rtol=1e-10)
 
     def test_governance_doc_marks_alpha030_ff3_inputs_as_project_level_exception(self):
         agents_doc = Path(__file__).resolve().parents[1] / "AGENTS.md"

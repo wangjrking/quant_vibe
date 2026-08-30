@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+  "status": "production",
+  "validation_platform": "juejin",
+  "metrics": {
+    "annual_return": 1.1414,
+    "pnl_ratio": 4.6313,
+    "sharpe": 0.786,
+    "max_drawdown": 0.3585,
+    "recent120_annual": 0.1053,
+    "recent60_annual": 0.0949
+  },
+  "stress_metrics_sell_0p25": {
+    "annual_return": 1.0973,
+    "pnl_ratio": 4.4523,
+    "sharpe": 0.77,
+    "max_drawdown": 0.3643,
+    "recent120_annual": 0.0407,
+    "recent60_annual": 0.0827
+  },
+  "low_path_dependency": {
+    "summary_rows": [
+      {
+        "anchor": "20240102",
+        "starts": "7",
+        "annual_min": "0.09731745461353469",
+        "annual_median": "0.10672513354941393",
+        "annual_max": "0.1115354511219484",
+        "sharpe_min": "0.47176252440234456",
+        "max_drawdown_max": "0.3335543341798174",
+        "pass_gt_0_all_starts": "True"
+      },
+      {
+        "anchor": "20250102",
+        "starts": "7",
+        "annual_min": "0.3457229897554299",
+        "annual_median": "0.3872015530971107",
+        "annual_max": "0.4066831822241157",
+        "sharpe_min": "1.2062131558040496",
+        "max_drawdown_max": "0.23531036999240285",
+        "pass_gt_0_all_starts": "True"
+      },
+      {
+        "anchor": "20250701",
+        "starts": "7",
+        "annual_min": "0.003530357251319005",
+        "annual_median": "0.02277555894005001",
+        "annual_max": "0.03628762854750511",
+        "sharpe_min": "0.12108020347622499",
+        "max_drawdown_max": "0.21149658829912843",
+        "pass_gt_0_all_starts": "True"
+      },
+      {
+        "anchor": "20251009",
+        "starts": "7",
+        "annual_min": "0.07136868702516641",
+        "annual_median": "0.09731504539727576",
+        "annual_max": "0.1911715215008738",
+        "sharpe_min": "0.41364356298840627",
+        "max_drawdown_max": "0.15277514873826725",
+        "pass_gt_0_all_starts": "True"
+      },
+      {
+        "anchor": "20260105",
+        "starts": "7",
+        "annual_min": "0.19323683477036724",
+        "annual_median": "0.25352411256949114",
+        "annual_max": "0.3734050722386342",
+        "sharpe_min": "0.736055207635612",
+        "max_drawdown_max": "0.17116312615245854",
+        "pass_gt_0_all_starts": "True"
+      }
+    ],
+    "all_starts_positive": true,
+    "weakness_note": "2025-07-01 anchor minimum annual return is about 0.35%; formally positive but weak."
+  },
+  "hard_gate_audit": {
+    "case_key": "w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60",
+    "signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_adaptive70w_fouryear_strict_neighbor_20260629\\signals\\w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60.csv",
+    "market_db": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\STOCK_DAILY_DATA.db",
+    "signal_rows": 985,
+    "signal_days": 985,
+    "buy_days": 984,
+    "min_signal_date": "20220606",
+    "max_signal_date": "20260626",
+    "min_buy_date": "20220607",
+    "max_buy_date": "20260626",
+    "issue_count": 0,
+    "missing_signal_market_count": 0,
+    "missing_buy_market_count": 0,
+    "bj_board_count": 0,
+    "st_count": 0,
+    "delist_count": 0,
+    "buy_open_limit_up_count": 0,
+    "passed": true,
+    "issue_examples": []
+  },
+  "style_concentration_audit": {
+    "case_key": "w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60",
+    "signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_adaptive70w_fouryear_strict_neighbor_20260629\\signals\\w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60.csv",
+    "log_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_adaptive70w_fouryear_pos60_ddrisk_20260629\\logs\\w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60__dd_loose__sell0p0__full.log",
+    "signal_rows": 985,
+    "missing_market_rows": 0,
+    "trade_count_parsed": 329,
+    "parsed_trade_total_pnl": 132567.4062962871,
+    "top_stock_contribution": [
+      {
+        "key": "601328.SH",
+        "pnl": 474625.78585375834,
+        "count": 2
+      },
+      {
+        "key": "002693.SZ",
+        "pnl": 458137.96548195253,
+        "count": 3
+      },
+      {
+        "key": "603773.SH",
+        "pnl": 334778.91424819914,
+        "count": 1
+      },
+      {
+        "key": "002575.SZ",
+        "pnl": 321695.77962653,
+        "count": 1
+      },
+      {
+        "key": "002636.SZ",
+        "pnl": 225776.71278087408,
+        "count": 1
+      },
+      {
+        "key": "000572.SZ",
+        "pnl": 203448.3980480006,
+        "count": 1
+      },
+      {
+        "key": "600579.SH",
+        "pnl": 195329.69083621312,
+        "count": 2
+      },
+      {
+        "key": "603998.SH",
+        "pnl": 186683.2782801781,
+        "count": 1
+      },
+      {
+        "key": "301487.SZ",
+        "pnl": 161087.87621683482,
+        "count": 1
+      },
+      {
+        "key": "002584.SZ",
+        "pnl": 150346.15931339888,
+        "count": 1
+      }
+    ],
+    "top_month_contribution": [
+      {
+        "key": "202602",
+        "pnl": 573711.7732460683,
+        "count": 9
+      },
+      {
+        "key": "202606",
+        "pnl": 418454.1103492721,
+        "count": 7
+      },
+      {
+        "key": "202504",
+        "pnl": 352023.94410965685,
+        "count": 4
+      },
+      {
+        "key": "202501",
+        "pnl": 258928.51646927441,
+        "count": 3
+      },
+      {
+        "key": "202503",
+        "pnl": 191331.91574056004,
+        "count": 6
+      },
+      {
+        "key": "202408",
+        "pnl": 190608.29084526855,
+        "count": 4
+      },
+      {
+        "key": "202411",
+        "pnl": 173814.92187076152,
+        "count": 8
+      },
+      {
+        "key": "202601",
+        "pnl": 166511.91814995467,
+        "count": 8
+      },
+      {
+        "key": "202410",
+        "pnl": 142670.1971774486,
+        "count": 9
+      },
+      {
+        "key": "202307",
+        "pnl": 140113.21907968016,
+        "count": 9
+      }
+    ],
+    "top_1pct_trade_count": 3,
+    "top_1pct_pnl": 1017046.3263335293,
+    "top_1pct_pnl_share": 7.6719184205840065,
+    "style_counts": {
+      "amount": {
+        "30-60w": 270,
+        "60-100w": 97,
+        ">=100w": 81,
+        "15-30w": 537
+      },
+      "total_mv": {
+        ">=800e": 217,
+        "30-80e": 314,
+        "80-200e": 234,
+        "200-800e": 220
+      },
+      "atr_qfq": {
+        "2-4%": 212,
+        "<2%": 41,
+        "missing": 536,
+        ">=10%": 138,
+        "4-6%": 34,
+        "6-10%": 24
+      },
+      "close": {
+        "<10": 595,
+        "10-30": 194,
+        "30-60": 140,
+        "60-100": 43,
+        "100-150": 13
+      },
+      "turnover": {
+        "1-3%": 216,
+        "<1%": 317,
+        ">=10%": 89,
+        "3-6%": 229,
+        "6-10%": 134
+      }
+    }
+  },
+  "latest_signal_status": {
+    "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+    "status": "hard_gate_complete",
+    "signal_date": "20260626",
+    "buy_date": "",
+    "latest_market_date": "20260626",
+    "buy_day_market_available": true,
+    "buy_day_hard_gate_complete": true,
+    "candidate_count_after_filters": null,
+    "selected_stock_code": "300420.SZ",
+    "selected_symbol": "SZSE.300420",
+    "selected_name": "五洋自控",
+    "target_pct": "0.60000",
+    "published_at": "2026-06-29T08:05:14+08:00",
+    "note": "Status is aligned to latest signal row hard-gate fields. buy_date may be empty when the signal source did not encode the next market date."
+  },
+  "residual_risks": [
+    "Sharpe is below 1 and max drawdown is about 36%.",
+    "2025-07 nearby cold-start floor is weak.",
+    "Style audit shows low-price and lower-liquidity exposure plus many missing ATR buckets in signal rows.",
+    "Latest signal buy_date is empty; pre-trade hard gate and realtime limit-up check remain required."
+  ]
+}

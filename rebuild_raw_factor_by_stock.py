@@ -10,9 +10,6 @@ import pandas as pd
 
 from data_process_module import group_factor_eng
 from rebuild_factor_data_batched import _chunks, _load_batch, _normalize_types, _stock_codes
-from stock_daily_data_route import resolve_stock_daily_db_path
-
-
 def _try_acquire_lock(lock_path: Path, *, stale_seconds: int | None = None) -> bool:
     if stale_seconds is not None and lock_path.exists():
         age = time.time() - lock_path.stat().st_mtime
@@ -38,10 +35,9 @@ def rebuild_raw_factor_parts(
     use_locks: bool = False,
     lock_stale_minutes: int = 360,
 ) -> Path:
-    db_path = resolve_stock_daily_db_path(data_dir=data_dir)
     part_dir = output_dir or data_dir / "raw_factor_by_stock_parts"
     part_dir.mkdir(parents=True, exist_ok=True)
-    codes = _stock_codes(db_path)
+    codes = _stock_codes(data_dir=data_dir)
     print(f"raw_factor_start stocks={len(codes)} batch_size={batch_size} output_dir={part_dir}", flush=True)
 
     for batch_idx, batch_codes in _chunks(codes, batch_size):
@@ -71,7 +67,7 @@ def rebuild_raw_factor_parts(
                 f"raw_batch_start index={batch_idx} stocks={len(batch_codes)} first={batch_codes[0]} last={batch_codes[-1]}",
                 flush=True,
             )
-            integ = _load_batch(db_path, batch_codes)
+            integ = _load_batch(codes=batch_codes, data_dir=data_dir)
             frames = []
             for _, group in integ.groupby("stock_code", sort=False):
                 frames.append(group_factor_eng(group))

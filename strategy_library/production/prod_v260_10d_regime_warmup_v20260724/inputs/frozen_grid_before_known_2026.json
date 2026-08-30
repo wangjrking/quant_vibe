@@ -1,0 +1,90 @@
+{
+  "status": "entire_preregistered_grid_frozen_before_known_2026",
+  "known_2026_used_for_grid_definition": false,
+  "candidates": [
+    {
+      "case_id": "v260_2fb2f05dbcdc4367",
+      "definition": {
+        "min_hold_days": 4,
+        "max_hold_days": 20,
+        "sell_score_below": 0.85,
+        "replacement_advantage": 0.05,
+        "market_lookback": 10,
+        "market_return_min": 0.0,
+        "low_gross": 0.2,
+        "normal_target_pct": 0.25,
+        "weak_target_pct": 0.05,
+        "strong_target_pct": 0.375,
+        "smooth_window": 7,
+        "current_weight": 0.1,
+        "min_hold_policy": "strong_3_else_4",
+        "strong_return_min": 0.035,
+        "max_rank_deterioration": 0.1,
+        "max_positions": 16,
+        "warmup_lookback": 3,
+        "steady_lookback": 5,
+        "warmup_days": 50,
+        "weak_max_positions": 14,
+        "normal_max_positions": 15,
+        "strong_max_positions": 16,
+        "position_warmup_days": 30
+      }
+    },
+    {
+      "case_id": "v260_748bdb6520590687",
+      "definition": {
+        "min_hold_days": 4,
+        "max_hold_days": 20,
+        "sell_score_below": 0.85,
+        "replacement_advantage": 0.05,
+        "market_lookback": 10,
+        "market_return_min": 0.0,
+        "low_gross": 0.2,
+        "normal_target_pct": 0.25,
+        "weak_target_pct": 0.05,
+        "strong_target_pct": 0.375,
+        "smooth_window": 7,
+        "current_weight": 0.1,
+        "min_hold_policy": "strong_3_else_4",
+        "strong_return_min": 0.035,
+        "max_rank_deterioration": 0.1,
+        "max_positions": 16,
+        "warmup_lookback": 3,
+        "steady_lookback": 5,
+        "warmup_days": 50,
+        "weak_max_positions": 14,
+        "normal_max_positions": 15,
+        "strong_max_positions": 16,
+        "position_warmup_days": 50
+      }
+    },
+    {
+      "case_id": "v260_66169f3c16966373",
+      "definition": {
+        "min_hold_days": 4,
+        "max_hold_days": 20,
+        "sell_score_below": 0.85,
+        "replacement_advantage": 0.05,
+        "market_lookback": 10,
+        "market_return_min": 0.0,
+        "low_gross": 0.2,
+        "normal_target_pct": 0.25,
+        "weak_target_pct": 0.05,
+        "strong_target_pct": 0.375,
+        "smooth_window": 7,
+        "current_weight": 0.1,
+        "min_hold_policy": "strong_3_else_4",
+        "strong_return_min": 0.035,
+        "max_rank_deterioration": 0.1,
+        "max_positions": 16,
+        "warmup_lookback": 3,
+        "steady_lookback": 5,
+        "warmup_days": 50,
+        "weak_max_positions": 14,
+        "normal_max_positions": 15,
+        "strong_max_positions": 16,
+        "position_warmup_days": 70
+      }
+    }
+  ]
+}

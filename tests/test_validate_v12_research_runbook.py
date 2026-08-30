@@ -18,7 +18,7 @@ class ValidateV12ResearchRunbookTest(unittest.TestCase):
                 "standard_chain": {
                     "feature_input": str(root / "production_factor_parts"),
                     "label_input": str(root / "prediction_label_parts"),
-                    "prediction_db": str(root / "model_predictions" / "MODEL_PREDICTIONS.db"),
+                    "prediction_asset_root": str(root / "production_assets" / "duckdb"),
                 },
                 "entrypoints": {
                     "parallel_folds": str(entrypoint),
@@ -86,7 +86,7 @@ class ValidateV12ResearchRunbookTest(unittest.TestCase):
             "standard_chain": {
                 "feature_input": "quant/data_file/production_factor_parts/",
                 "label_input": "quant/data_file/prediction_label_parts/",
-                "prediction_db": "quant/data_file/model_predictions/MODEL_PREDICTIONS.db",
+                "prediction_asset_root": "quant/data_file/production_assets/duckdb/",
             },
             "entrypoints": {},
             "v12_execution_order": [
@@ -135,7 +135,7 @@ class ValidateV12ResearchRunbookTest(unittest.TestCase):
             "standard_chain": {
                 "feature_input": "quant/data_file/production_factor_parts/",
                 "label_input": "quant/data_file/prediction_label_parts/",
-                "prediction_db": "quant/data_file/model_predictions/MODEL_PREDICTIONS.db",
+                "prediction_asset_root": "quant/data_file/production_assets/duckdb/",
             },
             "entrypoints": {},
             "v12_execution_order": [

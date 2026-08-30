@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+  "strategy_name": "高收益回调补位",
+  "name": "高收益回调补位",
+  "status": "withdrawn_unreproducible",
+  "created_at": "2026-07-16",
+  "published_at": "2026-07-16",
+  "published_at_iso": "2026-07-16T08:23:20+08:00",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": false,
+  "production_published": false,
+  "withdrawn_at": "2026-07-21",
+  "withdrawal_reason": "P1 reproducibility audit failed; user selected withdrawal and no automatic fallback strategy.",
+  "current_reproducibility_passed": false,
+  "execution_allowed": false,
+  "formal_signal_generation_allowed": false,
+  "source_candidate": "frs_scale090_cap090_refresh",
+  "source_report_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_research_strategy_data_refresh_20260716",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\full_history_high_return_frs_scale090_cap090.csv",
+  "latest_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\latest_signal_20260717_for_20260720.csv",
+  "latest_signal_status": "withdrawn_strategy_p1",
+  "input_contract": {
+    "formal_manifest_1d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb",
+    "source_type": "duckdb_table",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false,
+    "active_universe_no_bj": true,
+    "market_field_semantics": {
+      "factor_model_fields": "qfq-derived fields must be explicitly marked, e.g. atr_qfq and model rank inputs.",
+      "execution_price_rule": "Trading execution, limit-up/down checks, and buy-day hard gate use raw unadjusted market open/pre_close, not qfq.",
+      "bare_price_field_policy": "Bare open/high/low/close/pre_close are raw execution prices only; never infer qfq."
+    }
+  },
+  "metrics": {
+    "pnl_ratio": 71.78887203236464,
+    "annual_return": 18.158654394880866,
+    "sharpe": 2.9894989987447596,
+    "max_drawdown": 0.07585417925647757,
+    "risk_ratio": 0.6007308620504238,
+    "win_ratio": 0.5630885122410546,
+    "open_count": 533,
+    "close_count": 531,
+    "win_count": 299,
+    "lose_count": 232,
+    "calmar_ratio": 239.38897728341325
+  },
+  "trading_rules_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\trading_rules.json",
+  "validation_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\validation.json",
+  "latest_signal_date": "20260717",
+  "latest_buy_date": "20260720",
+  "latest_signal_status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\latest_signal_20260717_for_20260720_status.json",
+  "style_exposure": {
+    "primary": "高弹性回调 + 低候选补位 + 高换手",
+    "secondary": [
+      "????",
+      "????",
+      "???",
+      "?????"
+    ],
+    "risk_notes": [
+      "High return but Sharpe lower than previous production.",
+      "Latest refreshed run has open_count > close_count, so most recent positions are not fully matured.",
+      "L7 execution is blocked until buy-day hard gate and trading-agent review."
+    ]
+  },
+  "current_signal": {
+    "latest_file": null,
+    "archive_latest_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\latest_signal_20260717_for_20260720.csv",
+    "signal_date": "20260717",
+    "buy_date": "20260720",
+    "latest_signal_date": "20260717",
+    "latest_buy_date": "20260720",
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "l7_execution_allowed": false,
+    "status": "withdrawn_strategy_p1"
+  },
+  "validation": {
+    "annual_return": 18.158654394880866,
+    "sharpe": 2.9894989987447596,
+    "max_drawdown": 0.07585417925647757,
+    "validation_platform": "juejin",
+    "status": "historical_snapshot_only",
+    "current_reproducibility_passed": false,
+    "current_metrics_display_allowed": false,
+    "note": "Historical fixed-signal snapshot only; withdrawn after P1 reproducibility audit and not eligible for current production display or execution."
+  }
+}

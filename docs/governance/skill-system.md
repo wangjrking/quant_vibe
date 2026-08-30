@@ -1,4 +1,4 @@
-# AGENT 入口与智能体内部技能治理说明
+﻿# AGENT 入口与智能体内部技能治理说明
 
 本文档定义本项目中 **AGENT 入口** 与 **智能体内部技能** 的关系，并明确不同类型规则应放在哪里。
 
@@ -44,7 +44,7 @@ architect-agent
 audit-agent
 data-ingestion-agent
 data-integration-agent
-data-warehouse-agent
+mcp-agent
 factor-agent
 model-agent
 strategy-agent

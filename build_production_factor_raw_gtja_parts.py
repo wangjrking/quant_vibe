@@ -11,6 +11,7 @@ import pyarrow.parquet as pq
 
 from build_production_factor_parts import KEY_COLUMNS, production_raw_columns
 from gtja_alpha_workflow import GTJA_ALPHA_COLUMNS, compute_gtja_alpha_from_raw_factor, required_gtja_raw_columns
+from l3_duckdb_sync import l3_duckdb_sync_enabled, sync_feature_parts_full_to_duckdb
 
 
 def build_production_raw_gtja_part(
@@ -107,6 +108,12 @@ def main(argv=None):
             gtja_input_columns,
             resume=not args.no_resume,
         )
+    if l3_duckdb_sync_enabled():
+        sync_result = sync_feature_parts_full_to_duckdb(
+            data_dir=None,
+            parts_dir=output_dir,
+        )
+        print(json.dumps({"duckdb_sync": sync_result}, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

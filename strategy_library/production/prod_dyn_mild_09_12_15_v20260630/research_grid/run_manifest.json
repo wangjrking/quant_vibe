@@ -1,0 +1,161 @@
+{
+  "manifests": {
+    "3d": {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+      "table": "stock_predict_data_model_agent_four_year_fullwindow_20260628_executable_3d_open_return_formal_candidate"
+    },
+    "5d": {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+      "table": "stock_predict_data_model_agent_four_year_fullwindow_20260628_executable_5d_open_return_formal_candidate"
+    },
+    "10d": {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+      "table": "stock_predict_data_model_agent_four_year_fullwindow_20260628_executable_10d_open_return_formal_candidate"
+    }
+  },
+  "entry": {
+    "name": "w72_23_05_amt150_mv30",
+    "w10d": 0.72,
+    "w5d": 0.23,
+    "w3d": 0.05,
+    "amount_min": 150000.0,
+    "total_mv_min": 300000.0,
+    "price_cap": 150.0
+  },
+  "top_cases": [
+    {
+      "name": "top3_pos25",
+      "topn": 3,
+      "max_positions": 3,
+      "target": 0.25
+    },
+    {
+      "name": "top3_pos20",
+      "topn": 3,
+      "max_positions": 3,
+      "target": 0.2
+    }
+  ],
+  "buy_rules": [
+    {
+      "name": "nocool",
+      "two_day_cap": null,
+      "combo_cap": null,
+      "turnover_floor": null
+    },
+    {
+      "name": "cool2d20",
+      "two_day_cap": 0.2,
+      "combo_cap": null,
+      "turnover_floor": null
+    },
+    {
+      "name": "cool2d18",
+      "two_day_cap": 0.18,
+      "combo_cap": null,
+      "turnover_floor": null
+    },
+    {
+      "name": "cool2d15_turn15",
+      "two_day_cap": null,
+      "combo_cap": 0.15,
+      "turnover_floor": 15.0
+    }
+  ],
+  "sell_rules": [
+    {
+      "name": "h3m5_e096_c097_min1",
+      "holding_days": 3,
+      "max_holding_days": 5,
+      "score_exit_ratio": 0.96,
+      "score_continue_ratio": 0.97,
+      "min_score_exit_days": 1,
+      "day_drop_ratio": null
+    },
+    {
+      "name": "h2m3_e097_c098_min1",
+      "holding_days": 2,
+      "max_holding_days": 3,
+      "score_exit_ratio": 0.97,
+      "score_continue_ratio": 0.98,
+      "min_score_exit_days": 1,
+      "day_drop_ratio": null
+    },
+    {
+      "name": "h1m2_e098_c099_min1",
+      "holding_days": 1,
+      "max_holding_days": 2,
+      "score_exit_ratio": 0.98,
+      "score_continue_ratio": 0.99,
+      "min_score_exit_days": 1,
+      "day_drop_ratio": null
+    },
+    {
+      "name": "h3m5_e096_c097_daydrop97",
+      "holding_days": 3,
+      "max_holding_days": 5,
+      "score_exit_ratio": 0.96,
+      "score_continue_ratio": 0.97,
+      "min_score_exit_days": 1,
+      "day_drop_ratio": 0.97
+    },
+    {
+      "name": "h2m3_e097_c098_daydrop97",
+      "holding_days": 2,
+      "max_holding_days": 3,
+      "score_exit_ratio": 0.97,
+      "score_continue_ratio": 0.98,
+      "min_score_exit_days": 1,
+      "day_drop_ratio": 0.97
+    },
+    {
+      "name": "h3m5_e096_c097_min2",
+      "holding_days": 3,
+      "max_holding_days": 5,
+      "score_exit_ratio": 0.96,
+      "score_continue_ratio": 0.97,
+      "min_score_exit_days": 2,
+      "day_drop_ratio": null
+    }
+  ],
+  "risk_modes": [
+    {
+      "name": "open_only_ddloose",
+      "intraday": "0",
+      "max_daily_sells": "0",
+      "dd_soft": "0.08",
+      "dd_hard": "0.14",
+      "dd_recover": "0.04",
+      "dd_soft_scale": "0.80",
+      "dd_hard_scale": "0.60"
+    },
+    {
+      "name": "intraday_ddloose",
+      "intraday": "1",
+      "max_daily_sells": "0",
+      "dd_soft": "0.08",
+      "dd_hard": "0.14",
+      "dd_recover": "0.04",
+      "dd_soft_scale": "0.80",
+      "dd_hard_scale": "0.60"
+    },
+    {
+      "name": "open_only_ddloose_maxsell1",
+      "intraday": "0",
+      "max_daily_sells": "1",
+      "dd_soft": "0.08",
+      "dd_hard": "0.14",
+      "dd_recover": "0.04",
+      "dd_soft_scale": "0.80",
+      "dd_hard_scale": "0.60"
+    }
+  ],
+  "slices": [
+    [
+      "full",
+      "2022-06-07 09:00:00",
+      "2026-06-29 15:30:00"
+    ]
+  ],
+  "note": "research-only frequency grid; no production parameter change"
+}

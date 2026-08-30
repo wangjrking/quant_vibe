@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "experiment_id": "forward_frequency_strategy_optimization_20260721",
+  "status": "preregistered_before_observation_result_access",
+  "created_at": "2026-07-21T02:15:00+08:00",
+  "research_boundary": {
+    "selection_data_max_date": "20251231",
+    "previous_2026_holdout_is_already_observed": true,
+    "previous_2026_holdout_must_not_be_used_for_selection": true,
+    "new_unseen_forward_start": "20260722",
+    "publication_allowed_before_new_forward_evidence": false
+  },
+  "objective": {
+    "annual_return_min": 5.0,
+    "sharpe_min": 4.0,
+    "max_drawdown_max": 0.4,
+    "selection_order": [
+      "forward_fold_min_sharpe_desc",
+      "forward_fold_median_sharpe_desc",
+      "development_annual_return_desc",
+      "development_max_drawdown_asc"
+    ],
+    "target_is_not_guaranteed": true
+  },
+  "input_contract": {
+    "manifests": {
+      "1d": "quant/main/config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+      "3d": "quant/main/config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+      "5d": "quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+      "10d": "quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+    },
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb",
+    "market_table": "STOCK_DAILY_DATA",
+    "require_approved_for_l5": true,
+    "require_duckdb_table": true,
+    "allow_legacy": false,
+    "allow_historical_signal_input": false,
+    "allow_research_prediction_input": false
+  },
+  "information_timing": {
+    "signal_time": "T close plus",
+    "execution_time": "T plus 1 open",
+    "signal_features": "formal L4 scores and L2 fields available by T close only",
+    "buy_open_gate": "raw open and pre_close only at T plus 1 execution",
+    "next_open_return": "offline observation label only",
+    "factor_price_semantics": "explicit qfq technical fields only",
+    "execution_price_semantics": "unadjusted raw open and pre_close",
+    "t_plus_one_required": true,
+    "intraday_risk_sell_allowed": false
+  },
+  "universe": {
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "exclude_suspended": true,
+    "skip_open_limit_up_buy": true,
+    "industry_filter": false,
+    "month_or_date_filter": false
+  },
+  "walk_forward": {
+    "entry_screen_stage_1": ["20220606", "20231229"],
+    "entry_screen_stage_2": ["20240102", "20241231"],
+    "entry_screen_stage_3": ["20250102", "20251231"],
+    "final_holdout": ["20260722", null],
+    "holdout_locked_until_finalists_frozen": true,
+    "final_holdout_currently_available": false,
+    "entry_promote_counts": [24, 12, 8],
+    "juejin_promote_counts": [16, 8, 3]
+  },
+  "entry_grid": {
+    "blends": {
+      "w10_100": {"1d": 0.0, "3d": 0.0, "5d": 0.0, "10d": 1.0},
+      "w5_25_10_75": {"1d": 0.0, "3d": 0.0, "5d": 0.25, "10d": 0.75},
+      "w3_15_5_25_10_60": {"1d": 0.0, "3d": 0.15, "5d": 0.25, "10d": 0.60}
+    },
+    "top_n": [3, 5],
+    "blend_rank_min": [0.95, 0.98],
+    "cross_horizon_gate": [
+      {"name": "none", "rank_10d_min": 0.0, "rank_5d_min": 0.0},
+      {"name": "support_5d10d", "rank_10d_min": 0.90, "rank_5d_min": 0.70}
+    ],
+    "amount_min": [90000.0, 150000.0],
+    "total_mv_min": [200000.0, 500000.0],
+    "market_regime": [
+      {"name": "none", "breadth_up_min": 0.0, "market_mean_pct_min": -100.0}
+    ],
+    "signal_pct_band": [
+      {"name": "all", "min": -100.0, "max": 100.0}
+    ],
+    "buy_open_gate": [
+      {"name": "limit_only", "reject_below": -100.0, "reject_above": 100.0, "scale_above": 100.0, "high_scale": 1.0},
+      {"name": "band_m8_p5", "reject_below": -8.0, "reject_above": 5.0, "scale_above": 5.0, "high_scale": 0.0}
+    ]
+  },
+  "exit_grid": [
+    {"name": "h1_3_e0_b1s1", "min_hold": 1, "max_hold": 3, "replace_edge": 0.00, "max_daily_buys": 1, "max_daily_sells": 1},
+    {"name": "h1_3_e2_b3s3", "min_hold": 1, "max_hold": 3, "replace_edge": 0.02, "max_daily_buys": 3, "max_daily_sells": 3},
+    {"name": "h2_5_e0_b1s1", "min_hold": 2, "max_hold": 5, "replace_edge": 0.00, "max_daily_buys": 1, "max_daily_sells": 1},
+    {"name": "h2_5_e2_b2s2", "min_hold": 2, "max_hold": 5, "replace_edge": 0.02, "max_daily_buys": 2, "max_daily_sells": 2},
+    {"name": "h2_5_e5_b3s3", "min_hold": 2, "max_hold": 5, "replace_edge": 0.05, "max_daily_buys": 3, "max_daily_sells": 3},
+    {"name": "h3_7_e0_b1s1", "min_hold": 3, "max_hold": 7, "replace_edge": 0.00, "max_daily_buys": 1, "max_daily_sells": 1},
+    {"name": "h3_7_e2_b2s2", "min_hold": 3, "max_hold": 7, "replace_edge": 0.02, "max_daily_buys": 2, "max_daily_sells": 2},
+    {"name": "h3_7_e5_b3s3", "min_hold": 3, "max_hold": 7, "replace_edge": 0.05, "max_daily_buys": 3, "max_daily_sells": 3}
+  ],
+  "position_caps": [0.6, 0.9],
+  "max_positions": 5,
+  "strategy_target_position_ceiling": 1.0,
+  "execution_cost": {
+    "juejin_primary_one_side_slippage": 0.003,
+    "juejin_stress_one_side_slippage": 0.004,
+    "backtest_adjust": "none",
+    "initial_cash": 600000
+  },
+  "local_screen": {
+    "round_trip_cost_proxy": 0.006,
+    "evaluation_return_column": "next_open_return_raw",
+    "evaluation_horizon_trade_days": 1,
+    "minimum_buy_days_per_full_year": 100,
+    "minimum_average_names_per_buy_day": 0.8,
+    "forbid_2026_selection_access": true
+  },
+  "reproducibility": {
+    "random_seed": 20260725,
+    "deterministic_tie_break": "stock_code ascending",
+    "freeze_script_config_and_base_module_hash_before_screen": true,
+    "preserve_all_candidates": true,
+    "preserve_failed_runs": true
+  }
+}

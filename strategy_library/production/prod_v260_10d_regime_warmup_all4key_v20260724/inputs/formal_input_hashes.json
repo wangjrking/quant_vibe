@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-24",
+  "key_domain": "inner_intersection_on_trade_date_stock_code",
+  "score_weights": {
+    "1D": 0.0,
+    "3D": 0.0,
+    "5D": 0.0,
+    "10D": 1.0
+  },
+  "formal_inputs": {
+    "1D": {
+      "manifest_sha256": "59C6002A0D21D07D30E2519F6D0055EAEB48445DFC28377FF6BBA744BA684032",
+      "duckdb_sha256": "0BA2D16ED9BD14543F0802E330717A244B8CDD82D5F471F4874B91E2FC3A7186",
+      "row_count": 4780552,
+      "min_trade_date": "20220606",
+      "max_trade_date": "20260723",
+      "duplicate_keys": 0,
+      "null_scores": 0
+    },
+    "3D": {
+      "manifest_sha256": "E8323D9D9B3BAD39F7C711D2F64A89431DA52901A12106D22A40B9189ADC6955",
+      "duckdb_sha256": "47EA2DEE4B53D412DDF9A61A6855AADA59FA25B831F172874C319AADF7A62FE7",
+      "row_count": 4780552,
+      "min_trade_date": "20220606",
+      "max_trade_date": "20260723",
+      "duplicate_keys": 0,
+      "null_scores": 0
+    },
+    "5D": {
+      "manifest_sha256": "8B53DE0C6B68BC8ECFA511150C26AE84B4F47D589442B02EE498C1A90F240DF1",
+      "duckdb_sha256": "DD8EA23F8B33D46E72677D5DEC997C527E74A04ECD47270A5EFC83CFD4FA9E34",
+      "row_count": 4780873,
+      "min_trade_date": "20220606",
+      "max_trade_date": "20260723",
+      "duplicate_keys": 0,
+      "null_scores": 0
+    },
+    "10D": {
+      "manifest_sha256": "F57882119A742CE08DC1BC47BF012C17A51C958DB175BE475F601760553E7936",
+      "duckdb_sha256": "0DA6401DCBB5A08B0C9A28FD010A018B7239845E18F79838C93009F4AF85295D",
+      "row_count": 4780873,
+      "min_trade_date": "20220606",
+      "max_trade_date": "20260723",
+      "duplicate_keys": 0,
+      "null_scores": 0
+    }
+  }
+}

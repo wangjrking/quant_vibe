@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "experiment_id": "cross_horizon_smooth_prefilter_20260721",
+  "status": "preregistered_before_result_access",
+  "created_at": "2026-07-21T09:30:00+08:00",
+  "research_boundary": {
+    "selection_data_max_date": "20251231",
+    "validation_window": ["20260105", "20260717"],
+    "validation_already_seen_by_prior_experiments": true,
+    "validation_must_not_be_used_for_selection": true,
+    "new_unseen_forward_start": "20260722",
+    "publication_allowed_before_new_forward_evidence": false
+  },
+  "objective": {
+    "annual_return_min": 5.0,
+    "sharpe_min": 4.0,
+    "max_drawdown_max": 0.4,
+    "selection_order": [
+      "forward_fold_min_sharpe_desc",
+      "forward_fold_median_sharpe_desc",
+      "development_annual_return_desc",
+      "development_max_drawdown_asc"
+    ],
+    "target_is_not_guaranteed": true
+  },
+  "input_contract": {
+    "manifests": {
+      "1d": "quant/main/config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+      "3d": "quant/main/config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+      "5d": "quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+      "10d": "quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+    },
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb",
+    "market_table": "STOCK_DAILY_DATA",
+    "require_approved_for_l5": true,
+    "require_duckdb_table": true,
+    "allow_legacy": false,
+    "allow_historical_signal_input": false,
+    "allow_research_prediction_input": false
+  },
+  "information_timing": {
+    "signal_time": "T日收盘后",
+    "execution_time": "T+1日开盘",
+    "signal_features": "仅使用截至T日的formal L4评分与L2字段",
+    "filter_order": "T日规则预过滤 -> T日综合分排名 -> T+1不复权执行硬门控 -> 按排名补位",
+    "buy_open_gate": "仅在T+1开盘使用不复权open/pre_close判断涨停不可买；不按开盘涨跌幅调参",
+    "next_open_return": "仅作离线评价标签",
+    "factor_price_semantics": "仅显式qfq技术字段",
+    "execution_price_semantics": "不复权真实open/pre_close",
+    "t_plus_one_required": true,
+    "intraday_risk_sell_allowed": false
+  },
+  "universe": {
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "exclude_suspended": true,
+    "skip_open_limit_up_buy": true,
+    "industry_filter": false,
+    "month_or_date_filter": false
+  },
+  "walk_forward": {
+    "entry_screen_stage_1": ["20220606", "20231229"],
+    "entry_screen_stage_2": ["20240102", "20241231"],
+    "entry_screen_stage_3": ["20250102", "20251231"],
+    "final_holdout": ["20260722", null],
+    "holdout_locked_until_finalists_frozen": true,
+    "final_holdout_currently_available": false,
+    "entry_promote_counts": [24, 12, 4],
+    "juejin_promote_counts": [12, 6, 3]
+  },
+  "entry_grid": {
+    "blends": {
+      "s10": {"w3": 0.0, "w5": 0.0, "w10": 1.0, "agreement_penalty": 0.0},
+      "s10_85_s5_15": {"w3": 0.0, "w5": 0.15, "w10": 0.85, "agreement_penalty": 0.0},
+      "s10_75_s5_25": {"w3": 0.0, "w5": 0.25, "w10": 0.75, "agreement_penalty": 0.0},
+      "s10_75_s5_25_agree05": {"w3": 0.0, "w5": 0.25, "w10": 0.75, "agreement_penalty": 0.05},
+      "s10_70_s5_25_s3_05": {"w3": 0.05, "w5": 0.25, "w10": 0.70, "agreement_penalty": 0.0},
+      "s10_70_s5_25_s3_05_agree05": {"w3": 0.05, "w5": 0.25, "w10": 0.70, "agreement_penalty": 0.05}
+    },
+    "top_n": [3, 5, 10],
+    "blend_rank_min": [0.90, 0.94, 0.97],
+    "cross_horizon_gate": [
+      {"name": "none", "rank_10d_min": 0.0, "rank_5d_min": 0.0, "rank_3d_min": 0.0},
+      {"name": "support5_50", "rank_10d_min": 0.0, "rank_5d_min": 0.50, "rank_3d_min": 0.0},
+      {"name": "support5_70", "rank_10d_min": 0.0, "rank_5d_min": 0.70, "rank_3d_min": 0.0},
+      {"name": "support5_50_confirm3_50", "rank_10d_min": 0.0, "rank_5d_min": 0.50, "rank_3d_min": 0.50}
+    ],
+    "amount_min": [90000.0, 200000.0],
+    "total_mv_min": [200000.0, 500000.0],
+    "market_regime": [
+      {"name": "none", "breadth_up_min": 0.0, "market_mean_pct_min": -100.0}
+    ],
+    "signal_pct_band": [
+      {"name": "all", "min": -100.0, "max": 100.0}
+    ],
+    "buy_open_gate": [
+      {"name": "limit_only", "reject_below": -100.0, "reject_above": 100.0, "scale_above": 100.0, "high_scale": 1.0}
+    ]
+  },
+  "exit_grid": [
+    {"name": "h3_8_e0", "min_hold": 3, "max_hold": 8, "replace_edge": 0.00},
+    {"name": "h3_8_e2", "min_hold": 3, "max_hold": 8, "replace_edge": 0.02},
+    {"name": "h5_10_e0", "min_hold": 5, "max_hold": 10, "replace_edge": 0.00},
+    {"name": "h5_10_e2", "min_hold": 5, "max_hold": 10, "replace_edge": 0.02},
+    {"name": "h8_15_e0", "min_hold": 8, "max_hold": 15, "replace_edge": 0.00},
+    {"name": "h8_15_e2", "min_hold": 8, "max_hold": 15, "replace_edge": 0.02}
+  ],
+  "position_caps": [0.6, 0.9],
+  "max_positions": 10,
+  "strategy_target_position_ceiling": 1.0,
+  "execution_cost": {
+    "juejin_primary_one_side_slippage": 0.003,
+    "juejin_stress_one_side_slippage": 0.004,
+    "backtest_adjust": "none",
+    "initial_cash": 600000
+  },
+  "local_screen": {
+    "round_trip_cost_proxy": 0.006,
+    "evaluation_return_column": "open_return_5d_raw",
+    "evaluation_horizon_trade_days": 5,
+    "minimum_buy_days_per_full_year": 100,
+    "minimum_average_names_per_buy_day": 0.8,
+    "forbid_2026_selection_access": true
+  },
+  "reproducibility": {
+    "random_seed": 20260726,
+    "deterministic_tie_break": "stock_code ascending",
+    "freeze_script_config_and_input_hash_before_screen": true,
+    "preserve_all_candidates": true,
+    "preserve_failed_runs": true
+  }
+}

@@ -52,6 +52,19 @@ def _check_floor(name: str, actual: Any, floor: Any) -> dict[str, Any]:
     }
 
 
+def _check_ceiling(name: str, actual: Any, ceiling: Any) -> dict[str, Any]:
+    actual_num = _as_float(actual)
+    ceiling_num = _as_float(ceiling)
+    passed = actual_num is not None and ceiling_num is not None and actual_num <= ceiling_num
+    return {
+        "name": name,
+        "expected": {"max": ceiling_num},
+        "actual": actual_num,
+        "passed": passed,
+        "reason": None if passed else f"{name} expected <= {ceiling_num}, got {actual_num}",
+    }
+
+
 def evaluate_candidate(candidate: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     hard_results: list[dict[str, Any]] = []
     reminders: list[dict[str, Any]] = []
@@ -61,6 +74,7 @@ def evaluate_candidate(candidate: dict[str, Any], config: dict[str, Any]) -> dic
     governance = hard.get("governance", {})
     coverage = hard.get("coverage", {})
     reproducibility = hard.get("reproducibility", {})
+    observation_window = hard.get("observation_window", {})
     quality_common = hard.get("quality", {}).get("common", {})
     quality_by_label = hard.get("quality", {}).get("by_label", {})
 
@@ -102,13 +116,22 @@ def evaluate_candidate(candidate: dict[str, Any], config: dict[str, Any]) -> dic
             False,
         )
     )
-    hard_results.append(
-        _check_floor(
-            "min_trade_date",
-            candidate.get("min_trade_date"),
-            coverage.get("required_min_trade_date"),
+    if coverage.get("required_min_trade_date") is not None:
+        hard_results.append(
+            _check_floor(
+                "min_trade_date",
+                candidate.get("min_trade_date"),
+                coverage.get("required_min_trade_date"),
+            )
         )
-    )
+    if coverage.get("required_start_trade_date_on_or_before") is not None:
+        hard_results.append(
+            _check_ceiling(
+                "min_trade_date",
+                candidate.get("min_trade_date"),
+                coverage.get("required_start_trade_date_on_or_before"),
+            )
+        )
     hard_results.append(
         _check_equal(
             "latest_trade_date",
@@ -152,6 +175,36 @@ def evaluate_candidate(candidate: dict[str, Any], config: dict[str, Any]) -> dic
         hard_results.append(_check_equal("evaluation_report_present", _as_bool(candidate.get("evaluation_report_present")), True))
     if _as_bool(reproducibility.get("candidate_manifest_required")):
         hard_results.append(_check_equal("candidate_manifest_present", _as_bool(candidate.get("candidate_manifest_present")), True))
+
+    if _as_bool(observation_window.get("four_year_observation_required")):
+        hard_results.append(
+            _check_floor(
+                "observation_calendar_years",
+                candidate.get("observation_calendar_years"),
+                observation_window.get("minimum_calendar_years"),
+            )
+        )
+        hard_results.append(
+            _check_floor(
+                "eval_trade_days",
+                candidate.get("eval_trade_days"),
+                observation_window.get("minimum_eval_trade_days"),
+            )
+        )
+        hard_results.append(
+            _check_equal(
+                "same_observation_window_as_baseline",
+                _as_bool(candidate.get("same_observation_window_as_baseline")),
+                True,
+            )
+        )
+        hard_results.append(
+            _check_equal(
+                "label_maturity_respected",
+                _as_bool(candidate.get("label_maturity_respected")),
+                True,
+            )
+        )
 
     for name, floor in quality_common.items():
         if name.endswith("_floor"):

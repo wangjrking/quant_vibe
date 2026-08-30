@@ -23,6 +23,10 @@ from model_asset_route import (
     enrich_research_prediction_manifest,
     require_legacy_model_asset_chain_opt_in,
     resolve_legacy_mixed_factor_path,
+    resolve_model_feature_duckdb_path,
+    resolve_model_feature_duckdb_table,
+    resolve_model_label_duckdb_path,
+    resolve_model_label_duckdb_table,
     resolve_legacy_prediction_db_path,
     resolve_model_feature_path,
     resolve_model_label_path,
@@ -32,7 +36,11 @@ from model_asset_route import (
     use_legacy_prediction_db,
     write_prediction_manifest,
 )
-from stock_daily_data_route import resolve_stock_daily_db_path
+from stock_daily_data_route import (
+    resolve_stock_daily_backend,
+    resolve_stock_daily_db_path,
+    resolve_stock_daily_duckdb_path,
+)
 
 
 DATE_FMT = "%Y%m%d"
@@ -428,7 +436,9 @@ def build_fold_feature_selection_fn(
             )
         )
         raw = read_raw_frame(
-            resolve_stock_daily_db_path(data_file_url),
+            resolve_stock_daily_duckdb_path(data_file_url)
+            if resolve_stock_daily_backend(data_dir=data_file_url) == "duckdb"
+            else resolve_stock_daily_db_path(data_file_url),
             start="20100101",
             end=None,
             needed_columns=needed_columns,
@@ -439,13 +449,21 @@ def build_fold_feature_selection_fn(
         from fast_feature_selection import score_features_fast_parquet, score_features_fast_split, write_score_csv
         feature_path = None
         label_path = None
+        feature_table = None
+        label_table = None
         data_path = None
         if use_legacy_mixed_features(feature_source):
             require_legacy_model_asset_chain_opt_in(reason="legacy mixed factor feature selection input")
             data_path = resolve_legacy_mixed_factor_path(data_file_url, require_exists=True)
         else:
-            feature_path = resolve_model_feature_path(data_file_url, require_exists=True)
-            label_path = resolve_model_label_path(data_file_url, require_exists=True)
+            feature_table = resolve_model_feature_duckdb_table(data_file_url)
+            label_table = resolve_model_label_duckdb_table(data_file_url)
+            if feature_table and label_table:
+                feature_path = resolve_model_feature_duckdb_path(data_file_url, require_exists=True)
+                label_path = resolve_model_label_duckdb_path(data_file_url, require_exists=True)
+            else:
+                feature_path = resolve_model_feature_path(data_file_url, require_exists=True)
+                label_path = resolve_model_label_path(data_file_url, require_exists=True)
         frame = None
 
     def select_for_window(window: RollingWindow) -> list[str]:
@@ -489,6 +507,8 @@ def build_fold_feature_selection_fn(
                 rows, selected = score_features_fast_split(
                     feature_path,
                     label_path=label_path,
+                    feature_table=feature_table,
+                    label_table=label_table,
                     label=config.label,
                     start=window.train_start,
                     end=window.train_end,

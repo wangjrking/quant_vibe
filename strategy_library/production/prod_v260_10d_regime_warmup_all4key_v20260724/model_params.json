@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "model_owner": "model-agent",
+  "label": "executable_10d_open_return",
+  "score_field": "pred_prob",
+  "formal_manifests": {
+    "1D_key_domain_only": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+    "3D_key_domain_only": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+    "5D_key_domain_only": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "10D_scoring": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+  },
+  "key_domain_contract": "inner_intersection_1d_3d_5d_10d",
+  "score_weights": {
+    "1D": 0.0,
+    "3D": 0.0,
+    "5D": 0.0,
+    "10D": 1.0
+  },
+  "strategy_model_transform": {
+    "daily_cross_section_rank": true,
+    "smooth_window_trade_days": 7,
+    "current_day_weight": 0.1
+  },
+  "model_training_modified_by_strategy_agent": false
+}

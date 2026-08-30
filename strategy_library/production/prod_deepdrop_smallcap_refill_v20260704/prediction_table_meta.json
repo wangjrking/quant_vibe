@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+  "strategy_name": "?????????",
+  "formal_manifests": {
+    "formal_manifest_1d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json"
+  },
+  "source_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\full_history_deepdrop_smallcap_refill.csv",
+  "source_signal_coverage": {
+    "min_signal_date": "20220811",
+    "max_signal_date": "20260528",
+    "max_buy_date": "20260529",
+    "rows": 311
+  },
+  "source_type": "duckdb formal L4 assets plus archived L5 production signal rules",
+  "allow_legacy": false,
+  "allow_sqlite_production_input": false,
+  "note": "?????????? repro500 latest ???????????????????????????"
+}

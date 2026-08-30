@@ -1,0 +1,29 @@
+{
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "enabled": false,
+  "candidate_only": true,
+  "activation_requires": [
+    "candidate_audit_allow_candidate_to_execute",
+    "controlled_registry_and_task_cutover",
+    "post_cutover_readback_audit"
+  ],
+  "prediction_manifests": {
+    "1D": "config/prediction_manifests/executable_1d_open_return_l4_formal_20260619.json",
+    "3D": "config/prediction_manifests/executable_3d_open_return_l4_formal_20260617.json",
+    "5D": "config/prediction_manifests/executable_5d_open_return_l4_formal_20260620.json",
+    "10D": "config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json"
+  },
+  "key_domain": "inner_intersection_1d_3d_5d_10d",
+  "score_contract": "10D pred_prob rank only",
+  "steps": [
+    {
+      "name": "export_v260_all4key_signal",
+      "command": [
+        "{python}",
+        "export_v260_all4key_production_signals.py",
+        "--signal-dir",
+        "{signal_dir}"
+      ]
+    }
+  ]
+}

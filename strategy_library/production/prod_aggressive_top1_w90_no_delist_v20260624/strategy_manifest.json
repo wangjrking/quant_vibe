@@ -3,7 +3,7 @@
   "strategy_id": "prod_aggressive_top1_w90_no_delist_v20260624",
   "name": "aggressive Top1 90D10 no-delist",
   "code_name": "no_delist_latest_w90_5d10_h5_g200_e098",
-  "status": "production_user_override_not_admission_passed",
+  "status": "historical_archive",
   "production_version": "v20260624",
   "published_at": "2026-06-24",
   "published_by": "strategy-agent",
@@ -19,7 +19,36 @@
       "data_file/odb.db",
       "stock_predict_data_* legacy table",
       "unapproved research prediction asset"
-    ]
+    ],
+    "adjustment_semantics": {
+      "explicit_front_adjusted_marker_required": true,
+      "front_adjusted_marker": "qfq",
+      "front_adjusted_column_suffix": "_qfq",
+      "front_adjusted_indicator_suffix": "_qfq",
+      "front_adjusted_factor_marker_required": true,
+      "forbidden_implicit_front_adjusted_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+    },
+    "market_field_semantics": {
+      "raw_price_output_suffix": "_raw",
+      "raw_market_price_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "front_adjusted_indicator_suffix": "_qfq",
+      "contract_rule": "strategy-side downstream assets must export raw market prices as *_raw; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+      "schema_kind": "strategy_output"
+    },
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb"
   },
   "prediction_assets": {
     "score_db": "D:/work/quant/quant_mcp/quant/data_file/reports/strategy_agent_goal_high_annual_20260623/top1_no_delist_rerun_20260624/scores_latest_formal_top1.db",
@@ -61,14 +90,18 @@
     "note": "??? 20260623->20260624 ?? latest?20260624 ?????????????"
   },
   "governance": {
-    "is_current_l5": true,
-    "is_only_registered_l5_production_strategy": true,
+    "is_current_l5": false,
+    "is_only_registered_l5_production_strategy": false,
     "formal_performance_requires_juejin": true,
     "exclude_bj": true,
     "exclude_st": true,
     "exclude_delisting": true,
     "skip_open_limit_up_buy": true,
-    "production": true,
+    "production": false,
     "published_by_user_override": true
   }
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

@@ -1,0 +1,22 @@
+{
+  "authorization_id": "paper_v260_execution_gate_example",
+  "enabled": false,
+  "stage": "paper",
+  "account_id": "REPLACE_WITH_ACCOUNT_ID",
+  "strategy_id": "prod_v260_10d_regime_warmup_all4key_v20260724",
+  "strategy_version": "v20260724",
+  "owner_approval_id": "REQUIRED_BEFORE_ENABLE",
+  "expires_at": "2026-12-31T16:00:00+08:00",
+  "allowed_sides": [
+    "BUY",
+    "SELL"
+  ],
+  "allowed_symbols": [],
+  "max_order_notional": 50000.0,
+  "max_symbol_position_pct": 0.1,
+  "max_total_position_pct": 0.6,
+  "max_orders_per_batch": 10,
+  "quote_max_age_seconds": 10,
+  "kill_switch_required": true,
+  "policy_hash": ""
+}

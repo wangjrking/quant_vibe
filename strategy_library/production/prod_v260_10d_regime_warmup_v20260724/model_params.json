@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+  "model_owner": "model-agent",
+  "label": "executable_10d_open_return",
+  "score_field": "pred_prob",
+  "formal_manifest": "D:/work/quant/quant_mcp/quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+  "strategy_model_transform": {
+    "daily_cross_section_rank": true,
+    "smooth_window_trade_days": 7,
+    "current_day_weight": 0.1
+  },
+  "model_training_modified_by_strategy_agent": false
+}

@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -310,6 +311,133 @@ class BuildManualTradePackageTests(unittest.TestCase):
         self.assertIn("测试投产策略", ticket_text)
         self.assertIn("000002.SZ", csv_text)
         self.assertEqual(summary["strategy"]["strategy_id"], "prod_a")
+
+
+    def test_build_from_runtime_supports_duckdb_strategy_assets(self):
+        import duckdb
+        import pandas as pd
+
+        module = _load_module(self)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            duckdb_path = root / "quant_production.duckdb"
+            holdings_path = root / "holdings.json"
+            holdings_path.write_text(
+                json.dumps(
+                    {
+                        "ok": True,
+                        "account_id": "acct",
+                        "account_type": "STOCK",
+                        "asset": {"total_asset": 100000.0, "market_value": 0.0, "cash": 100000.0},
+                        "positions": [],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with duckdb.connect(str(duckdb_path)) as conn:
+                conn.register(
+                    "_registry_df",
+                    pd.DataFrame(
+                        [
+                            {
+                                "strategy_id": "prod_a",
+                                "is_current_production": True,
+                                "registry_payload_json": json.dumps(
+                                    {
+                                        "strategy_id": "prod_a",
+                                        "name": "测试策略",
+                                        "status": "production",
+                                        "path": "strategy_library/production/prod_a",
+                                    },
+                                    ensure_ascii=False,
+                                ),
+                            }
+                        ]
+                    ),
+                )
+                conn.execute('CREATE TABLE "prod_l5_strategy_registry_current" AS SELECT * FROM _registry_df')
+                conn.unregister("_registry_df")
+                conn.register(
+                    "_manifest_df",
+                    pd.DataFrame(
+                        [
+                            {
+                                "strategy_id": "prod_a",
+                                "manifest_payload_json": json.dumps(
+                                    {
+                                        "strategy_id": "prod_a",
+                                        "name": "测试策略",
+                                        "production_version": "v1",
+                                    },
+                                    ensure_ascii=False,
+                                ),
+                            }
+                        ]
+                    ),
+                )
+                conn.execute('CREATE TABLE "prod_l5_strategy_manifest_current" AS SELECT * FROM _manifest_df')
+                conn.unregister("_manifest_df")
+                conn.register(
+                    "_signal_rows_df",
+                    pd.DataFrame(
+                        [
+                            {
+                                "strategy_id": "prod_a",
+                                "file_name": "prod_a_latest.csv",
+                                "row_index": 1,
+                                "signal_date": "20260628",
+                                "rank": "1",
+                                "row_payload_json": json.dumps(
+                                    {
+                                        "signal_date": "20260628",
+                                        "buy_date": "20260630",
+                                        "stock_code": "000001.SZ",
+                                        "name": "A",
+                                        "rank": "1",
+                                        "target_pct": "1.0",
+                                    },
+                                    ensure_ascii=False,
+                                ),
+                            }
+                        ]
+                    ),
+                )
+                conn.execute('CREATE TABLE "prod_l7_signal_rows_current" AS SELECT * FROM _signal_rows_df')
+                conn.unregister("_signal_rows_df")
+                conn.register(
+                    "_signal_files_df",
+                    pd.DataFrame(
+                        [
+                            {
+                                "strategy_id": "prod_a",
+                                "file_name": "prod_a_latest.csv",
+                                "source_path": "quant/data_file/production_signals/prod_a_latest.csv",
+                                "modified_at": "2026-06-28T10:00:00",
+                            }
+                        ]
+                    ),
+                )
+                conn.execute('CREATE TABLE "prod_l7_signal_files_current" AS SELECT * FROM _signal_files_df')
+                conn.unregister("_signal_files_df")
+
+            old_env = dict(os.environ)
+            os.environ["QUANT_STRATEGY_ASSET_BACKEND"] = "duckdb"
+            os.environ["QUANT_STRATEGY_DUCKDB"] = str(duckdb_path)
+            try:
+                package = module.build_from_runtime(
+                    holdings_json=holdings_path,
+                    platform="QMT",
+                    account_label="模拟盘",
+                )
+            finally:
+                os.environ.clear()
+                os.environ.update(old_env)
+
+        self.assertEqual(package["strategy"]["strategy_id"], "prod_a")
+        self.assertEqual(package["signal"]["signal_date"], "20260628")
+        self.assertEqual(package["signal"]["source_file"], "quant/data_file/production_signals/prod_a_latest.csv")
 
 
 if __name__ == "__main__":

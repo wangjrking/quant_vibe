@@ -4,7 +4,7 @@
   "name": "流动性精选一号",
   "code_name": "liq_prime_one",
   "source_strategy": "liq_enh_top1_q95_amt8e5_turn2_mv1e6",
-  "status": "production",
+  "status": "historical_archive",
   "production_version": "V1.0",
   "version": "v20260612",
   "published_at": "2026-06-13",
@@ -46,4 +46,8 @@
     "stock_code": "301313.SZ",
     "name": "凡拓数创"
   }
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

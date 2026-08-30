@@ -2,18 +2,30 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+from adjustment_semantics import (
+    FRONT_ADJUSTED_MARKET_PRICE_COLUMNS,
+    prefer_explicit_qfq_columns,
+    require_explicit_qfq_market_columns,
+    validate_strategy_output_field_names,
+)
 from gtja_alpha_workflow import GTJA_ALPHA_COLUMNS
+from l3_duckdb_sync import l3_duckdb_sync_enabled, sync_feature_parts_full_to_duckdb
 from project_paths import resolve_data_dir
 
 
 KEY_COLUMNS = ["trade_date", "stock_code"]
 INDUSTRY_ENCODE_MAPPING_NAME = "production_factor_industry_encode_mapping.json"
+PRODUCTION_GTJA_ALPHA_COLUMNS = [f"{column}_qfq" for column in GTJA_ALPHA_COLUMNS]
+GTJA_TO_PRODUCTION_COLUMN_MAP = dict(zip(GTJA_ALPHA_COLUMNS, PRODUCTION_GTJA_ALPHA_COLUMNS))
 
 BASE_NON_FACTOR_COLUMNS = {
     "name",
@@ -55,6 +67,7 @@ EXPLICIT_FUTURE_COLUMNS = {
     "close_open_yield_rate",
     "close_low_yield_rate",
     "low_close_yield_rate",
+    "index_2000_post10_close",
     "index_2000_post10_yield_rate",
     "adjust_10d_yield_rate",
 }
@@ -149,26 +162,85 @@ def is_raw_factor_column(column: str) -> bool:
 
 
 def production_raw_columns(raw_columns: list[str]) -> list[str]:
-    return [column for column in raw_columns if is_raw_factor_column(column)]
+    require_explicit_qfq_market_columns(raw_columns, context="production raw factor schema")
+    preferred = prefer_explicit_qfq_columns(raw_columns)
+    selected = [column for column in preferred if is_raw_factor_column(column)]
+    validate_strategy_output_field_names(selected, context="production raw factor schema output")
+    return selected
 
 
 def default_industry_encode_mapping_path(data_dir: str | Path | None = None) -> Path:
     return resolve_data_dir(data_dir) / "runtime" / INDUSTRY_ENCODE_MAPPING_NAME
 
 
-def load_industry_encode_mapping(mapping_path: str | Path | None = None) -> dict[str, int]:
+def _industry_encode_mapping_lock_path(path: Path) -> Path:
+    return path.with_name(f"{path.name}.lock")
+
+
+@contextmanager
+def industry_encode_mapping_lock(
+    mapping_path: str | Path | None = None,
+    *,
+    timeout_seconds: float = 30.0,
+    poll_interval_seconds: float = 0.05,
+):
     path = Path(mapping_path) if mapping_path else default_industry_encode_mapping_path()
+    lock_path = _industry_encode_mapping_lock_path(path)
+    deadline = time.monotonic() + timeout_seconds
+    fd = None
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            break
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"timed out waiting for industry encode mapping lock: {lock_path}")
+            time.sleep(poll_interval_seconds)
+    try:
+        os.write(fd, str(os.getpid()).encode("utf-8"))
+        yield path
+    finally:
+        if fd is not None:
+            os.close(fd)
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _read_industry_encode_mapping_unlocked(path: Path) -> dict[str, int]:
     if not path.exists():
         return {}
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload_text = path.read_text(encoding="utf-8")
+    if not payload_text.strip():
+        return {}
+    payload = json.loads(payload_text)
     return {str(key): int(value) for key, value in payload.items()}
+
+
+def load_industry_encode_mapping(mapping_path: str | Path | None = None) -> dict[str, int]:
+    path = Path(mapping_path) if mapping_path else default_industry_encode_mapping_path()
+    last_error: json.JSONDecodeError | None = None
+    for attempt in range(4):
+        try:
+            return _read_industry_encode_mapping_unlocked(path)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+            if attempt >= 3:
+                raise
+            time.sleep(0.05)
+    if last_error is not None:
+        raise last_error
+    return {}
 
 
 def save_industry_encode_mapping(mapping: dict[str, int], mapping_path: str | Path | None = None) -> Path:
     path = Path(mapping_path) if mapping_path else default_industry_encode_mapping_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     ordered = {key: mapping[key] for key in sorted(mapping, key=lambda item: mapping[item])}
-    path.write_text(json.dumps(ordered, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp_path = path.with_name(f"{path.name}.tmp.{os.getpid()}.{time.time_ns()}")
+    temp_path.write_text(json.dumps(ordered, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(temp_path, path)
     return path
 
 
@@ -191,11 +263,23 @@ def extend_industry_encode_mapping(mapping: dict[str, int], industry_values) -> 
     return updated
 
 
+def update_industry_encode_mapping(
+    industry_values,
+    mapping_path: str | Path | None = None,
+) -> dict[str, int]:
+    with industry_encode_mapping_lock(mapping_path) as path:
+        mapping = extend_industry_encode_mapping(
+            _read_industry_encode_mapping_unlocked(path),
+            industry_values,
+        )
+        save_industry_encode_mapping(mapping, path)
+        return mapping
+
+
 def sync_industry_encode_mapping_from_raw_parts(
     raw_parts_dir: Path,
     mapping_path: str | Path | None = None,
 ) -> dict[str, int]:
-    mapping = load_industry_encode_mapping(mapping_path)
     industries: set[str] = set()
     for part_path in sorted(raw_parts_dir.glob("raw_part_*.parquet")):
         schema = pq.ParquetFile(part_path).schema.names
@@ -203,9 +287,7 @@ def sync_industry_encode_mapping_from_raw_parts(
             continue
         table = pq.read_table(part_path, columns=["industry"])
         industries.update(normalize_industry_values(table.column("industry").to_pylist()))
-    mapping = extend_industry_encode_mapping(mapping, industries)
-    save_industry_encode_mapping(mapping, mapping_path)
-    return mapping
+    return update_industry_encode_mapping(industries, mapping_path)
 
 
 def apply_industry_encode(frame: pd.DataFrame, mapping: dict[str, int]) -> pd.DataFrame:
@@ -238,7 +320,8 @@ def read_gtja_part(gtja_part_path: Path) -> pd.DataFrame:
     gtja = pd.read_parquet(gtja_part_path)
     gtja["trade_date"] = gtja["trade_date"].astype(str)
     keep = [*KEY_COLUMNS, *[column for column in GTJA_ALPHA_COLUMNS if column in gtja.columns]]
-    return gtja[keep]
+    gtja = gtja[keep].copy()
+    return gtja.rename(columns={column: GTJA_TO_PRODUCTION_COLUMN_MAP[column] for column in keep if column in GTJA_TO_PRODUCTION_COLUMN_MAP})
 
 
 def build_production_part(
@@ -282,8 +365,13 @@ def write_schema_report(raw_columns: list[str], output_path: Path) -> None:
         "key_columns": KEY_COLUMNS,
         "raw_factor_columns": raw_columns,
         "raw_factor_count": len(raw_columns) - len(KEY_COLUMNS),
-        "gtja_alpha_columns": GTJA_ALPHA_COLUMNS,
-        "gtja_alpha_count": len(GTJA_ALPHA_COLUMNS),
+        "front_adjusted_market_price_columns": [
+            column for column in FRONT_ADJUSTED_MARKET_PRICE_COLUMNS if column in raw_columns
+        ],
+        "gtja_alpha_source_columns": GTJA_ALPHA_COLUMNS,
+        "gtja_alpha_production_columns": PRODUCTION_GTJA_ALPHA_COLUMNS,
+        "gtja_alpha_count": len(PRODUCTION_GTJA_ALPHA_COLUMNS),
+        "gtja_alpha_naming_rule": "GTJA Alpha production columns are qfq-derived and must use *_qfq names.",
         "industry_encode_mapping_path": str(default_industry_encode_mapping_path()),
         "excluded_rules": {
             "base_non_factor_columns": sorted(BASE_NON_FACTOR_COLUMNS),
@@ -341,6 +429,12 @@ def main(argv=None):
             industry_mapping,
             resume=not args.no_resume,
         )
+    if l3_duckdb_sync_enabled():
+        sync_result = sync_feature_parts_full_to_duckdb(
+            data_dir=None,
+            parts_dir=output_dir,
+        )
+        print(json.dumps({"duckdb_sync": sync_result}, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

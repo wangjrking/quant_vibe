@@ -15,6 +15,7 @@ from build_prediction_label_parts import (
     required_raw_columns,
     sanitize_existing_labels,
 )
+from l3_duckdb_sync import l3_duckdb_sync_enabled, sync_label_parts_target_date_to_duckdb
 
 
 def _part_index(path: Path) -> int:
@@ -97,6 +98,7 @@ def parse_args(argv=None):
     parser.add_argument("--target-date", required=True)
     parser.add_argument("--labels", nargs="*", help="Optional explicit label list.")
     parser.add_argument("--report-path")
+    parser.add_argument("--skip-duckdb-sync", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -138,6 +140,12 @@ def main(argv=None):
         "results": results,
         "audit": audit,
     }
+    if not args.skip_duckdb_sync and l3_duckdb_sync_enabled():
+        payload["duckdb_sync"] = sync_label_parts_target_date_to_duckdb(
+            data_dir=None,
+            target_date=args.target_date,
+            parts_dir=output_dir,
+        )
     if args.report_path:
         report_path = Path(args.report_path)
         report_path.parent.mkdir(parents=True, exist_ok=True)

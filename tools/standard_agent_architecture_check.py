@@ -1,4 +1,4 @@
-"""Read-only checks for the standard multi-agent architecture.
+﻿"""Read-only checks for the standard multi-agent architecture.
 
 This script validates governance scaffolding only. It does not run business
 workflows, touch market data, compute factors, train models, predict, generate
@@ -19,7 +19,7 @@ AGENTS = [
     "audit-agent",
     "data-ingestion-agent",
     "data-integration-agent",
-    "data-warehouse-agent",
+    "mcp-agent",
     "factor-agent",
     "model-agent",
     "strategy-agent",
@@ -114,7 +114,17 @@ def check_asset_registry(root: Path, errors: list[str]) -> None:
             errors.append("production_assets.json must require audit before change")
         for asset in production.get("assets", []):
             check_asset_manifest(asset, "production", errors)
-            if asset.get("allowed_for_main_workflow") is not True:
+            status = str(asset.get("status") or "")
+            if status in {"retired_legacy_reference", "superseded"}:
+                if asset.get("allowed_for_main_workflow") is not False:
+                    errors.append(
+                        f"rollback production asset must not be allowed for main workflow: {asset.get('asset_id')}"
+                    )
+                if not asset.get("superseded_by"):
+                    errors.append(
+                        f"rollback production asset missing superseded_by: {asset.get('asset_id')}"
+                    )
+            elif asset.get("allowed_for_main_workflow") is not True:
                 errors.append(
                     f"production asset not allowed for main workflow: {asset.get('asset_id')}"
                 )

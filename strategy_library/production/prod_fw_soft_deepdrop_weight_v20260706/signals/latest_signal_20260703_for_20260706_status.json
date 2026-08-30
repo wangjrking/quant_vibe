@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_fw_soft_deepdrop_weight_v20260706",
+  "status": "pending_buy_day_hard_gate",
+  "signal_date": "20260703",
+  "buy_date": "20260706",
+  "latest_signal_date": "20260703",
+  "latest_buy_date": "20260706",
+  "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\signals\\latest_signal_20260703_for_20260706.csv",
+  "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_fw_soft_deepdrop_weight_v20260706_latest.csv",
+  "row_count": 3,
+  "stock_count": 3,
+  "duplicate_signal_stock_keys": 0,
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "l7_execution_allowed": false,
+  "note": "published after user accepted downgraded full-history rebuild metrics; latest buy-day hard gate remains pending if buy-day market data is unavailable.",
+  "audit": {
+    "full_history_rows": 314,
+    "full_history_signal_days": 208,
+    "full_history_buy_days": 208,
+    "duplicate_buy_stock_keys": 0,
+    "latest_target_pct_sum": 0.9099999999999999,
+    "bj_rows": 0
+  }
+}

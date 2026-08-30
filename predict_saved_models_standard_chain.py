@@ -2,21 +2,27 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow.dataset as ds
 import xgboost as xgb
 
+from l4_duckdb_sync import l4_duckdb_sync_enabled, sync_prediction_table_full_to_duckdb
 from model_asset_route import (
     enrich_research_prediction_manifest,
+    resolve_model_feature_duckdb_path,
+    resolve_model_feature_duckdb_table,
+    resolve_model_prediction_duckdb_path,
+    resolve_model_feature_path,
     resolve_model_prediction_db_path,
     resolve_prediction_run_dir,
     write_prediction_manifest,
 )
+from stock_daily_data_route import resolve_stock_daily_duckdb_path
 
 
 LABEL_MODEL_SPECS = {
@@ -50,6 +56,10 @@ BASE_COLUMNS = [
 ]
 
 
+def _manifest_rel_path(path: Path, manifest_dir: Path) -> str:
+    return Path(os.path.relpath(path, start=manifest_dir)).as_posix()
+
+
 def _label_suffix(label: str) -> str:
     return label.replace("executable_", "").replace("_open_return", "")
 
@@ -62,15 +72,41 @@ def _model_path(report_root: Path, model_dir: str) -> Path:
     return report_root / model_dir / "models" / "model_fold09.json"
 
 
-def _read_target_date_frame(factor_dir: Path, predict_date: str, columns: list[str]) -> pd.DataFrame:
-    dataset = ds.dataset(str(factor_dir), format="parquet")
-    schema_names = set(dataset.schema.names)
-    columns = [column for column in columns if column in schema_names]
-    table = dataset.to_table(
-        columns=columns,
-        filter=(ds.field("trade_date") == predict_date),
-    )
-    frame = table.to_pandas()
+def _quote_ident(value: str) -> str:
+    return '"' + str(value).replace('"', '""') + '"'
+
+
+def _read_target_date_frame(
+    factor_dir: Path,
+    predict_date: str,
+    columns: list[str],
+    *,
+    table_name: str | None = None,
+) -> pd.DataFrame:
+    if factor_dir.suffix.lower() == ".duckdb":
+        import duckdb
+
+        with duckdb.connect(str(factor_dir), read_only=True) as conn:
+            schema_names = {str(row[0]) for row in conn.execute(f"DESCRIBE {_quote_ident(str(table_name))}").fetchall()}
+            columns = [column for column in columns if column in schema_names]
+            selected = ", ".join(_quote_ident(column) for column in columns)
+            sql = (
+                f"SELECT {selected} "
+                f"FROM {_quote_ident(str(table_name))} "
+                "WHERE trade_date = ?"
+            )
+            frame = conn.execute(sql, [str(predict_date)]).fetchdf()
+    else:
+        import pyarrow.dataset as ds
+
+        dataset = ds.dataset(str(factor_dir), format="parquet")
+        schema_names = set(dataset.schema.names)
+        columns = [column for column in columns if column in schema_names]
+        table = dataset.to_table(
+            columns=columns,
+            filter=(ds.field("trade_date") == predict_date),
+        )
+        frame = table.to_pandas()
     if "trade_date" in frame.columns:
         frame["trade_date"] = frame["trade_date"].astype(str)
     return frame
@@ -138,6 +174,19 @@ def _write_sqlite_tables(db_path: Path, wide_table: str, long_table: str, wide: 
         conn.commit()
 
 
+def _write_duckdb_tables(db_path: Path, wide_table: str, long_table: str, wide: pd.DataFrame, long: pd.DataFrame) -> None:
+    import duckdb
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect(str(db_path)) as conn:
+        conn.register("_wide_df", wide)
+        conn.register("_long_df", long)
+        conn.execute(f'CREATE OR REPLACE TABLE "{wide_table}" AS SELECT * FROM _wide_df')
+        conn.execute(f'CREATE OR REPLACE TABLE "{long_table}" AS SELECT * FROM _long_df')
+        conn.unregister("_wide_df")
+        conn.unregister("_long_df")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Predict a target date with saved standard-chain model files only.")
     parser.add_argument("--data-dir", default=r"D:\work\quant\quant_mcp\quant\data_file")
@@ -148,7 +197,11 @@ def main() -> None:
 
     data_dir = Path(args.data_dir)
     report_root = Path(args.report_root) if args.report_root else data_dir / "reports" / "model_agent_standard_chain_tune_20260617"
-    factor_dir = data_dir / "production_factor_parts"
+    factor_table = resolve_model_feature_duckdb_table(data_dir)
+    if factor_table:
+        factor_dir = resolve_model_feature_duckdb_path(data_dir, require_exists=True)
+    else:
+        factor_dir = resolve_model_feature_path(data_dir, require_exists=True)
     output_dir = data_dir / "reports" / f"saved_model_predict_{args.predict_date}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -168,7 +221,12 @@ def main() -> None:
             ],
         }
     )
-    frame = _read_target_date_frame(factor_dir, args.predict_date, all_feature_columns)
+    frame = _read_target_date_frame(
+        factor_dir,
+        args.predict_date,
+        all_feature_columns,
+        table_name=factor_table,
+    )
     if frame.empty:
         raise RuntimeError(f"no production_factor_parts rows found for {args.predict_date}")
 
@@ -180,8 +238,29 @@ def main() -> None:
 
     wide_table = f"stock_predict_data_saved_model_scores_{args.predict_date}_wide"
     long_table = f"stock_predict_data_saved_model_scores_{args.predict_date}_long"
-    db_path = resolve_model_prediction_db_path(data_dir, create_parent=True)
-    _write_sqlite_tables(db_path, wide_table, long_table, wide, long)
+    try:
+        db_path = resolve_model_prediction_db_path(data_dir, create_parent=True)
+        use_duckdb_output = False
+    except RuntimeError:
+        db_path = resolve_model_prediction_duckdb_path(data_dir, require_exists=False)
+        use_duckdb_output = True
+    if use_duckdb_output:
+        _write_duckdb_tables(db_path, wide_table, long_table, wide, long)
+    else:
+        _write_sqlite_tables(db_path, wide_table, long_table, wide, long)
+    duckdb_sync_wide = None
+    duckdb_sync_long = None
+    if (not use_duckdb_output) and l4_duckdb_sync_enabled():
+        duckdb_sync_wide = sync_prediction_table_full_to_duckdb(
+            data_dir=data_dir,
+            sqlite_db_path=db_path,
+            table_name=wide_table,
+        )
+        duckdb_sync_long = sync_prediction_table_full_to_duckdb(
+            data_dir=data_dir,
+            sqlite_db_path=db_path,
+            table_name=long_table,
+        )
 
     wide_path = output_dir / f"{wide_table}.parquet"
     long_path = output_dir / f"{long_table}.parquet"
@@ -190,13 +269,21 @@ def main() -> None:
 
     manifest_dir = resolve_prediction_run_dir(data_dir, label="saved_model_scores", output_table=wide_table, create=True)
     generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
+    if use_duckdb_output:
+        source_type = "duckdb_table"
+        manifest_db_path = _manifest_rel_path(db_path, manifest_dir)
+        market_db_path = _manifest_rel_path(resolve_stock_daily_duckdb_path(), manifest_dir)
+    else:
+        source_type = "sqlite_table"
+        manifest_db_path = _manifest_rel_path(db_path, manifest_dir)
+        market_db_path = "../../STOCK_DAILY_DATA.db"
     payload = enrich_research_prediction_manifest(
         {
             "schema_version": 1,
-            "source_type": "sqlite_table",
+            "source_type": source_type,
             "predict_date": args.predict_date,
             "prediction_db_path": str(db_path),
-            "db_path": "../MODEL_PREDICTIONS.db",
+            "db_path": manifest_db_path,
             "table": wide_table,
             "table_long": long_table,
             "prediction_mode": "independent",
@@ -206,12 +293,16 @@ def main() -> None:
             "stock_count": int(wide["stock_code"].nunique()),
             "min_trade_date": str(wide["trade_date"].min()),
             "max_trade_date": str(wide["trade_date"].max()),
-            "market_db_path": "../../STOCK_DAILY_DATA.db",
+            "market_db_path": market_db_path,
             "output_dir": str(output_dir),
             "wide_parquet": str(wide_path),
             "long_parquet": str(long_path),
             "generated_at": generated_at,
             "labels": labels,
+            "duckdb_sync": {
+                "wide": duckdb_sync_wide,
+                "long": duckdb_sync_long,
+            },
             "label_model_specs": {
                 label: {
                     "model_dir": metadata["model_dir"],

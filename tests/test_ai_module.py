@@ -17,12 +17,54 @@ from ai_module import (
     get_factor_data,
     get_model,
     incre_fit,
+    resolve_selected_feature_aliases,
     top_return_loss,
 )
 from model_asset_route import MODEL_FEATURE_MODE_LEGACY
 
 
 class AiModuleTests(unittest.TestCase):
+    def test_resolve_selected_feature_aliases_maps_legacy_qfq_fields(self):
+        available = {
+            "stock_code",
+            "trade_date",
+            "close_qfq",
+            "macdsignal_qfq",
+            "gtja_alpha024_qfq",
+            "amount",
+        }
+
+        resolved = resolve_selected_feature_aliases(
+            ["stock_code", "trade_date", "close", "macdsignal", "gtja_alpha024", "amount"],
+            available,
+        )
+
+        self.assertEqual(
+            resolved["query_columns"],
+            ["stock_code", "trade_date", "close_qfq", "macdsignal_qfq", "gtja_alpha024_qfq", "amount"],
+        )
+        self.assertEqual(
+            resolved["alias_pairs"],
+            [
+                ("close", "close_qfq"),
+                ("macdsignal", "macdsignal_qfq"),
+                ("gtja_alpha024", "gtja_alpha024_qfq"),
+            ],
+        )
+        self.assertEqual(resolved["missing"], [])
+
+    def test_resolve_selected_feature_aliases_does_not_map_unrelated_field(self):
+        available = {"stock_code", "trade_date", "amount_qfq"}
+
+        resolved = resolve_selected_feature_aliases(
+            ["stock_code", "trade_date", "amount"],
+            available,
+        )
+
+        self.assertEqual(resolved["query_columns"], ["stock_code", "trade_date"])
+        self.assertEqual(resolved["alias_pairs"], [])
+        self.assertEqual(resolved["missing"], ["amount"])
+
     def test_get_model_reads_early_stopping_rounds_from_env(self):
         captured = {}
 
@@ -201,6 +243,52 @@ class AiModuleTests(unittest.TestCase):
         self.assertEqual(set(fit_x.index.get_level_values("trade_date")), {"20260102", "20260105"})
         self.assertEqual(set(kwargs["eval_set"][0][0].index.get_level_values("trade_date")), {"20260106"})
         self.assertNotIn("20260109", set(kwargs["eval_set"][0][0].index.get_level_values("trade_date")))
+
+    def test_incre_fit_disables_early_stopping_when_no_validation_dataset_exists(self):
+        calls = []
+
+        class FakeModel:
+            def __init__(self):
+                self.params = {"early_stopping_rounds": 250}
+
+            def get_params(self, deep=True):
+                return dict(self.params)
+
+            def set_params(self, **kwargs):
+                self.params.update(kwargs)
+                return self
+
+            def fit(self, x, y, **kwargs):
+                if "eval_set" not in kwargs and self.params.get("early_stopping_rounds") is not None:
+                    raise ValueError("Must have at least 1 validation dataset for early stopping.")
+                calls.append((dict(self.params), kwargs))
+
+            def predict(self, x):
+                return np.array([0.1, 0.2])
+
+        train_index = pd.MultiIndex.from_tuples(
+            [
+                ("000001.SZ", "20260102"),
+                ("000002.SZ", "20260102"),
+                ("000003.SZ", "20260102"),
+            ],
+            names=["stock_code", "trade_date"],
+        )
+        test_index = pd.MultiIndex.from_tuples(
+            [("000004.SZ", "20260105"), ("000005.SZ", "20260105")],
+            names=["stock_code", "trade_date"],
+        )
+        train_x = pd.DataFrame({"f": [1.0, 2.0, 3.0]}, index=train_index)
+        train_y = pd.Series([0.01, 0.05, -0.02], index=train_index)
+        test_x = pd.DataFrame({"f": [4.0, 5.0]}, index=test_index)
+        test_y = pd.Series([np.nan, np.nan], index=test_index)
+
+        incre_fit(FakeModel(), train_x, train_y, test_x, test_y, "data_file", save_shap=False)
+
+        self.assertEqual(len(calls), 1)
+        model_params, kwargs = calls[0]
+        self.assertIsNone(model_params["early_stopping_rounds"])
+        self.assertNotIn("eval_set", kwargs)
 
     def test_save_model_artifacts_persists_best_iteration_metadata(self):
         class FakeModel:
@@ -420,6 +508,72 @@ class AiModuleTests(unittest.TestCase):
 
         self.assertEqual(list(train_x.columns), ["close_rate", "pb"])
         self.assertEqual(list(test_x.columns), ["close_rate", "pb"])
+        self.assertEqual(train_y.name, "executable_5d_open_return")
+        self.assertEqual(test_y.name, "executable_5d_open_return")
+        self.assertEqual(len(train_data), 1)
+        self.assertEqual(len(test_data), 1)
+
+    def test_get_factor_data_maps_legacy_selected_features_to_qfq_split_columns(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            data_dir = Path(temp_dir)
+            feature_dir = data_dir / "production_factor_parts"
+            label_dir = data_dir / "prediction_label_parts"
+            feature_dir.mkdir()
+            label_dir.mkdir()
+
+            pd.DataFrame(
+                [
+                    {
+                        "stock_code": "000001.SZ",
+                        "trade_date": "20240102",
+                        "close_qfq": 10.0,
+                        "macdsignal_qfq": 0.2,
+                        "gtja_alpha024_qfq": 1.5,
+                    },
+                    {
+                        "stock_code": "000001.SZ",
+                        "trade_date": "20250102",
+                        "close_qfq": 11.0,
+                        "macdsignal_qfq": 0.3,
+                        "gtja_alpha024_qfq": 1.7,
+                    },
+                ]
+            ).to_parquet(feature_dir / "part-000.parquet", index=False)
+            pd.DataFrame(
+                [
+                    {
+                        "stock_code": "000001.SZ",
+                        "trade_date": "20240102",
+                        "executable_5d_open_return": 0.02,
+                        "5d_yield_rate": 0.03,
+                        "open6_yield_rate": 0.04,
+                        "10d_yield_rate": 0.05,
+                    },
+                    {
+                        "stock_code": "000001.SZ",
+                        "trade_date": "20250102",
+                        "executable_5d_open_return": 0.06,
+                        "5d_yield_rate": 0.07,
+                        "open6_yield_rate": 0.08,
+                        "10d_yield_rate": 0.09,
+                    },
+                ]
+            ).to_parquet(label_dir / "part-000.parquet", index=False)
+
+            train_x, train_y, test_x, test_y, train_data, test_data = get_factor_data(
+                "20240101",
+                "20250101",
+                "executable_5d_open_return",
+                str(data_dir),
+                selected_features=["close", "macdsignal", "gtja_alpha024"],
+            )
+
+        self.assertEqual(list(train_x.columns), ["close", "macdsignal", "gtja_alpha024"])
+        self.assertEqual(list(test_x.columns), ["close", "macdsignal", "gtja_alpha024"])
+        self.assertEqual(float(train_x.iloc[0]["close"]), 10.0)
+        self.assertEqual(float(train_x.iloc[0]["macdsignal"]), 0.2)
+        self.assertEqual(float(train_x.iloc[0]["gtja_alpha024"]), 1.5)
+        self.assertEqual(float(test_x.iloc[0]["close"]), 11.0)
         self.assertEqual(train_y.name, "executable_5d_open_return")
         self.assertEqual(test_y.name, "executable_5d_open_return")
         self.assertEqual(len(train_data), 1)

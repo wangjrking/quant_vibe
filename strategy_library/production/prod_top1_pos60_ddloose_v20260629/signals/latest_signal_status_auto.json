@@ -1,0 +1,18 @@
+{
+    "strategy_id":  "prod_top1_pos60_ddloose_v20260629",
+    "status":  "pending_buy_day_hard_gate",
+    "signal_date":  "20260629",
+    "buy_date":  "20260630",
+    "latest_signal_date":  "20260629",
+    "latest_buy_date":  "20260630",
+    "latest_market_date":  "20260629",
+    "buy_day_market_available":  false,
+    "buy_day_hard_gate_complete":  false,
+    "candidate_count_after_filters":  2400,
+    "selected_stock_code":  "000636.SZ",
+    "selected_symbol":  "SZSE.000636",
+    "selected_name":  "风华高科",
+    "target_pct":  "0.60000",
+    "published_at":  "2026-06-29T23:29:45+08:00",
+    "note":  "已根据 L1 增量审计确认下一执行交易日为 20260630；因 20260630 市场行尚未进入 STOCK_DAILY_DATA，买入日硬过滤待下一交易日行情到位后再补完。"
+}

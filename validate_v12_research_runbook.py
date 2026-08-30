@@ -39,12 +39,15 @@ def validate_runbook(runbook: dict[str, Any], job_specs: dict[str, Any]) -> dict
         errors.append("approval_status must be research_plan_not_approved_for_execution")
 
     standard_chain = runbook.get("standard_chain", {})
+    prediction_asset_root = str(standard_chain.get("prediction_asset_root", "")).replace("\\", "/")
     if "production_factor_parts" not in str(standard_chain.get("feature_input", "")):
         errors.append("standard_chain.feature_input must point to production_factor_parts")
     if "prediction_label_parts" not in str(standard_chain.get("label_input", "")):
         errors.append("standard_chain.label_input must point to prediction_label_parts")
-    if "MODEL_PREDICTIONS.db" not in str(standard_chain.get("prediction_db", "")):
-        errors.append("standard_chain.prediction_db must point to MODEL_PREDICTIONS.db")
+    if "prediction_db" in standard_chain:
+        errors.append("standard_chain.prediction_db is retired; use prediction_asset_root in DuckDB-only mode")
+    if "production_assets/duckdb" not in prediction_asset_root:
+        errors.append("standard_chain.prediction_asset_root must point to production_assets/duckdb")
     for key, value in standard_chain.items():
         if _contains_legacy_path(str(value)):
             errors.append(f"standard_chain.{key} must not point to legacy asset")

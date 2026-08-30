@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+  "status": "blocked_p1_input_contract_mismatch",
+  "signal_date": "20260723",
+  "buy_date": "20260724",
+  "production_current": true,
+  "buy_day_market_available": false,
+  "buy_day_hard_gate_complete": false,
+  "l7_execution_allowed": false,
+  "row_count": 0,
+  "stock_count": 0,
+  "blocking_issue": "冻结动作依赖未声明的 1D/3D/5D/10D 四表键域交集；10D-only 重建无法逐键复现。",
+  "note": "未生成 20260723 正式 latest 信号。输入契约修复和重新审计完成前不得交付 L7。"
+}

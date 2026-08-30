@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+  "strategy_name": "Top1 60pct dd_loose",
+  "status": "historical_archive",
+  "created_at": "2026-06-29",
+  "published_at": "2026-06-29",
+  "published_at_iso": "2026-06-29T08:03:51+08:00",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_candidate": "w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60",
+  "validation_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_adaptive70w_fouryear_pos60_ddloose_admission_20260629",
+  "publish_report_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_publish_top1_pos60_ddloose_20260629",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_adaptive70w_fouryear_strict_neighbor_20260629\\signals\\w72_23_05_amt150_mv30__hold3m5_c097_e096_ddtight_pos65__strict_amt150000_mv300000_pc150_pos60.csv",
+  "input_contract": {
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb",
+    "allow_legacy": false,
+    "adjustment_semantics": {
+      "explicit_front_adjusted_marker_required": true,
+      "front_adjusted_marker": "qfq",
+      "front_adjusted_column_suffix": "_qfq",
+      "front_adjusted_indicator_suffix": "_qfq",
+      "front_adjusted_factor_marker_required": true,
+      "forbidden_implicit_front_adjusted_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+    },
+    "market_field_semantics": {
+      "raw_price_output_suffix": "_raw",
+      "raw_market_price_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "front_adjusted_indicator_suffix": "_qfq",
+      "contract_rule": "strategy-side downstream assets must export raw market prices as *_raw; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+      "schema_kind": "strategy_output"
+    }
+  },
+  "current_signal": {
+    "signal_date": "20260629",
+    "buy_date": "20260630",
+    "archive_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_top1_pos60_ddloose_v20260629\\signals\\latest_signal_20260629_for_20260630.csv",
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_top1_pos60_ddloose_v20260629_latest.csv",
+    "status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_top1_pos60_ddloose_v20260629\\signals\\latest_signal_20260629_for_20260630_status.json",
+    "buy_day_hard_gate_complete": false,
+    "buy_day_realtime_checks_required": true
+  }
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

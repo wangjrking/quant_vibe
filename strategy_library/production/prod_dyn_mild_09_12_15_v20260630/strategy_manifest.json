@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_dyn_mild_09_12_15_v20260630",
+  "strategy_name": "动态Top5高收益 dyn_mild_09_12_15",
+  "name": "动态Top5高收益 dyn_mild_09_12_15",
+  "status": "production",
+  "created_at": "2026-06-30",
+  "published_at": "2026-06-30",
+  "published_at_iso": "2026-06-30T21:32:26+08:00",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_candidate": "dyn_mild_09_12_15",
+  "source_report_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_latest_l4_top3_frequency_grid_20260630",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dyn_mild_09_12_15_v20260630\\signals\\full_history_dyn_mild_09_12_15.csv",
+  "input_contract": {
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "market_db_path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\l2_stock_daily_data.duckdb",
+    "allow_legacy": false,
+    "market_field_semantics": {
+      "raw_price_output_suffix": "_raw",
+      "raw_market_price_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "front_adjusted_indicator_suffix": "_qfq",
+      "contract_rule": "strategy-side downstream assets must export raw market prices as *_raw; front-adjusted indicators and factors must remain explicitly marked as *_qfq",
+      "schema_kind": "strategy_output"
+    },
+    "adjustment_semantics": {
+      "explicit_front_adjusted_marker_required": true,
+      "front_adjusted_marker": "qfq",
+      "front_adjusted_column_suffix": "_qfq",
+      "front_adjusted_indicator_suffix": "_qfq",
+      "front_adjusted_factor_marker_required": true,
+      "forbidden_implicit_front_adjusted_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "pre_close"
+      ],
+      "contract_rule": "front-adjusted values must be explicitly marked with qfq in field or factor names; naked open/high/low/close/pre_close columns must not be interpreted as front-adjusted by downstream consumers without a separate explicit schema contract"
+    }
+  },
+  "validation": {
+    "annual_return": 5.731332542989966,
+    "pnl_ratio": 23.302184914512626,
+    "sharpe": 1.8663811890630113,
+    "max_drawdown": 0.16397974934864862
+  },
+  "current_signal": {
+    "signal_date": "20260630",
+    "buy_date": "20260701",
+    "archive_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dyn_mild_09_12_15_v20260630\\signals\\latest_signal_20260630_for_20260701.csv",
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_dyn_mild_09_12_15_v20260630_latest.csv",
+    "status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_dyn_mild_09_12_15_v20260630\\signals\\latest_signal_20260630_for_20260701_status.json",
+    "buy_day_hard_gate_complete": false,
+    "buy_day_realtime_checks_required": true
+  }
+}

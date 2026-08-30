@@ -6,14 +6,13 @@
   "approval_status": "research_only_not_approved_for_l4_or_l5",
   "purpose": "Define the next controlled model tuning objectives after V11 balanced TopN snapshot.",
   "standard_chain": {
-    "feature_input": "quant/data_file/production_factor_parts/",
-    "label_input": "quant/data_file/prediction_label_parts/",
-    "prediction_db": "quant/data_file/model_predictions/MODEL_PREDICTIONS.db",
-    "forbidden_default_inputs": [
-      "quant/data_file/stock_factor_data.parquet",
-      "quant/data_file/standard_factor_by_date_parts/",
-      "quant/data_file/standard_factor_by_date_parts_fast40/",
-      "quant/data_file/odb.db stock_predict_data_*"
+    "feature_input": "quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>",
+    "label_input": "quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>",
+    "prediction_asset_root": "quant/data_file/production_assets/duckdb/",
+    "forbidden_default_input_classes": [
+      "retired legacy parquet factor assets",
+      "retired legacy sqlite mixed prediction tables",
+      "retired standard_factor_by_date_parts directories"
     ]
   },
   "basis": {
@@ -78,13 +77,13 @@
       "main_gap": "recent20 RankIC remains negative while TopN is positive.",
       "optimization_style": "dual_objective_rankic_plus_topn",
       "score_weights": {
-        "full.daily_rank_ic_mean_delta": 0.30,
-        "full.top1_delta": 0.10,
-        "full.top5_delta": 0.10,
+        "full.daily_rank_ic_mean_delta": 0.3,
+        "full.top1_delta": 0.1,
+        "full.top5_delta": 0.1,
         "full.top10_delta": 0.05,
         "recent63.top1_delta": 0.15,
         "recent63.top5_delta": 0.15,
-        "recent20.daily_rank_ic_mean_delta": 0.10,
+        "recent20.daily_rank_ic_mean_delta": 0.1,
         "recent20.top5_delta": 0.05
       },
       "additional_constraints": {
@@ -105,12 +104,12 @@
       "main_gap": "Full RankIC and recent20 RankIC are negative despite strong TopN gains.",
       "optimization_style": "rankic_constrained_topn_objective",
       "score_weights": {
-        "full.daily_rank_ic_mean_delta": 0.40,
-        "full.rank_ic_positive_ratio_delta": 0.10,
-        "full.top5_delta": 0.10,
-        "recent126.daily_rank_ic_mean_delta": 0.10,
-        "recent63.daily_rank_ic_mean_delta": 0.10,
-        "recent63.top5_delta": 0.10,
+        "full.daily_rank_ic_mean_delta": 0.4,
+        "full.rank_ic_positive_ratio_delta": 0.1,
+        "full.top5_delta": 0.1,
+        "recent126.daily_rank_ic_mean_delta": 0.1,
+        "recent63.daily_rank_ic_mean_delta": 0.1,
+        "recent63.top5_delta": 0.1,
         "recent20.daily_rank_ic_mean_delta": 0.05,
         "recent20.top5_delta": 0.05
       },
@@ -133,12 +132,12 @@
       "main_gap": "Full Top10 delta is still negative while most other windows improve.",
       "optimization_style": "top10_constrained_stability_objective",
       "score_weights": {
-        "full.daily_rank_ic_mean_delta": 0.20,
-        "full.top1_delta": 0.10,
+        "full.daily_rank_ic_mean_delta": 0.2,
+        "full.top1_delta": 0.1,
         "full.top5_delta": 0.15,
         "full.top10_delta": 0.25,
-        "recent63.daily_rank_ic_mean_delta": 0.10,
-        "recent63.top5_delta": 0.10,
+        "recent63.daily_rank_ic_mean_delta": 0.1,
+        "recent63.top5_delta": 0.1,
         "recent20.top5_delta": 0.05,
         "recent20.top10_delta": 0.05
       },
@@ -161,7 +160,7 @@
       "optimization_style": "preserve_v11_constrained_blend_then_validate",
       "score_weights": {
         "full.daily_rank_ic_mean_delta": 0.25,
-        "full.top5_delta": 0.20,
+        "full.top5_delta": 0.2,
         "full.top10_delta": 0.15,
         "recent63.top1_delta": 0.15,
         "recent63.top5_delta": 0.15,

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_repro500_p435_s96_p10d70_v20260702",
+  "strategy_name": "复现500高收益 Top3 p435 s96 p10d70",
+  "status": "production",
+  "model_input": {
+    "source": "formal L4 1D/3D/5D/10D score fields in reconstructed L5 signal chain",
+    "base_candidate": "w25_25_00_50_gapm8p3_top8",
+    "entry_weight_name": "w25_25_00_50_reconstructed",
+    "uses_1d": true,
+    "uses_3d": true,
+    "uses_5d": true,
+    "uses_10d": true
+  },
+  "selection_rule": {
+    "topn": 3,
+    "signal_pct_chg_max": -1.75,
+    "buy_open_gap_qfq_max_pct": 1.5,
+    "pred_10d_min": 0.7,
+    "pred_1d_min": -0.002,
+    "exclude_bj": true,
+    "exclude_st_risk_warning": true,
+    "exclude_delist": true,
+    "skip_open_limit_up_buy": true,
+    "no_industry_filter": true,
+    "no_month_or_date_exclusion": true
+  },
+  "position_rule": {
+    "target_position_pct": 0.435,
+    "max_positions": 3,
+    "cash_buffer_mode": "explicit_target_pct"
+  },
+  "holding_rule": {
+    "holding_days": 1,
+    "max_holding_days": 1,
+    "score_exit_entry_ratio": 0.96,
+    "min_holding_days_before_score_exit": 1,
+    "score_continue_entry_ratio": 9.99,
+    "signal_stop_loss_pct": 0.05,
+    "signal_take_profit_pct": 0.08
+  },
+  "execution_rule": {
+    "signal_date_rule": "T???????????????",
+    "latest_signal_status": "stale_no_current_signal",
+    "latest_signal_warning": "??????????20260528/20260529????????????????????L7???",
+    "qfq_semantics": "交易可执行过滤必须使用不复权真实价格，不得用前复权价格判断涨跌停或真实成交。"
+  }
+}

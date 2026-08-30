@@ -19,6 +19,10 @@ def _sample_group(n=30):
             "low": close - 0.5,
             "close": close,
             "pre_close": close.shift(1),
+            "open_qfq": (close - 0.2) * 0.95,
+            "high_qfq": (close + 0.5) * 0.95,
+            "low_qfq": (close - 0.5) * 0.95,
+            "close_qfq": close * 0.95,
             "vol": [100.0] * n,
             "amount": close * 10.0,
             "his_low": close - 2.0,
@@ -66,6 +70,30 @@ class FactorFormulaModuleTests(unittest.TestCase):
         result = group_factor_eng(frame)
 
         self.assertTrue(math.isfinite(result.loc[5, "_ts_imbalance"]))
+
+    def test_group_factor_eng_preserves_explicit_qfq_market_price_columns(self):
+        result = group_factor_eng(_sample_group())
+
+        self.assertIn("open_qfq", result.columns)
+        self.assertIn("high_qfq", result.columns)
+        self.assertIn("low_qfq", result.columns)
+        self.assertIn("close_qfq", result.columns)
+        self.assertIn("pre_close_qfq", result.columns)
+        self.assertAlmostEqual(result.loc[0, "close_qfq"], 9.5)
+        self.assertTrue(pd.isna(result.loc[0, "pre_close_qfq"]))
+        self.assertAlmostEqual(result.loc[1, "pre_close_qfq"], result.loc[0, "close_qfq"])
+
+    def test_group_factor_eng_marks_front_adjusted_indicators_with_qfq(self):
+        result = group_factor_eng(_sample_group())
+
+        self.assertIn("atr_qfq", result.columns)
+        self.assertIn("macd_qfq", result.columns)
+        self.assertIn("macdsignal_qfq", result.columns)
+        self.assertIn("macdhist_qfq", result.columns)
+        self.assertNotIn("atr", result.columns)
+        self.assertNotIn("macd", result.columns)
+        self.assertNotIn("macdsignal", result.columns)
+        self.assertNotIn("macdhist", result.columns)
 
 
 if __name__ == "__main__":

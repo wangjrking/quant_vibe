@@ -1,0 +1,20 @@
+{
+  "case_id": "header_only_no_signal",
+  "strategy_manifest_latest_signal_file": null,
+  "latest_csv_rows": 0,
+  "required_signal_semantics": "no_signal_hold_only",
+  "required_true_flags": [
+    "no_signal",
+    "hold_only",
+    "formal_batch_generated"
+  ],
+  "required_zero_counts": [
+    "action_count",
+    "row_count",
+    "buy_count",
+    "sell_count"
+  ],
+  "execution_flags_must_be_false": true,
+  "expected_branch": "no_signal_hold_only_pending_only",
+  "otherwise": "fail_closed"
+}

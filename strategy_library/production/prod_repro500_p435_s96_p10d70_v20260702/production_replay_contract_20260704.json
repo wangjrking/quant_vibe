@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_repro500_p435_s96_p10d70_v20260702",
+  "created_at": "2026-07-04T16:40:00+08:00",
+  "purpose": "生产策略复跑唯一口径，禁止混用 reports 研究候选",
+  "source_of_truth": {
+    "registry": "quant/main/strategy_library/registry.json",
+    "strategy_archive": "quant/main/strategy_library/production/prod_repro500_p435_s96_p10d70_v20260702",
+    "signal_file": "quant/main/strategy_library/production/prod_repro500_p435_s96_p10d70_v20260702/signals/full_history_repro500_p435_s96_p10d70.csv",
+    "score_db": "quant/main/strategy_library/production/prod_repro500_p435_s96_p10d70_v20260702/inputs/score.duckdb",
+    "score_table": "score",
+    "strategy_code": "quant/main/strategy_library/production/prod_repro500_p435_s96_p10d70_v20260702/code_snapshot/main.py",
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb"
+  },
+  "forbidden_default_inputs": [
+    "quant/data_file/reports/*/signals.csv",
+    "quant/data_file/reports/*/*_signals/*.csv",
+    "quant/data_file/reports/*/*_grid",
+    "legacy SQLite prediction tables",
+    "research-only prediction assets"
+  ],
+  "required_backtest_args": {
+    "max_positions": 3,
+    "backtest_adjust": "none",
+    "backtest_initial_cash": 700000,
+    "backtest_slippage_ratio": 0.0,
+    "score_table": "score"
+  },
+  "required_environment": {
+    "GM_OPEN_DAILY_SCORE_EXIT": "1",
+    "GM_ADAPTIVE_LIQUIDITY_SLIPPAGE": "0",
+    "GM_BACKTEST_SLIPPAGE_RATIO": "0.0"
+  },
+  "latest_rerun": {
+    "log_file": "quant/main/strategy_library/production/prod_repro500_p435_s96_p10d70_v20260702/backtests/repro500_production_rerun_20260704_maxpos3.log",
+    "backtest_start": "2022-08-12 09:00:00",
+    "backtest_end": "2026-06-08 15:30:00",
+    "pnl_ratio": 15.39970117609666,
+    "annual_return": 4.023543972280086,
+    "sharpe": 4.457735801842926,
+    "max_drawdown": 0.032456636795882725,
+    "open_count": 296,
+    "close_count": 296,
+    "win_ratio": 0.8006756756756757
+  },
+  "notes": [
+    "本次复跑不使用已移入回收站的 strategy_agent_active_l4_prod_repro_grid_20260703 研究目录。",
+    "此前 315.83% 复跑漏传 max_positions=3，导致只按单持仓执行。",
+    "旧发布日志 500.50% 尚未完全复现，不能用研究候选结果替代生产复跑结果。"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_fw_soft_deepdrop_weight_v20260706",
+  "created_at": "2026-07-06T00:00:00+08:00",
+  "purpose": "生产复现契约",
+  "source_of_truth": {
+    "registry": "quant/main/strategy_library/registry.json",
+    "strategy_archive": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706",
+    "signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\signals\\full_history_fw_soft_deepdrop_weight.csv",
+    "strategy_code": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_fw_soft_deepdrop_weight_v20260706\\code_snapshot\\main.py",
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb"
+  },
+  "required_backtest_conditions": {
+    "validation_platform": "juejin",
+    "backtest_slippage_ratio": 0.003,
+    "adaptive_liquidity_slippage": false,
+    "backtest_adjust": "none",
+    "max_positions": 3
+  },
+  "latest_verified_juejin_log": "backtests/fw_soft_from_current_production_full_history_slip0p0030.log",
+  "latest_verified_metrics": {
+    "annual_return": 2.57064,
+    "pnl_ratio": 10.106487,
+    "sharpe": 3.645812,
+    "max_drawdown": 0.035646,
+    "win_ratio": 0.70418,
+    "open_count": 311,
+    "close_count": 311,
+    "calmar_ratio": 72.115135,
+    "risk_ratio": 0.0
+  },
+  "known_limitations": [
+    "用户接受降级发布，当前 full-history 重建版未达到研究版 501% 指标。",
+    "latest signal 仍需买入日硬门校验完成后才可交 L7。"
+  ]
+}

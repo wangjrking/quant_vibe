@@ -8,29 +8,23 @@ from pathlib import Path
 from typing import Any
 
 from project_paths import resolve_data_path, resolve_project_path
+from strategy_asset_route import (
+    current_production_strategy,
+    load_current_production_strategy_context,
+    load_latest_signal_batch,
+    load_production_strategy_registry,
+    load_strategy_manifest_payload,
+    resolve_latest_signal_file as route_resolve_latest_signal_file,
+)
 
 
 def load_registry(registry_path: str | Path) -> dict[str, Any]:
-    path = resolve_project_path(registry_path)
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
-
-
-def current_production_strategy(registry: dict[str, Any], strategy_id: str | None = None) -> dict[str, Any]:
-    production = registry.get("production", {})
-    selected_id = strategy_id or production.get("current")
-    if not selected_id:
-        raise ValueError("production.current missing in strategy registry")
-    for item in production.get("strategies", []):
-        if item.get("strategy_id") == selected_id:
-            return item
-    raise ValueError(f"strategy_id not found in production registry: {selected_id}")
+    return load_production_strategy_registry(registry_path=registry_path)
 
 
 def load_strategy_manifest(strategy_dir: str | Path) -> dict[str, Any]:
-    path = Path(strategy_dir) / "strategy_manifest.json"
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    strategy_path = Path(strategy_dir)
+    return load_strategy_manifest_payload(strategy_path.name, strategy_dir=strategy_path)
 
 
 def resolve_latest_signal_file(
@@ -39,36 +33,7 @@ def resolve_latest_signal_file(
     signal_dir: str | Path | None = None,
     strategy_dir: str | Path | None = None,
 ) -> Path:
-    candidates: list[Path] = []
-    if signal_dir is not None:
-        candidates.append(resolve_data_path(signal_dir) / f"{strategy_id}_latest.csv")
-    if strategy_dir is not None:
-        base = Path(strategy_dir)
-        candidates.extend(
-            [
-                base / "signals" / "signals_latest.csv",
-                base / "signals" / "production_signals.csv",
-            ]
-        )
-    for path in candidates:
-        if path.exists():
-            return path
-    raise FileNotFoundError(
-        f"latest signal file not found for {strategy_id}; checked: "
-        + ", ".join(str(path) for path in candidates)
-    )
-
-
-def load_latest_signal_batch(signal_path: str | Path) -> list[dict[str, str]]:
-    path = Path(signal_path)
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        rows = list(csv.DictReader(handle))
-    if not rows:
-        raise ValueError(f"signal file is empty: {path}")
-    latest_signal_date = max((row.get("signal_date") or "") for row in rows)
-    latest_rows = [row for row in rows if (row.get("signal_date") or "") == latest_signal_date]
-    latest_rows.sort(key=lambda row: int(row.get("rank") or "999999"))
-    return latest_rows
+    return route_resolve_latest_signal_file(strategy_id, signal_dir=signal_dir, strategy_dir=strategy_dir)
 
 
 def load_holdings_summary_from_json(path: str | Path) -> dict[str, Any]:
@@ -500,16 +465,15 @@ def build_from_runtime(
     review_status: str = "未审核",
     rebalance_tolerance: float = 0.02,
 ) -> dict[str, Any]:
-    registry = load_registry(registry_file)
-    strategy_entry = current_production_strategy(registry, strategy_id)
-    strategy_dir = resolve_project_path(Path(strategy_root) / strategy_entry["strategy_id"])
-    strategy_manifest = load_strategy_manifest(strategy_dir)
-    signal_file = resolve_latest_signal_file(
-        strategy_entry["strategy_id"],
+    strategy_context = load_current_production_strategy_context(
+        strategy_id=strategy_id,
+        registry_file=registry_file,
         signal_dir=signal_dir,
-        strategy_dir=strategy_dir,
+        strategy_root=strategy_root,
     )
-    signal_rows = load_latest_signal_batch(signal_file)
+    registry = strategy_context["registry"]
+    strategy_manifest = strategy_context["strategy_manifest"]
+    signal_rows = strategy_context["signal_rows"]
     if holdings_json:
         holdings_summary = load_holdings_summary_from_json(holdings_json)
     elif account_id:
@@ -530,7 +494,7 @@ def build_from_runtime(
         executor=executor,
         review_status=review_status,
         rebalance_tolerance=rebalance_tolerance,
-        signal_source_file=str(signal_file),
+        signal_source_file=str(strategy_context["signal_path"]),
     )
 
 

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+  "purpose": "V260生产候选复现契约",
+  "reproduction_level": "process_reproducible_with_frozen_action_exact_repeat",
+  "source_of_truth": {
+    "formal_10d_manifest": "quant/main/config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
+    "market_db": "quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb",
+    "full_history_actions": "signals/full_history_actions.csv",
+    "juejin_executor": "code_snapshot/juejin_frozen_executor.py",
+    "source_snapshot": "code_snapshot/source_modules/",
+    "protocol": "inputs/preregistered_protocol.json",
+    "frozen_grid": "inputs/frozen_grid_before_known_2026.json"
+  },
+  "frozen_parameters": {
+    "position_warmup_days": 50,
+    "smooth_window": 7,
+    "current_weight": 0.1,
+    "weak_normal_strong_max_positions": [
+      14,
+      15,
+      16
+    ],
+    "fixed_slippage_each_side": 0.003,
+    "initial_cash": 700000
+  },
+  "expected_artifacts": {
+    "action_rows": 1563,
+    "action_sha256": "D02BB8B6384BE1B586FA39D2676CAE2E15495D35A39132C29279F65A173D516F",
+    "juejin_platform_linear_annual": 1.900502577405542,
+    "juejin_sharpe": 1.5514961406711685,
+    "juejin_max_drawdown": 0.23529891580633588
+  },
+  "fail_closed_conditions": [
+    "formal 10D manifest is not approved_for_l5 or not duckdb_table",
+    "action SHA256 mismatch",
+    "source snapshot hash mismatch",
+    "legacy or research-only L4 input detected",
+    "raw execution price and qfq score semantics are mixed",
+    "production registry cutover has not passed audit"
+  ]
+}

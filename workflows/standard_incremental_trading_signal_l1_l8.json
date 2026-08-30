@@ -1,0 +1,139 @@
+{
+  "template_id": "standard_incremental_trading_signal_l1_l8",
+  "execution_scope": "target_trade_date_only",
+  "execution_profile": "routine_target_date_incremental_fast_path_v1",
+  "full_history_rebuild": false,
+  "execution_route": {
+    "route_id": "standard_target_date_incremental_l1_l8_v1",
+    "execution_profile": "routine_target_date_incremental_fast_path_v1",
+    "execution_scope": "target_trade_date_only",
+    "target_trade_date": "{target_trade_date}",
+    "full_history_rebuild": false,
+    "requires_candidate_grant": false,
+    "requires_architect_review": false,
+    "authorization_policy": {
+      "policy_id": "owner_approved_once_auto_advance_v1",
+      "owner_approval_at_workflow_start": true,
+      "per_layer_commander_grant": false,
+      "audit_pass_auto_dispatches_next_layer": true,
+      "control_thread_timeout_is_blocking": false,
+      "business_execution_retry_limit": 1,
+      "retryable_failure_classes": ["launcher_identity", "stale_lease", "control_thread_timeout", "bounded_stage_timeout"],
+      "non_retryable_failure_classes": ["data_quality", "source_not_ready", "schema_drift", "future_leakage", "unknown_writer", "asset_fingerprint_drift"]
+    },
+    "evidence_policy": {
+      "single_run_manifest": true,
+      "single_startup_preflight": true,
+      "audit_each_layer_handoff": true,
+      "repeat_package_parser_checks": false
+    },
+    "stages": [
+      {"layer": "L1", "entrypoint": "run_all_a_raw_update.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L2", "entrypoint": "integrate_l2_latest_and_recompute_qfq.py", "companion_entrypoints": ["integrate_l2_stock_risk_events_daily.py"], "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L3", "entrypoint": "deliver_l3_target_date_duckdb_mainline.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L4", "entrypoint": "incremental_formal_l4_duckdb_mainline.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L5", "entrypoint": "run_production_tasks.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L6", "entrypoint": "run_production_tasks.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L7", "entrypoint": "build_l7_delivery_package.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false},
+      {"layer": "L8", "entrypoint": "workflow_monitor_manage.py", "scope": "target_trade_date_only", "target_trade_date": "{target_trade_date}", "full_history_rebuild": false}
+    ]
+  },
+  "workflow_name": "标准增量交易信号工作流",
+  "matched_workflow": "standard_incremental_trading_signal: L1/L2/L3/L4/L5/L6/L7/L8 target-date incremental, audit-gated handoff",
+  "requires_user_approval": false,
+  "description": "当前正式主线：L1-L7 均按目标交易日增量处理，L8 仅做审计与候选治理；全历史重建不属于本模板。",
+  "hard_rules": [
+    "no-BJ",
+    "DuckDB-only",
+    "one-table-one-file",
+    "explicit-qfq",
+    "fail-closed"
+  ],
+  "agents": [
+    {
+      "layer": "L1",
+      "agent_id": "data-ingestion-agent",
+      "task": "L1 每日增量接入、source/raw parquet/active DuckDB 三面对齐、审计前交付",
+      "eta_minutes": 30
+    },
+    {
+      "layer": "L2",
+      "agent_id": "data-integration-agent",
+      "task": "L2 仅整合 target_trade_date，保持 no-BJ、DuckDB-only 和显式 qfq 底表契约",
+      "eta_minutes": 45
+    },
+    {
+      "layer": "L3",
+      "agent_id": "factor-agent",
+      "task": "L3 仅交付 target_trade_date feature 截面，保持 no-BJ、DuckDB-only、显式 qfq、label 不前推",
+      "eta_minutes": 60
+    },
+    {
+      "layer": "L4",
+      "agent_id": "model-agent",
+      "task": "L4 基于 active L3 做目标交易日增量预测刷新，不训练、不调参",
+      "eta_minutes": 30
+    },
+    {
+      "layer": "L5",
+      "agent_id": "strategy-agent",
+      "task": "L5 生成正式信号候选，读取 approved_for_l5 formal manifest，不混入 research 或 legacy 资产",
+      "eta_minutes": 20
+    },
+    {
+      "layer": "L6",
+      "agent_id": "strategy-agent",
+      "task": "L6 完成 latest signal、validation 和 current 同步，保持与正式策略归档一致",
+      "eta_minutes": 15
+    },
+    {
+      "layer": "L7",
+      "agent_id": "trading-agent",
+      "task": "L7 生成交易交付包并执行买入日硬门控，未过闸前保持 pending_buy_day_hard_gate",
+      "eta_minutes": 20
+    },
+    {
+      "layer": "L8",
+      "agent_id": "mcp-agent",
+      "task": "L8 只登记发布候选和状态，不把未过硬门控资产发布为自动可执行交易信号",
+      "eta_minutes": 15
+    }
+  ],
+  "gates": [
+    {
+      "from_layer": "L1",
+      "to_layer": "L2",
+      "condition": "L1 三面对齐完成且审计通过"
+    },
+    {
+      "from_layer": "L2",
+      "to_layer": "L3",
+      "condition": "L2 target_trade_date 增量底表完成且审计通过"
+    },
+    {
+      "from_layer": "L3",
+      "to_layer": "L4",
+      "condition": "L3 target_trade_date feature 交付完成且审计通过"
+    },
+    {
+      "from_layer": "L4",
+      "to_layer": "L5",
+      "condition": "L4 formal 预测刷新完成且 manifest 审计通过"
+    },
+    {
+      "from_layer": "L5",
+      "to_layer": "L6",
+      "condition": "L5 正式信号生成完成"
+    },
+    {
+      "from_layer": "L6",
+      "to_layer": "L7",
+      "condition": "L6 latest signal、validation、current 同步完成且审计通过"
+    },
+    {
+      "from_layer": "L7",
+      "to_layer": "L8",
+      "condition": "L7 只允许进入交付和候选发布治理；硬门控未过不得进入可执行态"
+    }
+  ]
+}

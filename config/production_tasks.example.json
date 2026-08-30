@@ -6,7 +6,7 @@
     "timezone": "Asia/Shanghai"
   },
   "defaults": {
-    "python": "python",
+    "python": "../../.venv/Scripts/python.exe",
     "project_dir": ".",
     "data_dir": "../data_file",
     "registry_file": "strategy_library/registry.json",
@@ -16,22 +16,18 @@
   },
   "strategies": [
     {
-      "strategy_id": "prod_dynamic_top1_amt9w_warmup60_v20260626",
-      "enabled": true,
+      "strategy_id": "prod_v260_10d_regime_warmup_v20260724",
+      "enabled": false,
+      "disabled_reason": "P1: V260 frozen actions require an undeclared 1D/3D/5D/10D key-domain intersection; the approved production contract is 10D-only.",
       "prediction_manifest": "config/prediction_manifests/executable_10d_open_return_l4_formal_20260617.json",
-      "description": "当前唯一 L5 生产策略：单票动态Top1 量额90k warmup60。只读取 approved_for_l5 formal L4 3D/5D/10D 资产；新账户默认先做 warm-up 60 状态重建。",
       "steps": [
         {
-          "name": "export_signals",
+          "name": "export_v260_signal",
           "command": [
             "{python}",
-            "export_dynamic_top1_formal_signals.py",
-            "--strategy-dir",
-            "strategy_library/production/{strategy_id}",
-            "--output",
-            "{signal_dir}/{strategy_id}_latest.csv",
-            "--status-output",
-            "{signal_dir}/{strategy_id}_latest_status.json"
+            "export_v260_production_signals.py",
+            "--signal-dir",
+            "{signal_dir}"
           ]
         }
       ]

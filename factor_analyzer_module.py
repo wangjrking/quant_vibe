@@ -9,6 +9,7 @@ import alphalens
 import matplotlib.pyplot as plt
 import pickle
 import shap
+from pathlib import Path
 from project_paths import resolve_data_dir
 
 from database_module import get_sql_engine
@@ -59,11 +60,41 @@ def get_factor_analysis_data(factor, groupby='industry'):
     alpha_factor_data = get_factor_stock_data(factor_data,factor, groupby)
     alphalens.tears.create_full_tear_sheet(alpha_factor_data)
 
-def shap_explain(stock_code,trade_date):
+def _resolve_shap_artifact_dir(artifact_dir=None) -> Path:
+    candidates = []
+    if artifact_dir is not None:
+        candidates.append(Path(artifact_dir))
 
-    with open(resolve_data_dir() / 'shap_values.pkl', 'rb') as file:
+    env_dir = os.getenv("QUANT_SHAP_ARTIFACT_DIR")
+    if env_dir:
+        candidates.append(Path(env_dir))
+
+    data_dir = resolve_data_dir()
+    candidates.extend(
+        [
+            data_dir / "reports" / "model_explainability_current",
+        ]
+    )
+
+    for candidate in candidates:
+        shap_path = candidate / "shap_values.pkl"
+        index_path = candidate / "test_index.pkl"
+        if shap_path.exists() and index_path.exists():
+            return candidate
+
+    searched = "\n".join(str(path) for path in candidates)
+    raise FileNotFoundError(
+        "shap artifact files not found. expected shap_values.pkl and test_index.pkl in one of:\n"
+        + searched
+    )
+
+
+def shap_explain(stock_code,trade_date, artifact_dir=None):
+    artifact_root = _resolve_shap_artifact_dir(artifact_dir)
+
+    with open(artifact_root / 'shap_values.pkl', 'rb') as file:
         shap_values  = pickle.load(file)
-    with open(resolve_data_dir() / 'test_index.pkl', 'rb') as file:
+    with open(artifact_root / 'test_index.pkl', 'rb') as file:
         test_index  = pickle.load(file)
     num = test_index.index((stock_code,trade_date))
     shap.plots.waterfall(shap_values[num])

@@ -1,0 +1,47 @@
+{
+  "config_id": "incremental_audit_cadence_policy_v1_20260829",
+  "generated_at": "2026-08-29T00:00:00+08:00",
+  "actor": "commander-agent",
+  "approval_status": "owner_directed_governance_policy",
+  "purpose": "Reduce routine target-date audit duplication while preserving machine fail-closed gates and strict review for elevated-risk changes.",
+  "routine_eligibility": {
+    "target_trade_date_only": true,
+    "preapproved_standard_contract": true,
+    "no_schema_change": true,
+    "no_code_or_runtime_change": true,
+    "no_model_or_manifest_semantics_change": true,
+    "no_strategy_semantics_change": true,
+    "no_active_or_registry_route_change": true,
+    "no_full_history_rebuild": true,
+    "no_source_partial_exception": true,
+    "all_machine_gates_and_rollback_checks_pass": true
+  },
+  "routine_cadence": {
+    "l1_to_l4": "machine_gated_then_one_batch_release_audit_after_l4",
+    "batch_audit_scope": ["L1 source and row coverage", "L2 lineage and formulas", "L3 feature boundary", "L4 model binding and prediction quality"],
+    "batch_audit_required_before": "L5_L6",
+    "l5_l6_no_action": "machine_validate_and_record_hold_only_no_L7_or_L8_audit",
+    "l5_l6_with_actions": "one_delivery_audit_covering_L5_L6_L7_before_any_execution_or_external_release",
+    "l8_pending_only": "machine_registered_without_fixed_audit",
+    "l8_fixed_audit_trigger": ["external_publication", "permission_opening", "execution_state_change"]
+  },
+  "strict_audit_escalations": [
+    "schema_change",
+    "code_or_runtime_change",
+    "model_training_or_model_change",
+    "strategy_semantics_change",
+    "active_or_registry_route_change",
+    "full_history_rebuild",
+    "source_partial_exception",
+    "data_quality_anomaly",
+    "unknown_writer_or_fingerprint_drift",
+    "real_trade_execution",
+    "external_publication"
+  ],
+  "boundaries": {
+    "machine_gates_remain_fail_closed": true,
+    "routine_write_requires_atomic_rollback": true,
+    "batch_audit_failure_requires_rollback_or_quarantine_decision": true,
+    "no_business_asset_change_by_this_policy": true
+  }
+}

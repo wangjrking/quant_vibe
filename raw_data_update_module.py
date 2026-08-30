@@ -13,6 +13,8 @@ from typing import Callable
 
 import pandas as pd
 
+from l1_universe_rules import filter_stock_codes_no_bj
+
 
 @dataclass(frozen=True)
 class RawTableSpec:
@@ -36,6 +38,25 @@ RAW_TABLE_SPECS: dict[str, RawTableSpec] = {
     "dc_hot": RawTableSpec("dc_hot", "dc_hot.parquet", ("ts_code", "trade_date"), per_stock=False),
     "stock_st": RawTableSpec("stock_st", "stock_st.parquet", ("ts_code", "trade_date"), per_stock=False),
     "index_daily": RawTableSpec("index_daily", "index_daily.parquet", ("ts_code", "trade_date"), per_stock=False),
+    "stk_shock": RawTableSpec(
+        "stk_shock",
+        "stk_shock.parquet",
+        ("ts_code", "trade_date", "reason", "period"),
+        per_stock=False,
+    ),
+    "stk_high_shock": RawTableSpec(
+        "stk_high_shock",
+        "stk_high_shock.parquet",
+        ("ts_code", "trade_date", "reason", "period"),
+        per_stock=False,
+    ),
+    "stk_alert": RawTableSpec(
+        "stk_alert",
+        "stk_alert.parquet",
+        ("ts_code", "start_date", "end_date", "type"),
+        date_column="start_date",
+        per_stock=False,
+    ),
 }
 
 
@@ -73,6 +94,14 @@ def append_parquet_dedup(path: str | Path, new_rows: pd.DataFrame, subset: list[
         "act_ent_type",
         "limit_type",
         "reason",
+        "period",
+        "trade_market",
+        "type",
+        "source_api",
+        "source_row_sha256",
+        "fetched_at",
+        "start_date",
+        "end_date",
         "first_time",
         "last_time",
     }
@@ -93,7 +122,7 @@ def append_parquet_dedup(path: str | Path, new_rows: pd.DataFrame, subset: list[
 def load_stock_codes(path: str | Path) -> list[str]:
     frame = pd.read_csv(path)
     col = "stock_code" if "stock_code" in frame.columns else "ts_code"
-    return sorted({str(value).strip().upper() for value in frame[col].dropna() if str(value).strip()})
+    return filter_stock_codes_no_bj(frame[col].dropna())
 
 
 def load_existing_stock_codes(path: str | Path, code_column: str = "ts_code") -> set[str]:

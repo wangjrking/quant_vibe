@@ -3,7 +3,7 @@
   "strategy_id": "prod_liq_prime_one_v2_reproducible_20260614",
   "name": "流动性精选一只 v2 可复现冻结版",
   "code_name": "liq_prime_one_reproducible",
-  "status": "production_candidate",
+  "status": "historical_archive",
   "version": "v20260614",
   "created_at": "2026-06-14",
   "purpose": "先复刻原投产策略的预测表血缘，再以可复现生产包形式冻结，避免后续用现有数据重训冒充原版。",
@@ -74,4 +74,8 @@
     "initial_cash": 600000
   },
   "promotion_rule": "只有当预测表、信号表、掘金回测和训练/组件血缘全部可复验时，才能从 production_candidate 升级为 production。"
-}
+,
+  "allowed_for_main_workflow": false,
+  "current_route_eligible": false,
+  "reference_role": "historical_reproduction_only",
+  "storage_governance_note": "historical production metadata only; not a current production route or active registry source under DuckDB-only governance"}

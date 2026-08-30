@@ -6,14 +6,13 @@
   "approval_status": "research_policy_only",
   "purpose": "Define hard constraints and soft reminders for promoting model research assets into promotable formal candidates.",
   "standard_chain": {
-    "feature_input": "quant/data_file/production_factor_parts/",
-    "label_input": "quant/data_file/prediction_label_parts/",
-    "prediction_db": "quant/data_file/model_predictions/MODEL_PREDICTIONS.db",
-    "forbidden_default_inputs": [
-      "quant/data_file/stock_factor_data.parquet",
-      "quant/data_file/standard_factor_by_date_parts/",
-      "quant/data_file/standard_factor_by_date_parts_fast40/",
-      "quant/data_file/odb.db stock_predict_data_*"
+    "feature_input": "quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>",
+    "label_input": "quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>",
+    "prediction_asset_root": "quant/data_file/production_assets/duckdb/",
+    "forbidden_default_input_classes": [
+      "retired legacy parquet factor assets",
+      "retired legacy sqlite mixed prediction tables",
+      "retired standard_factor_by_date_parts directories"
     ]
   },
   "hard_constraints": {

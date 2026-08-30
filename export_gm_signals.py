@@ -85,6 +85,7 @@ def main(argv=None):
         args.start,
         args.end,
         stock_pool_path=args.stock_pool,
+        source_type=source.get("source_type", "sqlite_table"),
     )
     market_rows_by_trade_date = load_market_rows_by_trade_date(market_db, args.start, args.end)
     rows = enrich_prediction_rows_with_market_rows(rows, market_rows_by_trade_date)

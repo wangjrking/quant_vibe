@@ -1,0 +1,16 @@
+{
+  "strategy_id": "prod_top1_pos60_ddloose_v20260629",
+  "status": "hard_gate_complete",
+  "signal_date": "20260626",
+  "buy_date": "",
+  "latest_market_date": "20260626",
+  "buy_day_market_available": true,
+  "buy_day_hard_gate_complete": true,
+  "candidate_count_after_filters": null,
+  "selected_stock_code": "300420.SZ",
+  "selected_symbol": "SZSE.300420",
+  "selected_name": "五洋自控",
+  "target_pct": "0.60000",
+  "published_at": "2026-06-29T08:05:14+08:00",
+  "note": "Status is aligned to latest signal row hard-gate fields. buy_date may be empty when the signal source did not encode the next market date."
+}

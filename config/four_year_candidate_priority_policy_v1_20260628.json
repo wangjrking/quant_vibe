@@ -1,0 +1,51 @@
+{
+  "config_id": "four_year_candidate_priority_policy_v1_20260628",
+  "generated_at": "2026-06-28T16:20:00+08:00",
+  "actor": "model-agent",
+  "asset_role": "research_policy_only",
+  "approval_status": "research_policy_only",
+  "purpose": "Classify whether four-year model candidates are only discussion-eligible or also clearly superior to the replaced research candidate.",
+  "default_rules": {
+    "discussion_requires": [
+      "promotable_formal_candidate",
+      "full_top5_delta_positive",
+      "recent63_top5_delta_positive",
+      "recent20_top5_delta_positive",
+      "recent63_abs_top5_positive",
+      "recent20_abs_top5_positive"
+    ],
+    "clear_replacement_requires": [
+      "current_full_rank_ic_delta_gte_replaced",
+      "current_full_top5_delta_gte_replaced"
+    ],
+    "mixed_case_status": "candidate_discussion_only_requires_formal_explanation",
+    "clear_case_status": "candidate_discussion_clear_replacement_case"
+  },
+  "labels": {
+    "executable_1d_open_return": {
+      "selection_axis": "full_window_and_recent_front_rank_balance",
+      "note": "1D should prefer the candidate that improves both full-window RankIC and Top5 over the replaced candidate."
+    },
+    "executable_3d_open_return": {
+      "selection_axis": "recent_window_top_rank_balance",
+      "note": "3D may enter discussion even when it does not dominate the replaced candidate, but it must carry a formal explanation."
+    },
+    "executable_5d_open_return": {
+      "selection_axis": "front_rank_priority_with_recent_window_guard",
+      "note": "5D prioritizes front-rank improvements and positive recent windows over pure full-window RankIC dominance."
+    },
+    "executable_10d_open_return": {
+      "selection_axis": "front_rank_priority_with_recent_window_guard",
+      "note": "10D prioritizes Top5 and recent-window strength, but formal review must explain RankIC and TopN divergence if present."
+    }
+  },
+  "boundaries": {
+    "policy_only": true,
+    "no_training": true,
+    "no_prediction": true,
+    "no_formal_manifest_change": true,
+    "no_production_manifest_change": true,
+    "no_signal": true,
+    "no_backtest": true
+  }
+}

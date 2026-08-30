@@ -8,8 +8,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from l6_duckdb_sync import l6_duckdb_sync_enabled, sync_strategy_backtests_to_duckdb
+from l5_duckdb_sync import l5_duckdb_sync_enabled, sync_strategy_registry_to_duckdb
+from l7_duckdb_sync import l7_duckdb_sync_enabled, sync_production_signal_artifacts_to_duckdb
 from prediction_manifest import load_prediction_source_manifest
 from project_paths import PROJECT_ROOT, resolve_project_path
+from strategy_asset_route import load_production_strategy_registry
 
 
 DEFAULT_CONFIG = PROJECT_ROOT / "config" / "production_tasks.example.json"
@@ -35,6 +39,30 @@ def strategy_lookup(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         for item in registry.get("production", {}).get("strategies", [])
         if item.get("strategy_id")
     }
+
+
+def validate_current_production_task_alignment(
+    config: dict[str, Any], registry: dict[str, Any]
+) -> str:
+    current_strategy_id = registry.get("production", {}).get("current")
+    if not current_strategy_id:
+        raise ValueError(
+            "production.current missing in strategy registry; "
+            "production signal generation is fail-closed"
+        )
+
+    enabled_strategy_ids = {
+        str(task.get("strategy_id", ""))
+        for task in config.get("strategies", [])
+        if task.get("enabled", True) and task.get("strategy_id")
+    }
+    expected = {str(current_strategy_id)}
+    if enabled_strategy_ids != expected:
+        raise ValueError(
+            "enabled production task must exactly match registry current: "
+            f"expected={sorted(expected)}, configured={sorted(enabled_strategy_ids)}"
+        )
+    return str(current_strategy_id)
 
 
 def render_token(value: str, context: dict[str, str]) -> str:
@@ -102,23 +130,46 @@ def run_production_tasks(config_path: Path, dry_run: bool = False) -> dict[str, 
     log_dir = resolve_project_path(defaults.get("log_dir", "logs/production_tasks"))
     signal_dir = resolve_project_path(defaults.get("signal_dir", "data_file/production_signals"))
     registry_path = resolve_project_path(defaults.get("registry_file", "strategy_library/registry.json"))
-    registry = load_json(registry_path)
-
-    production_ids = production_strategy_ids(registry)
-    registry_by_id = strategy_lookup(registry)
     stop_on_failure = bool(defaults.get("stop_on_failure", True))
     now = datetime.now()
     run_id = now.strftime("%Y%m%d_%H%M%S")
     signal_dir.mkdir(parents=True, exist_ok=True)
+
+    if not dry_run and l5_duckdb_sync_enabled():
+        l5_sync_summary = sync_strategy_registry_to_duckdb(
+            project_dir=project_dir,
+            data_dir=data_dir,
+            registry_path=registry_path,
+        )
+    else:
+        l5_sync_summary = None
+
+    registry = load_production_strategy_registry(
+        registry_path=registry_path,
+        data_dir=data_dir,
+    )
+    production_ids = production_strategy_ids(registry)
+    registry_by_id = strategy_lookup(registry)
+    current_strategy_id = validate_current_production_task_alignment(config, registry)
 
     summary: dict[str, Any] = {
         "run_id": run_id,
         "started_at": now.isoformat(timespec="seconds"),
         "config_file": str(config_path),
         "registry_file": str(registry_path),
+        "current_production_strategy": current_strategy_id,
         "production_strategies": sorted(production_ids),
         "results": [],
     }
+    if l5_sync_summary is not None:
+        summary["l5_duckdb_sync"] = l5_sync_summary
+
+    if not dry_run and l6_duckdb_sync_enabled():
+        summary["l6_duckdb_sync"] = sync_strategy_backtests_to_duckdb(
+            project_dir=project_dir,
+            data_dir=data_dir,
+            registry_path=registry_path,
+        )
 
     base_context = {
         "python": str(defaults.get("python", sys.executable)),
@@ -187,6 +238,14 @@ def run_production_tasks(config_path: Path, dry_run: bool = False) -> dict[str, 
                     break
 
         summary["results"].append(strategy_result)
+        if strategy_result["status"] == "ok" and not dry_run and l7_duckdb_sync_enabled():
+            strategy_result["l7_duckdb_sync"] = sync_production_signal_artifacts_to_duckdb(
+                data_dir=data_dir,
+                signal_dir=signal_dir,
+                project_dir=project_dir,
+                registry_path=registry_path,
+                strategy_ids={strategy_id},
+            )
         if strategy_result["status"] == "failed" and stop_on_failure:
             break
 

@@ -15,7 +15,12 @@ import numpy as np
 import pandas as pd
 
 from leakage_guard import validate_no_leakage
-from stock_daily_data_route import resolve_stock_daily_db_path
+from duckdb_asset_route import connect_duckdb_readonly
+from stock_daily_data_route import (
+    resolve_stock_daily_backend,
+    resolve_stock_daily_db_path,
+    resolve_stock_daily_duckdb_path,
+)
 from stock_pool_module import filter_frame_by_stock_pool, load_stock_pool
 
 
@@ -127,13 +132,17 @@ def find_unsupported_features(features: list[str], available_columns: set[str]) 
 
 def _resolve_daily_factor_table(db_path: Path) -> str:
     candidates = ("STOCK_DAILY_DATA", "STK_FACTOR", "stk_factor", "daily_data")
-    with sqlite3.connect(db_path) as conn:
-        existing = {
-            row[0]
-            for row in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        }
+    if db_path.suffix.lower() == ".duckdb":
+        with connect_duckdb_readonly(db_path) as conn:
+            existing = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
+    else:
+        with sqlite3.connect(db_path) as conn:
+            existing = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
     for table in candidates:
         if table in existing:
             return table
@@ -142,6 +151,12 @@ def _resolve_daily_factor_table(db_path: Path) -> str:
 
 def _read_sql_columns(db_path: Path, table_name: str | None = None) -> set[str]:
     table_name = table_name or _resolve_daily_factor_table(db_path)
+    if db_path.suffix.lower() == ".duckdb":
+        with connect_duckdb_readonly(db_path) as conn:
+            return {
+                str(row[0])
+                for row in conn.execute(f'DESCRIBE "{table_name}"').fetchall()
+            }
     with sqlite3.connect(db_path) as conn:
         return {row[1] for row in conn.execute(f'PRAGMA table_info("{table_name}")').fetchall()}
 
@@ -163,14 +178,20 @@ def _attach_stock_basic(db_path: Path, frame: pd.DataFrame) -> pd.DataFrame:
     missing = [col for col in ("name", "industry") if col not in frame.columns or frame[col].isna().all()]
     if not missing or "ts_code" not in frame.columns:
         return frame
-    with sqlite3.connect(db_path) as conn:
-        try:
-            basic = pd.read_sql(
-                "SELECT ts_code, name, industry FROM stock_basic_data",
-                conn,
-            )
-        except Exception:
-            return frame
+    try:
+        if db_path.suffix.lower() == ".duckdb":
+            with connect_duckdb_readonly(db_path) as conn:
+                basic = conn.execute(
+                    "SELECT ts_code, name, industry FROM stock_basic_data"
+                ).fetchdf()
+        else:
+            with sqlite3.connect(db_path) as conn:
+                basic = pd.read_sql(
+                    "SELECT ts_code, name, industry FROM stock_basic_data",
+                    conn,
+                )
+    except Exception:
+        return frame
     if basic.empty:
         return frame
     drop_cols = [col for col in ("name", "industry") if col in frame.columns]
@@ -204,8 +225,12 @@ def read_raw_frame(
         params.append(end)
     order_code = "stock_code" if has_stock_code else "ts_code"
     query += f' ORDER BY "{order_code}", trade_date'
-    with sqlite3.connect(db_path) as conn:
-        frame = pd.read_sql(query, conn, params=params)
+    if db_path.suffix.lower() == ".duckdb":
+        with connect_duckdb_readonly(db_path) as conn:
+            frame = conn.execute(query, params).fetchdf()
+    else:
+        with sqlite3.connect(db_path) as conn:
+            frame = pd.read_sql(query, conn, params=params)
     if "stock_code" not in frame.columns and "ts_code" in frame.columns:
         frame["stock_code"] = frame["ts_code"].map(_ts_code_to_gm)
     frame = _attach_stock_basic(db_path, frame)
@@ -410,7 +435,10 @@ def get_light_factor_data(
     allow_missing_features: bool = False,
 ):
     data_dir = Path(data_dir)
-    db_path = resolve_stock_daily_db_path(data_dir=data_dir)
+    if resolve_stock_daily_backend(data_dir=data_dir) == "duckdb":
+        db_path = resolve_stock_daily_duckdb_path(data_dir=data_dir, require_exists=True)
+    else:
+        db_path = resolve_stock_daily_db_path(data_dir=data_dir, require_exists=True)
     features = load_feature_list(features_path)
     available = _read_sql_columns(db_path)
     unsupported = find_unsupported_features(features, available)

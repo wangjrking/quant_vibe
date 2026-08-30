@@ -445,6 +445,84 @@ class RollingTrainModuleTests(unittest.TestCase):
         self.assertEqual(captured["build_light_factor_frame"]["label"], "executable_5d_open_return")
         self.assertTrue(captured["read_raw_frame"]["db_path"].endswith("STOCK_DAILY_DATA.db"))
 
+    def test_build_fold_feature_selection_fn_uses_duckdb_when_l2_mainline_is_duckdb(self):
+        captured = {}
+        fake_fast = types.ModuleType("fast_feature_selection")
+        fake_fast.score_features_fast = lambda frame, **kwargs: (
+            [{"feature": "close_rate", "abs_mean_ic": 0.1}],
+            ["close_rate"],
+        )
+        fake_fast.write_score_csv = lambda rows, path: None
+
+        fake_light = types.ModuleType("light_factor_module")
+
+        def fake_read_raw_frame(db_path, start, end, needed_columns, stock_pool_path=None):
+            captured["db_path"] = str(db_path)
+            return __import__("pandas").DataFrame(
+                [
+                    {
+                        "trade_date": "20240102",
+                        "stock_code": "000001.SZ",
+                        "name": "PingAn",
+                        "industry": "Bank",
+                        "st_type": None,
+                        "limit_times": None,
+                        "open": 10,
+                        "high": 11,
+                        "low": 9,
+                        "close": 10,
+                        "pre_close": 9.5,
+                        "atr_qfq": 0.5,
+                    }
+                ]
+            )
+
+        fake_light.read_raw_frame = fake_read_raw_frame
+        fake_light.build_light_factor_frame = lambda raw, features, label: __import__("pandas").DataFrame(
+            [{"trade_date": "20240102", "stock_code": "000001.SZ", "name": "PingAn", "close_rate": 1.0, "10d_yield_rate": 0.1}]
+        )
+        fake_light.DERIVED_FEATURES = {"close_rate"}
+        fake_light.META_COLUMNS = ["trade_date", "stock_code", "name"]
+
+        previous_fast = sys.modules.get("fast_feature_selection")
+        previous_light = sys.modules.get("light_factor_module")
+        import rolling_train_module as module
+
+        original_backend = module.resolve_stock_daily_backend
+        original_duckdb_path = module.resolve_stock_daily_duckdb_path
+        original_sqlite_path = module.resolve_stock_daily_db_path
+        sys.modules["fast_feature_selection"] = fake_fast
+        sys.modules["light_factor_module"] = fake_light
+        module.resolve_stock_daily_backend = lambda data_dir=None: "duckdb"
+        module.resolve_stock_daily_duckdb_path = lambda data_dir=None, require_exists=False: __import__("pathlib").Path(
+            r"D:\work\quant\quant_mcp\quant\data_file\production_assets\duckdb\quant_production.duckdb"
+        )
+        module.resolve_stock_daily_db_path = lambda data_dir=None, require_exists=False: __import__("pathlib").Path(
+            r"D:\work\quant\quant_mcp\quant\data_file\STOCK_DAILY_DATA.db"
+        )
+        try:
+            selector = build_fold_feature_selection_fn(
+                data_file_url="unused",
+                config=FoldFeatureSelectionConfig(label="10d_yield_rate", top_n=1, min_abs_ic=0.005),
+                use_light_factor_data=True,
+            )
+            selected = selector(RollingWindow(1, "20240101", "20240529", "20240604", "20240903"))
+        finally:
+            module.resolve_stock_daily_backend = original_backend
+            module.resolve_stock_daily_duckdb_path = original_duckdb_path
+            module.resolve_stock_daily_db_path = original_sqlite_path
+            if previous_fast is None:
+                sys.modules.pop("fast_feature_selection", None)
+            else:
+                sys.modules["fast_feature_selection"] = previous_fast
+            if previous_light is None:
+                sys.modules.pop("light_factor_module", None)
+            else:
+                sys.modules["light_factor_module"] = previous_light
+
+        self.assertEqual(selected, ["close_rate"])
+        self.assertTrue(captured["db_path"].endswith("quant_production.duckdb"))
+
     def test_build_validation_window_carves_validation_slice_before_test(self):
         validation = build_validation_window(
             RollingWindow(4, "20100101", "20250524", "20250604", "20250903"),

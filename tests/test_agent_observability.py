@@ -1,5 +1,4 @@
 import json
-import sqlite3
 import tempfile
 import unittest
 from datetime import datetime
@@ -8,6 +7,9 @@ from zoneinfo import ZoneInfo
 
 from agent_observability import (
     AGENT_LABELS,
+    AGENT_ORDER,
+    CANONICAL_AGENT_LABELS,
+    LEGACY_AGENT_LABELS,
     build_daily_snapshot,
     render_daily_markdown_report,
     write_daily_snapshot,
@@ -15,6 +17,27 @@ from agent_observability import (
 
 
 class AgentObservabilityTests(unittest.TestCase):
+    def test_active_agent_catalog_matches_governed_roles(self):
+        expected = {
+            "architect-agent",
+            "audit-agent",
+            "commander-agent",
+            "data-ingestion-agent",
+            "data-integration-agent",
+            "factor-agent",
+            "mcp-agent",
+            "model-agent",
+            "research-agent",
+            "strategy-agent",
+            "trading-agent",
+        }
+
+        self.assertEqual(set(CANONICAL_AGENT_LABELS), expected)
+        self.assertEqual(set(AGENT_ORDER), expected)
+        self.assertEqual(len(AGENT_ORDER), len(expected))
+        self.assertTrue(LEGACY_AGENT_LABELS.isdisjoint(AGENT_ORDER))
+        self.assertTrue(LEGACY_AGENT_LABELS.issubset(AGENT_LABELS))
+
     def _set_mtime(self, path: Path, dt_text: str) -> None:
         dt = datetime.strptime(dt_text, "%Y%m%d%H%M%S").replace(tzinfo=ZoneInfo("Asia/Shanghai"))
         ts = dt.timestamp()
@@ -142,7 +165,7 @@ class AgentObservabilityTests(unittest.TestCase):
             self.assertEqual(factor_row["token_status"], "estimated")
             self.assertIn("collaboration_requests", factor_row["estimate_basis"])
 
-    def test_write_daily_snapshot_persists_sqlite_and_reports(self):
+    def test_write_daily_snapshot_persists_duckdb_and_reports(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             data_dir = root / "quant" / "data_file"
@@ -178,7 +201,9 @@ class AgentObservabilityTests(unittest.TestCase):
             self.assertTrue(Path(result["csv_path"]).exists())
             self.assertTrue(Path(result["md_path"]).exists())
 
-            conn = sqlite3.connect(result["db_path"])
+            import duckdb
+
+            conn = duckdb.connect(result["db_path"])
             try:
                 total = conn.execute(
                     "SELECT count(*) FROM agent_daily_metrics WHERE snapshot_date = ?",

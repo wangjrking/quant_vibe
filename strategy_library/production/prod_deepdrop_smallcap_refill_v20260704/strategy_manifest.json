@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_deepdrop_smallcap_refill_v20260704",
+  "strategy_name": "?????????",
+  "name": "?????????",
+  "status": "production",
+  "created_at": "2026-07-04",
+  "published_at": "2026-07-04",
+  "published_at_iso": "2026-07-04T00:00:00+08:00",
+  "published_by": "strategy-agent",
+  "validation_platform": "juejin",
+  "production_registry_updated": true,
+  "production_published": true,
+  "source_candidate": "refill_mv45_deep82_basefirst",
+  "source_report_dir": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\experiments\\formal_l4_broad_pool_20260704",
+  "full_history_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\full_history_deepdrop_smallcap_refill.csv",
+  "latest_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\latest_signal_20260703_for_20260706.csv",
+  "latest_signal_status": "pending_buy_day_hard_gate",
+  "input_contract": {
+    "formal_manifest_1d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+    "formal_manifest_3d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+    "formal_manifest_5d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+    "formal_manifest_10d": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+    "source_type": "duckdb_table",
+    "allow_legacy": false,
+    "allow_sqlite_production_input": false,
+    "active_universe_no_bj": true,
+    "market_field_semantics": {
+      "qfq_fields": [
+        "atr_qfq",
+        "model/factor derived rank fields"
+      ],
+      "execution_price_rule": "???????????????? open/pre_close???? qfq ?????????????",
+      "bare_price_field_policy": "?????????? open/high/low/close/pre_close ???????????? raw ? qfq?"
+    }
+  },
+  "metrics": {
+    "annual_return": 3.4908,
+    "pnl_ratio": null,
+    "sharpe": 3.578,
+    "max_drawdown": 0.0418,
+    "win_ratio": 0.6955,
+    "open_count": 289,
+    "close_count": 289,
+    "calmar_ratio": null
+  },
+  "trading_rules_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\trading_rules.json",
+  "validation_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\validation.json",
+  "latest_signal_date": "20260703",
+  "latest_buy_date": "20260706",
+  "latest_signal_status_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\latest_signal_20260703_for_20260706_status.json",
+  "style_exposure": {
+    "primary": "???? + ?????",
+    "secondary": [
+      "???",
+      "????",
+      "????"
+    ],
+    "risk_notes": [
+      "?????",
+      "??????",
+      "latest ??????"
+    ]
+  },
+  "current_signal": {
+    "latest_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_deepdrop_smallcap_refill_v20260704_latest.csv",
+    "archive_latest_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_deepdrop_smallcap_refill_v20260704\\signals\\latest_signal_20260703_for_20260706.csv",
+    "signal_date": "20260703",
+    "buy_date": "20260706",
+    "latest_signal_date": "20260703",
+    "latest_buy_date": "20260706",
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "l7_execution_allowed": false,
+    "status": "pending_buy_day_hard_gate"
+  },
+  "validation": {
+    "annual_return": 3.4908,
+    "sharpe": 3.578,
+    "max_drawdown": 0.0418,
+    "validation_platform": "juejin",
+    "status": "production",
+    "note": "?????????????????????????????"
+  }
+}

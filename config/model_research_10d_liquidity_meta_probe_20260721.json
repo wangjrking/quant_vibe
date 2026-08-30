@@ -1,0 +1,58 @@
+{
+  "config_id": "model_research_10d_liquidity_meta_probe_20260721",
+  "status": "frozen_research_only",
+  "label": "executable_10d_open_return",
+  "train_start": "20220606",
+  "train_end": "20231229",
+  "evaluation_end": "20260528",
+  "features": [
+    "rank_score",
+    "rank_amount",
+    "score_x_amount",
+    "rank_score_sq",
+    "rank_amount_sq"
+  ],
+  "model_params": {
+    "objective": "reg:squarederror",
+    "n_estimators": 500,
+    "learning_rate": 0.03,
+    "max_depth": 3,
+    "min_child_weight": 20,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "reg_alpha": 0.1,
+    "reg_lambda": 10.0,
+    "tree_method": "hist",
+    "n_jobs": 8,
+    "random_state": 42
+  },
+  "sample_weight": {
+    "base": 1.0,
+    "daily_top_1pct_bonus": 9.0,
+    "amount_rank_multiplier": 2.0
+  },
+  "frozen_evaluation_periods": {
+    "validation_2024": ["20240102", "20241231"],
+    "validation_2025": ["20250102", "20251231"],
+    "recent_2026": ["20260105", "20260528"],
+    "recent60": ["20260302", "20260528"]
+  },
+  "round_trip_cost": 0.006,
+  "probe_gate": {
+    "validation_2024_top3_delta_min": 0.0,
+    "validation_2025_top3_delta_min": 0.0,
+    "recent60_top3_delta_min": 0.0,
+    "mean_rank_ic_delta_min": -0.002,
+    "mean_top1_amount_pct_improvement_min": 0.05
+  },
+  "boundaries": {
+    "research_only": true,
+    "single_frozen_model_no_holdout_tuning": true,
+    "no_formal_change": true,
+    "no_production_manifest_change": true,
+    "no_signal": true,
+    "no_backtest": true,
+    "approved_for_l5": false,
+    "allow_next_layer_continue": false
+  }
+}

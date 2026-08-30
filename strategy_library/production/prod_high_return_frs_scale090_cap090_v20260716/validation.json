@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+  "strategy_name": "高收益回调补位",
+  "status": "withdrawn_unreproducible",
+  "withdrawn_at": "2026-07-21",
+  "current_reproducibility_passed": false,
+  "current_metrics_display_allowed": false,
+  "metrics_scope": "historical_fixed_signal_snapshot_only_not_current_reproducible_return",
+  "validation_platform": "juejin",
+  "published_at": "2026-07-16",
+  "published_at_iso": "2026-07-16T08:23:20+08:00",
+  "metrics": {
+    "pnl_ratio": 71.78887203236464,
+    "annual_return": 18.158654394880866,
+    "sharpe": 2.9894989987447596,
+    "max_drawdown": 0.07585417925647757,
+    "risk_ratio": 0.6007308620504238,
+    "win_ratio": 0.5630885122410546,
+    "open_count": 533,
+    "close_count": 531,
+    "win_count": 299,
+    "lose_count": 232,
+    "calmar_ratio": 239.38897728341325
+  },
+  "old_repro_reference_metrics": {
+    "pnl_ratio": 78.26134135231258,
+    "annual_return": 19.79583478419549,
+    "sharpe": 3.1121556344408594,
+    "max_drawdown": 0.0759784857315747,
+    "risk_ratio": 0.0,
+    "win_ratio": 0.5689981096408318,
+    "open_count": 529,
+    "close_count": 529,
+    "win_count": 301,
+    "lose_count": 228,
+    "calmar_ratio": 260.5452661182592
+  },
+  "source_signal_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\full_history_high_return_frs_scale090_cap090.csv",
+  "source_log_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\backtests\\repro_refresh_frs_scale090_cap090_20260716_online.log",
+  "date_coverage": {
+    "signal_date_min": "20220811",
+    "signal_date_max": "20260717",
+    "buy_date_min": "20220812",
+    "buy_date_max": "20260720"
+  },
+  "signal_audit": {
+    "signal_rows": 541,
+    "signal_days": 448,
+    "buy_days": 448,
+    "stock_count": 371,
+    "duplicate_key_groups": 0,
+    "latest_signal_rows": 2,
+    "bj_rows": 0,
+    "latest_target_pct_sum": 0.3783093050880001
+  },
+  "admission_note": "User requested production replacement with the reproducible experimental-highest strategy. It has very high Juejin annual return but lower Sharpe than the former production strategy and remains high-sensitivity/high-turnover style.",
+  "latest_signal_status": {
+    "schema_version": 1,
+    "strategy_id": "prod_high_return_frs_scale090_cap090_v20260716",
+    "status": "withdrawn_strategy_p1",
+    "signal_date": "20260717",
+    "buy_date": "20260720",
+    "buy_date_source": "weekday_estimate_l2_market_not_available",
+    "latest_signal_date": "20260717",
+    "latest_buy_date": "20260720",
+    "source_file": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\latest_signal_20260717_for_20260720.csv",
+    "output_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_signals\\prod_high_return_frs_scale090_cap090_v20260716_latest.csv",
+    "row_count": 2,
+    "stock_count": 2,
+    "duplicate_signal_stock_keys": 0,
+    "buy_day_market_available": false,
+    "buy_day_hard_gate_complete": false,
+    "buy_day_realtime_checks_required": true,
+    "l7_execution_allowed": false,
+    "note": "Strategy withdrawn after P1 reproducibility audit; archived signal is historical evidence only and no L5-L8 execution is allowed.",
+    "freshness": {
+      "latest_signal_date": "20260717",
+      "latest_buy_date": "20260720",
+      "formal_manifest_checks": [
+        {
+          "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_1d_open_return_l4_formal_20260619.json",
+          "max_trade_date": "20260717",
+          "latest_rows": 5195,
+          "duplicate_key_groups": 0
+        },
+        {
+          "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_3d_open_return_l4_formal_20260617.json",
+          "max_trade_date": "20260717",
+          "latest_rows": 5195,
+          "duplicate_key_groups": 0
+        },
+        {
+          "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_5d_open_return_l4_formal_20260620.json",
+          "max_trade_date": "20260717",
+          "latest_rows": 5195,
+          "duplicate_key_groups": 0
+        },
+        {
+          "manifest_path": "D:\\work\\quant\\quant_mcp\\quant\\main\\config\\prediction_manifests\\executable_10d_open_return_l4_formal_20260617.json",
+          "max_trade_date": "20260717",
+          "latest_rows": 5195,
+          "duplicate_key_groups": 0
+        }
+      ]
+    },
+    "audit": {
+      "base_candidate_file": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_high_return_frs_incremental_20260717_recovery_20260718\\prod_high_return_frs_scale090_cap090_v20260716_fw_base_candidate_20260717.csv",
+      "base_candidate_rows": 3,
+      "mf_stage_rows": 2,
+      "final_signal_rows": 2,
+      "target_sum": 0.3783093050880001,
+      "bj_rows": 0,
+      "duplicate_buy_stock_keys_full_history": 0,
+      "full_history_rows": 541,
+      "full_history_signal_days": 448,
+      "full_history_buy_days": 448,
+      "legacy_or_research_only_input_used": false,
+      "input_mode": "active formal DuckDB manifests only; production strategy chain replayed without parameter changes",
+      "prod_fw_base_audit": {
+        "l4_join_count_no_bj": 5195,
+        "signal_day_market_rows": 5195,
+        "after_signal_day_filters": 3355,
+        "base_selected": 3,
+        "refill_selected": 0,
+        "target_topn": 3,
+        "actual_rows": 3,
+        "shortage": 0,
+        "bj_rows": 0,
+        "duplicate_signal_stock_keys": 0,
+        "latest_target_pct_sum": 0.91
+      },
+      "full_history_update": {
+        "before_rows": 539,
+        "after_rows": 541,
+        "signal_days": 448,
+        "buy_days": 448,
+        "duplicate_buy_stock_keys": 0,
+        "full_history": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\signals\\full_history_high_return_frs_scale090_cap090.csv"
+      }
+    }
+  },
+  "validation_evidence": {
+    "refresh_juejin_log": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\backtests\\repro_refresh_frs_scale090_cap090_20260716_online.log",
+    "old_repro_juejin_log": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\backtests\\repro_old_frs_scale090_cap090_20260716_online.log",
+    "research_source_status": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_high_return_frs_scale090_cap090_v20260716\\inputs\\experiment_highest_frs_scale090_cap090_refresh_status.json"
+  }
+}

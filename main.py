@@ -46,10 +46,10 @@ main.py 已降级为 legacy / historical mixed-db 入口，默认不再作为当
 - quant/main/AGENTS.md
 
 当前默认资产：
-- L1 raw split DB: quant/data_file/raw_table_dbs/[table].DB
-- L2: quant/data_file/STOCK_DAILY_DATA.db::STOCK_DAILY_DATA
-- L3 features: quant/data_file/production_factor_parts/
-- L3 labels: quant/data_file/prediction_label_parts/
+- L1 raw DuckDB table files: quant/data_file/production_assets/duckdb/l1_raw_tables/[table].duckdb
+- L2: quant/data_file/production_assets/duckdb/l2_stock_daily_data.duckdb::STOCK_DAILY_DATA
+- L3 features: quant/data_file/production_assets/duckdb/l3_feature_current.duckdb::<active_table>
+- L3 labels: quant/data_file/production_assets/duckdb/l3_label_current.duckdb::<active_table>
 - L4: 独立预测资产方案，非 odb.db.stock_predict_data_* 默认入口
 
 如需明确运行旧 mixed-db 历史链路，请设置环境变量 QUANT_ALLOW_LEGACY_MAIN=1 后再执行。

@@ -9,6 +9,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from adjustment_semantics import require_front_adjusted_column
+
 
 @dataclass
 class SelectionConfig:
@@ -95,7 +97,12 @@ def _is_current_limit(row):
 
 
 def _atr_ratio(row):
-    close = _to_float(_value(row, "close"))
+    close_column = require_front_adjusted_column(
+        set(row.keys()) if isinstance(row, dict) else row.keys(),
+        "close",
+        context="selection atr_ratio",
+    )
+    close = _to_float(_value(row, close_column))
     atr = _to_float(_value(row, "atr_qfq"))
     if close is None or atr is None or close <= 0:
         return None

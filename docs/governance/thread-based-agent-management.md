@@ -1,4 +1,4 @@
-# 线程制智能体管理规范
+﻿# 线程制智能体管理规范
 
 ## 定位
 
@@ -104,7 +104,7 @@
 - `审计智能体`
 - `数据接入智能体`
 - `数据整合智能体`
-- `数仓智能体`
+- `MCP智能体`
 - `因子智能体`
 - `模型智能体`
 - `策略智能体`
@@ -149,8 +149,12 @@
 建议含义：
 
 - `thread_status`：`active` / `paused` / `archived`
-- `preferred_model`：当前推荐执行模型，不等于平台强制默认值
-- `reasoning_policy`：例如“默认 non-fast，由指挥官按任务覆盖”
+- `preferred_model`：当前项目默认执行模型；除非前端对该次分派显式手动选择，否则必须与模型路由规范一致
+- `reasoning_policy`：当前默认 thinking 与前端覆盖边界，例如“默认 medium；仅前端单次显式选择可覆盖”
+
+模型实际分派必须遵守
+`quant/main/docs/governance/agent-model-budget-routing.md`。当前默认模型与 thinking
+必须与该规范一致；预算和风险只影响是否阻断，不得静默改用其他模型或推理强度。
 - `default_message_header`：例如 `会话来自：模型智能体（model-agent）`
 - `active_automation_ids`：绑定到该线程的活跃自动化 id 列表
 

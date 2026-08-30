@@ -19,5 +19,16 @@ log/
 logs/
 *.log
 
+# Generated strategy and research artifacts. Source code, manifests and docs
+# remain versioned; local score databases, signals and backtest outputs do not.
+strategy_library/**/backtests/
+strategy_library/**/experiments/
+strategy_library/**/inputs/*.duckdb
+strategy_library/**/signals/*.csv
+strategy_library/**/reports/*.csv
+strategy_library/**/reports/*.json
+strategy_library/**/reports/*.jsonl
+strategy_library/**/reports/*.duckdb
+
 .DS_Store
 Thumbs.db

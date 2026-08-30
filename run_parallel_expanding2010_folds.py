@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import csv
+import duckdb
 import json
 import os
-import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -14,14 +14,12 @@ from typing import Any
 import pandas as pd
 
 from model_asset_route import (
-    MODEL_FEATURE_MODE_LEGACY,
     MODEL_FEATURE_MODE_SPLIT,
     MODEL_PREDICTION_MODE_INDEPENDENT,
-    MODEL_PREDICTION_MODE_LEGACY,
     enrich_research_prediction_manifest,
     require_legacy_model_asset_chain_opt_in,
-    resolve_legacy_prediction_db_path,
     resolve_model_prediction_db_path,
+    resolve_model_prediction_root,
     use_legacy_prediction_db,
     write_prediction_manifest,
 )
@@ -32,15 +30,26 @@ def _quote(name: str) -> str:
     return '"' + str(name).replace('"', '""') + '"'
 
 
+def _quote_literal(value: str | Path) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
 def _table_exists(db_path: Path, table: str) -> bool:
-    with sqlite3.connect(db_path) as conn:
-        return bool(conn.execute("select count(*) from sqlite_master where type='table' and name=?", (table,)).fetchone()[0])
+    if not db_path.exists():
+        return False
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        return bool(
+            conn.execute(
+                "select count(*) from information_schema.tables where table_name = ?",
+                [table],
+            ).fetchone()[0]
+        )
 
 
 def _table_meta(db_path: Path, table: str) -> dict[str, Any]:
     if not _table_exists(db_path, table):
         return {"exists": False, "rows": 0}
-    with sqlite3.connect(db_path) as conn:
+    with duckdb.connect(str(db_path), read_only=True) as conn:
         row = conn.execute(
             f"select count(*), min(trade_date), max(trade_date), count(distinct trade_date), count(distinct stock_code) from {_quote(table)}"
         ).fetchone()
@@ -109,6 +118,24 @@ def _merge_result_rows(existing_rows: list[dict[str, Any]], new_row: dict[str, A
         merged[fold] = row
     merged[int(new_row["fold"])] = new_row
     return [merged[fold] for fold in sorted(merged)]
+
+
+def _collect_merge_prediction_paths(results: list[dict[str, Any]], fallback_paths: list[Path]) -> list[Path]:
+    merged: dict[int, Path] = {}
+    for row in results:
+        try:
+            fold = int(row["fold"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        prediction_path = row.get("prediction_path")
+        if not prediction_path:
+            continue
+        path = Path(prediction_path)
+        if path.exists():
+            merged[fold] = path
+    if merged:
+        return [merged[fold] for fold in sorted(merged)]
+    return fallback_paths
 
 
 def _run_fold(args, window) -> dict[str, Any]:
@@ -217,12 +244,11 @@ def _merge_tables(db_path: Path, output_table: str, fold_tables: list[str]) -> d
     available = [table for table in fold_tables if _table_exists(db_path, table)]
     if not available:
         raise RuntimeError("No fold tables are available to merge.")
-    with sqlite3.connect(db_path) as conn:
+    with duckdb.connect(str(db_path), read_only=False) as conn:
         conn.execute(f"drop table if exists {_quote(output_table)}")
         conn.execute(f"create table {_quote(output_table)} as select * from {_quote(available[0])} where 0")
         for table in available:
             conn.execute(f"insert into {_quote(output_table)} select * from {_quote(table)}")
-        conn.commit()
     return _table_meta(db_path, output_table)
 
 
@@ -230,16 +256,23 @@ def _merge_prediction_files(db_path: Path, output_table: str, prediction_paths: 
     available = [path for path in prediction_paths if path.exists()]
     if not available:
         raise RuntimeError("No fold prediction files are available to merge.")
-    with sqlite3.connect(db_path, timeout=300) as conn:
-        conn.execute("PRAGMA busy_timeout=300000")
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect(str(db_path), read_only=False) as conn:
         conn.execute(f"drop table if exists {_quote(output_table)}")
         first = True
         for path in available:
-            frame = pd.read_parquet(path)
-            frame.to_sql(output_table, con=conn, if_exists="replace" if first else "append", index=False)
+            source = f"read_parquet({_quote_literal(path.as_posix())})"
+            if first:
+                conn.execute(f"create table {_quote(output_table)} as select * from {source}")
+            else:
+                conn.execute(f"insert into {_quote(output_table)} select * from {source}")
             first = False
-        conn.commit()
     return _table_meta(db_path, output_table)
+
+
+def _resolve_independent_research_prediction_duckdb_path(data_file_url: str | Path, output_table: str) -> Path:
+    safe_table = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in output_table).strip("_")
+    return resolve_model_prediction_root(data_file_url, create=True) / f"{safe_table}.duckdb"
 
 
 def parse_args(argv=None):
@@ -284,12 +317,12 @@ def parse_args(argv=None):
     parser.add_argument(
         "--feature-source",
         default=None,
-        choices=[MODEL_FEATURE_MODE_SPLIT, MODEL_FEATURE_MODE_LEGACY],
+        choices=[MODEL_FEATURE_MODE_SPLIT],
     )
     parser.add_argument(
         "--prediction-output-mode",
         default=None,
-        choices=[MODEL_PREDICTION_MODE_INDEPENDENT, MODEL_PREDICTION_MODE_LEGACY],
+        choices=[MODEL_PREDICTION_MODE_INDEPENDENT],
     )
     return parser.parse_args(argv)
 
@@ -323,11 +356,6 @@ def main(argv=None) -> int:
     windows = [w for w in windows if w.fold >= args.start_fold and (args.end_fold is None or w.fold <= args.end_fold)]
     plan_rows = [w.to_dict() for w in windows]
     _write_rows(output_dir / "fold_plan.csv", plan_rows)
-    if use_legacy_prediction_db(args.prediction_output_mode):
-        require_legacy_model_asset_chain_opt_in(reason="legacy odb expanding2010 merged prediction output")
-        db_path = resolve_legacy_prediction_db_path(args.data_file_url)
-    else:
-        db_path = resolve_model_prediction_db_path(args.data_file_url, create_parent=True)
     fold_tables = [f"{args.output_table}__fold{w.fold:02d}" for w in windows]
     prediction_paths = [output_dir / "fold_predictions" / f"fold{w.fold:02d}.parquet" for w in windows]
 
@@ -358,11 +386,27 @@ def main(argv=None) -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
 
-    merge_meta = _merge_prediction_files(db_path, args.output_table, prediction_paths)
+    if use_legacy_prediction_db(args.prediction_output_mode):
+        require_legacy_model_asset_chain_opt_in(reason="legacy odb expanding2010 merged prediction output")
+        raise RuntimeError(
+            "legacy SQLite prediction merge output is disabled in the DuckDB-only architecture. "
+            "Use independent research DuckDB output instead."
+        )
+    else:
+        try:
+            db_path = resolve_model_prediction_db_path(args.data_file_url, create_parent=True)
+        except RuntimeError as exc:
+            if "DuckDB" not in str(exc) and "manifest-routed" not in str(exc):
+                raise
+            db_path = _resolve_independent_research_prediction_duckdb_path(args.data_file_url, args.output_table)
+
+    merge_prediction_paths = _collect_merge_prediction_paths(results, prediction_paths)
+    merge_meta = _merge_prediction_files(db_path, args.output_table, merge_prediction_paths)
     payload = {
         "output_table": args.output_table,
-        "prediction_db_path": str(db_path),
+        "prediction_duckdb_path": str(db_path),
         "prediction_mode": args.prediction_output_mode or MODEL_PREDICTION_MODE_INDEPENDENT,
+        "source_type": "duckdb_table",
         **merge_meta,
     }
     (output_dir / "merge_meta.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

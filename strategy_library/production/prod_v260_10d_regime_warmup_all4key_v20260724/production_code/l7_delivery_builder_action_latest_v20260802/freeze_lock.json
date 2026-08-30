@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "version_id": "l7_delivery_builder_action_latest_v20260802",
+  "created_at_utc": "2026-08-01T20:28:44.629565+00:00",
+  "status": "frozen_pending_audit",
+  "purpose": "L7 ?????? latest ????????????????",
+  "historical_pre_image_available": false,
+  "historical_evidence_gap": "???????????????????????????????????????",
+  "canonical_asset_root": "D:\\work\\quant\\quant_mcp\\quant\\main\\strategy_library\\production\\prod_v260_10d_regime_warmup_all4key_v20260724\\production_code\\l7_delivery_builder_action_latest_v20260802",
+  "source_snapshot_complete": true,
+  "files": [
+    {
+      "relative_path": "source\\build_l7_delivery_package.py",
+      "sha256": "6DFB6307E61791F135671BF9455DD9909F1A075FC5BC8CAA38F5E1A5020BECB7",
+      "size_bytes": 24270
+    },
+    {
+      "relative_path": "source\\export_latest_signal_from_strategy_archive.py",
+      "sha256": "EAEEE1B72A791D7D346778AA159FCCA881A92084B6F06D6CB9968EECFBA8633E",
+      "size_bytes": 7703
+    },
+    {
+      "relative_path": "source\\l7_buy_day_hard_gate.py",
+      "sha256": "B6670907450542B8753441E89BFC641A26DF7379D6213DD027E39040D230F62D",
+      "size_bytes": 14954
+    },
+    {
+      "relative_path": "source\\l7_duckdb_sync.py",
+      "sha256": "DAFDE5C02C47DA19A0E9D00EC8EFE1D2C069FA50429F0723E556B47EEAF32A65",
+      "size_bytes": 13365
+    },
+    {
+      "relative_path": "source\\project_paths.py",
+      "sha256": "58F118A633570D217AA9F4529D0777173DA065C2F4FECD9526FD11FA8B7FE674",
+      "size_bytes": 2083
+    },
+    {
+      "relative_path": "tests\\test_build_l7_delivery_package.py",
+      "sha256": "52581D799F4D7B35ED53B31428F878D4E574F7A987776EC81EB19B4F5502F017",
+      "size_bytes": 21461
+    },
+    {
+      "relative_path": "fixtures\\action_latest_missing_archive.json",
+      "sha256": "73C9119954E1B8B1EC4BDF36C9C4261DF7556CC778DFC9D1A34CAFDEFF10E78F",
+      "size_bytes": 421
+    },
+    {
+      "relative_path": "fixtures\\header_only_no_signal.json",
+      "sha256": "62BD536458A7D6E78006985621469061914D4268D7E43C0EA8F557E1F218BC4F",
+      "size_bytes": 514
+    }
+  ],
+  "commands": [
+    "D:\\work\\quant\\quant_mcp\\.venv\\Scripts\\python.exe -m unittest quant.main.tests.test_build_l7_delivery_package",
+    "No production L7 build command is permitted before audit approval."
+  ],
+  "execution_flags": {
+    "ready_for_human_confirmation_execution": false,
+    "pending_user_approval": false,
+    "auto_executable": false,
+    "live_trading_ready": false,
+    "l7_execution_allowed": false
+  },
+  "l7_state_before_tests": {
+    "prod_l7_signal_rows_current": {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\production\\l7\\prod_l7_signal_rows_current.duckdb",
+      "exists": true,
+      "sha256": "6BDD16E4917EA234706FB6FDA1ED2623BC619F2BEEB0CB9B4970E95E7195C713",
+      "size_bytes": 274432,
+      "mtime_ns": 1785374444763857900,
+      "row_count": 0
+    },
+    "prod_l7_signal_status_current": {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\production\\l7\\prod_l7_signal_status_current.duckdb",
+      "exists": true,
+      "sha256": "2A792B198F1C0AB2008146C066EED64A5700DB23879D0193EEE7F0C26749F6E7",
+      "size_bytes": 798720,
+      "mtime_ns": 1785374596199913900,
+      "row_count": 1
+    },
+    "prod_l7_signal_files_current": {
+      "path": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\production_assets\\duckdb\\production\\l7\\prod_l7_signal_files_current.duckdb",
+      "exists": true,
+      "sha256": "B4AF1E6D124F03EBB5BB99F69F43CCDD9D0BB4CAC20F6767C6101286069BA401",
+      "size_bytes": 536576,
+      "mtime_ns": 1785374596037010700,
+      "row_count": 2
+    }
+  }
+}
