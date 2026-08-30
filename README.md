@@ -1,38 +1,30 @@
 # Quant Vibe 多因子量化项目
 
-Quant Vibe 是一个面向 A 股的本地量化研究与信号生成项目，覆盖数据接入、特征加工、模型预测、组合信号和非执行态交易交付。
+Quant Vibe 是面向 A 股的本地量化研究与信号生成项目，覆盖官方数据接入、特征加工、模型预测、组合信号和非执行态交易交付。
 
-项目仅在本机 Python 与 DuckDB 环境中运行。
+项目运行在本机 Python 与 DuckDB 环境中，不使用 Docker、云中心或云服务器。
 
-## 技术架构
+## 技术链路
 
 ```mermaid
 flowchart LR
-    TS["Tushare 官方数据"] --> L1["L1 原始数据"]
-    L1 --> L2["L2 市场底表\n复权与质量校验"]
-    L2 --> L3["L3 特征与标签"]
-    L3 --> L4["L4 四期限模型\n1D / 3D / 5D / 10D"]
-    L4 --> L5["L5 策略信号\n组合构建"]
-    L5 --> L6["L6 信号校验\n买入日门控"]
-    L6 --> L7["L7 交易交付\nPending-only"]
-    L7 --> L8["L8 治理登记\n非执行态"]
-
-    DATA[("data_file/\n本地数据与证据")] --- L1
-    DATA --- L2
-    DATA --- L3
-    DATA --- L4
-    DATA --- L5
-    CFG["config.json / 环境变量"] --> L1
-    CFG --> L4
-    CFG --> L5
-    GOV["自动门禁与审计"] -. "质量、血缘、回滚" .-> L1
-    GOV -.-> L4
-    GOV -.-> L6
+    T["Tushare 官方数据"] --> L1["L1 原始数据"]
+    L1 --> L2["L2 市场底表与 qfq"]
+    L2 --> L3["L3 特征与成熟标签"]
+    L3 --> L4["L4 四期限正式预测"]
+    L4 --> L5["L5 策略信号"]
+    L5 --> L6["L6 信号校验"]
+    L6 --> L7["L7 pending-only 交付"]
+    L7 --> L8["L8 非执行治理登记"]
+    D[("data_file/ 本地数据与证据")] --- L1
+    D --- L2
+    D --- L3
+    D --- L4
 ```
 
-## 快速开始
+## 本地初始化
 
-### 1. 打开项目
+### 1. 进入项目目录
 
 ```powershell
 cd D:\work\quant\quant_mcp\quant\main
@@ -46,87 +38,72 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 3. 配置数据令牌
+项目自动化默认使用统一解释器：`D:\work\quant\quant_mcp\.venv\Scripts\python.exe`。
 
-推荐通过环境变量提供 Tushare Token：
+### 3. 配置 Tushare Token
 
 ```powershell
 $env:TUSHARE_TOKEN="your_token_here"
-```
-
-也可从模板创建本地配置：
-
-```powershell
 copy config.example.json config.json
 ```
 
-## 本地部署与自检
+真实 Token、`config.json`、`data_file/` 和本地日志不提交到 Git。
 
-完成环境安装和 Token 配置后，在项目根目录执行：
+### 4. 运行本地自检
 
 ```powershell
-cd D:\work\quant\quant_mcp\quant\main
-.\.venv\Scripts\python.exe tools\agent_governance_check.py
-.\.venv\Scripts\python.exe tools\standard_agent_architecture_check.py
+D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\check_source_layout.py
+D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\agent_governance_check.py
+D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\standard_agent_architecture_check.py
 ```
 
-两项检查通过后，即可按 L1-L8 工作流运行本地任务。
+### 5. 首次全量数据初始化
+
+新机器首次建库不能直接运行日常增量链路。必须先取得明确授权，并按 [全量数据初始化工作流](docs/governance/full-history-initialization-workflow.md) 执行 F0-F4：全量 L1、L2、L3，必要时重放不变正式模型的 L4 预测。
+
+全量初始化默认不生成策略信号、不创建交易交付、不进入 L5-L8。完成后，日常任务才从最新交易日按 L1-L8 增量运行。
+
+## 日常 L1-L8 增量工作流
+
+| 层级 | 负责角色 | 工作内容 |
+| --- | --- | --- |
+| L1 | 数据接入智能体 | 官方源检查、原始表与 L1 DuckDB |
+| L2 | 数据整合智能体 | 目标日底表和 qfq 整合 |
+| L3 | 因子智能体 | 目标日特征与独立成熟标签 |
+| L4 | 模型智能体 | 1D/3D/5D/10D 正式预测刷新 |
+| L5/L6 | 策略智能体 | 信号生成与校验 |
+| L7 | 交易智能体 | pending-only 交付与买入日硬门 |
+| L8 | MCP / 指挥官 | 非执行治理登记与状态监控 |
+
+主链必须满足：`no-BJ`、`DuckDB-only`、一表一文件、显式 qfq、原子回滚。真实交易不由该链路自动触发。
 
 ## Codex 多智能体配置
 
-在 Codex 桌面端打开工作区 `D:\work\quant\quant_mcp`，为下列角色各创建并置顶一个独立任务。任务之间只通过明确交接消息协作，不在其他角色任务中隐式代跑本角色工作。
+在 Codex 桌面端打开工作区 `D:\work\quant\quant_mcp`，为指挥官、审计、架构、数据接入、数据整合、因子、模型、策略、交易、MCP 和投研角色分别建立独立任务。
 
-| 独立任务 | 角色入口 | 职责 |
-| --- | --- | --- |
-| 指挥官智能体 | `.codex/skills/commander-agent/SKILL.md` | 接收需求、显式分派、汇总状态与裁决下一步 |
-| 审计智能体 | `.codex/skills/audit-agent/SKILL.md` | 只读复核关键变更与交接结论 |
-| 架构师智能体 | `.codex/skills/architect-agent/SKILL.md` | 审查跨层设计、边界与例外 |
-| 数据接入智能体 | `.codex/skills/data-ingestion-agent/SKILL.md` | L1 官方数据接入与原始表质量 |
-| 数据整合智能体 | `.codex/skills/data-integration-agent/SKILL.md` | L2 市场底表、复权与回滚 |
-| 因子智能体 | `.codex/skills/factor-agent/SKILL.md` | L3 特征与标签 |
-| 模型智能体 | `.codex/skills/model-agent/SKILL.md` | L4 训练、预测与模型资产 |
-| 策略智能体 | `.codex/skills/strategy-agent/SKILL.md` | L5/L6 信号、组合与验证 |
-| 交易智能体 | `.codex/skills/trading-agent/SKILL.md` | L7 pending-only 交付与买入日门控 |
-| MCP 智能体 | `.codex/agent_packages/mcp-agent/` | L8 非执行治理登记 |
-| 投研智能体 | `.codex/skills/research-agent/SKILL.md` | 研究设计与外部事实整理 |
-
-向每个任务发送的首条配置消息可使用：
-
-```text
-你是 Quant Vibe 的【角色名称】。先读取对应角色入口及其 agent package；仅在本角色边界内工作。
-所有跨角色工作必须由指挥官在可见任务中显式分派；完成后只回传证据根、结论、唯一阻断和下一步。
-默认使用 TERRA，thinking=medium；只有前端明确指定模型时才覆盖。
-```
-
-协作规则：指挥官负责显式分派；审计只读复核；各专业角色不替代其他角色执行。日常标准批次按机器门禁运行，出现数据例外、代码或模型变更、路由变更、真实执行时再升级审计。
+所有跨角色工作必须由指挥官在可见任务中显式分派；专业角色只在自己的任务中执行和回报。默认模型为 **TERRA**，`thinking=medium`；仅当前端明确指定时才覆盖。
 
 ## 项目结构
 
 | 路径 | 用途 |
 | --- | --- |
-| `README.md` | 项目首页与快速开始 |
-| `AGENTS.md` | 多智能体职责、模型路由与协作规则 |
-| `docs/governance/` | 工作流、数据契约、治理和部署说明 |
-| `config/` | 运行与自动化配置模板 |
-| `data_file/` | 本地 DuckDB 数据、报告、信号和运行证据，不提交 |
-| `log/`、`logs/` | 本地运行日志，不提交 |
-| `juejin_strategies/` | 本地 GM 策略文件，不提交 |
-| `tools/` | 校验、审计、切换和运维脚本 |
+| `config/` | 可版本化配置与工作流合同 |
+| `docs/governance/` | 工作流、数据合同和治理说明 |
+| `tools/` | 校验、治理与运维工具 |
+| `research/` | 活跃研究与归档研究 |
+| `legacy/` | 历史复现和兼容脚本 |
+| `strategy_library/` | 策略定义、归档和候选记录 |
 | `tests/` | 自动化测试 |
+| `data_file/` | 本地 DuckDB、报告、信号和运行证据，不提交 |
 
 ## 文档导航
 
-| 主题 | 文档 |
-| --- | --- |
-| L1-L8 增量工作流 | [latest-incremental-workflow-l1-l8.md](docs/governance/latest-incremental-workflow-l1-l8.md) |
-| 数据与路由契约 | [incremental-route-contract.md](docs/governance/incremental-route-contract.md) |
-| 多智能体与线程协作 | [thread-based-agent-management.md](docs/governance/thread-based-agent-management.md) |
-| 运行与模型治理 | [runtime-governance.md](docs/governance/runtime-governance.md) |
-| 源码目录与归档规则 | [source-layout-policy.md](docs/governance/source-layout-policy.md) |
-| 项目文档索引 | [project-doc-map.md](docs/governance/project-doc-map.md) |
+- [日常 L1-L8 增量工作流](docs/governance/latest-incremental-workflow-l1-l8.md)
+- [全量数据初始化工作流](docs/governance/full-history-initialization-workflow.md)
+- [增量路由合同](docs/governance/incremental-route-contract.md)
+- [线程制智能体管理](docs/governance/thread-based-agent-management.md)
+- [源码布局规则](docs/governance/source-layout-policy.md)
 
 ## 使用边界
 
-- `config.json`、`data_file/`、日志和本地 GM 策略均不提交到 Git。
-- 标准生产链路使用受控的 L1-L8 分层资产；历史兼容资产仅可在明确授权下使用。
-- 本项目用于研究和策略验证，不构成投资建议。真实交易前必须独立核验数据、成本、风控与执行条件。
+本项目用于研究与策略验证，不构成投资建议。真实交易前必须独立核验数据、成本、风险控制和执行条件。

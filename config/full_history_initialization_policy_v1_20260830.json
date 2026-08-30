@@ -1,0 +1,66 @@
+{
+  "config_id": "full_history_initialization_policy_v1_20260830",
+  "purpose": "Define the isolated, audited workflow for a new local installation or an explicitly approved full-history rebuild.",
+  "workflow_type": "full_history_initialization",
+  "activation": {
+    "requires_explicit_owner_authorization": true,
+    "requires_commander_run_plan": true,
+    "must_not_reuse_incremental_run_id_or_monitor": true
+  },
+  "stages": [
+    {
+      "id": "F0",
+      "owner": "commander-agent",
+      "scope": "preflight",
+      "requirements": [
+        "official_trade_calendar",
+        "Tushare_credentials",
+        "disk_and_memory_capacity",
+        "empty_or_explicitly_rebuildable_target_routes",
+        "immutable_run_plan"
+      ]
+    },
+    {
+      "id": "F1",
+      "owner": "data-ingestion-agent",
+      "scope": "full_history_l1_candidate",
+      "output": "staged_raw_parquet_and_split_duckdb",
+      "requirements": ["source_coverage", "no_BJ", "one_table_one_duckdb", "source_parquet_duckdb_reconciliation"]
+    },
+    {
+      "id": "F2",
+      "owner": "data-integration-agent",
+      "scope": "full_history_l2_candidate",
+      "output": "staged_stock_daily_data",
+      "requirements": ["raw_reconciliation", "explicit_qfq", "duplicate_free", "rollback_candidate"]
+    },
+    {
+      "id": "F3",
+      "owner": "factor-agent",
+      "scope": "full_history_l3_candidate",
+      "output": "staged_features_and_mature_labels",
+      "requirements": ["PIT_boundary", "separate_label_maturity", "no_future_columns", "writer_lease"]
+    },
+    {
+      "id": "F4",
+      "owner": "model-agent",
+      "scope": "optional_formal_prediction_replay",
+      "output": "staged_formal_predictions",
+      "requirements": ["immutable_approved_model", "formal_manifest_binding", "no_training_or_tuning"]
+    }
+  ],
+  "audit": {
+    "mode": "strict_stage_audit",
+    "required_before_each_active_cutover": true,
+    "required_reviews": ["audit-agent", "architect-agent"],
+    "failure_disposition": "quarantine_or_rollback"
+  },
+  "boundaries": {
+    "candidate_first": true,
+    "atomic_cutover_with_rollback": true,
+    "active_routes_unchanged_until_approved": true,
+    "l5_l6_l7_l8_automatic_progression": false,
+    "live_trade_or_external_publication": false,
+    "incremental_workflow_must_remain_target_date_only": true
+  }
+}
