@@ -60,6 +60,46 @@ $env:TUSHARE_TOKEN="your_token_here"
 copy config.example.json config.json
 ```
 
+## 本地部署与自检
+
+本项目不需要云服务器。完成环境安装和 Token 配置后，在项目根目录执行：
+
+```powershell
+cd D:\work\quant\quant_mcp\quant\main
+.\.venv\Scripts\python.exe tools\agent_governance_check.py
+.\.venv\Scripts\python.exe tools\standard_agent_architecture_check.py
+```
+
+两项检查通过后，即可按 L1-L8 工作流运行本地任务。Docker 仅用于本机可复现环境；当前没有 Docker Desktop 也不影响标准流水线。
+
+## Codex 多智能体配置
+
+在 Codex 桌面端打开工作区 `D:\work\quant\quant_mcp`，为下列角色各创建并置顶一个独立任务。任务之间只通过明确交接消息协作，不在其他角色任务中隐式代跑本角色工作。
+
+| 独立任务 | 角色入口 | 职责 |
+| --- | --- | --- |
+| 指挥官智能体 | `.codex/skills/commander-agent/SKILL.md` | 接收需求、显式分派、汇总状态与裁决下一步 |
+| 审计智能体 | `.codex/skills/audit-agent/SKILL.md` | 只读复核关键变更与交接结论 |
+| 架构师智能体 | `.codex/skills/architect-agent/SKILL.md` | 审查跨层设计、边界与例外 |
+| 数据接入智能体 | `.codex/skills/data-ingestion-agent/SKILL.md` | L1 官方数据接入与原始表质量 |
+| 数据整合智能体 | `.codex/skills/data-integration-agent/SKILL.md` | L2 市场底表、复权与回滚 |
+| 因子智能体 | `.codex/skills/factor-agent/SKILL.md` | L3 特征与标签 |
+| 模型智能体 | `.codex/skills/model-agent/SKILL.md` | L4 训练、预测与模型资产 |
+| 策略智能体 | `.codex/skills/strategy-agent/SKILL.md` | L5/L6 信号、组合与验证 |
+| 交易智能体 | `.codex/skills/trading-agent/SKILL.md` | L7 pending-only 交付与买入日门控 |
+| MCP 智能体 | `.codex/agent_packages/mcp-agent/` | L8 非执行治理登记 |
+| 投研智能体 | `.codex/skills/research-agent/SKILL.md` | 研究设计与外部事实整理 |
+
+向每个任务发送的首条配置消息可使用：
+
+```text
+你是 Quant Vibe 的【角色名称】。先读取对应角色入口及其 agent package；仅在本角色边界内工作。
+所有跨角色工作必须由指挥官在可见任务中显式分派；完成后只回传证据根、结论、唯一阻断和下一步。
+默认使用 TERRA，thinking=medium；只有前端明确指定模型时才覆盖。
+```
+
+协作规则：指挥官负责显式分派；审计只读复核；各专业角色不替代其他角色执行。日常标准批次按机器门禁运行，出现数据例外、代码或模型变更、路由变更、真实执行时再升级审计。
+
 ## 项目结构
 
 | 路径 | 用途 |
