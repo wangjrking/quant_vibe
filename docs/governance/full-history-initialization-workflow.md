@@ -28,4 +28,10 @@
 - 任一阶段失败必须 quarantine 或 rollback，禁止以局部缺口继续推进。
 - 模型训练、策略语义变更和真实交易均属于额外工作流，不能夹带在初始化中。
 
+## 与当前本地资产的关系
+
+当前 active L2、L3 feature 和正式预测资产可以覆盖长期历史；但 active L1 的部分辅助表是为日常增量保留的滚动窗口。这是正常的运行态设计，不能被视为全量原始数据铺底证明。
+
+因此全量初始化必须从官方源重新生成 F1 候选，再推进 F2-F4；不得以当前 active L1 的最早日期代替官方全历史覆盖证明。可使用 `tools/check_workflow_asset_alignment.py` 核对当前增量链路的目标日期对齐。
+
 机器可读合同见 [full_history_initialization_policy_v1_20260830.json](../../config/full_history_initialization_policy_v1_20260830.json)。

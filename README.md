@@ -55,6 +55,7 @@ copy config.example.json config.json
 D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\check_source_layout.py
 D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\agent_governance_check.py
 D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\standard_agent_architecture_check.py
+D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\check_workflow_asset_alignment.py
 ```
 
 ### 5. 首次全量数据初始化
