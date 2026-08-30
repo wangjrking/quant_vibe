@@ -12,7 +12,7 @@
     "market_db": "D:/work/quant/quant_mcp/quant/data_file/STOCK_DAILY_DATA.db"
   },
   "candidate_generation": {
-    "script": "D:/work/quant/quant_mcp/quant/main/research_formal_5d10d_gap_threshold_refine_20260622.py",
+    "script": "D:/work/quant/quant_mcp/quant/main/research/archive/root-scripts/research_formal_5d10d_gap_threshold_refine_20260622.py",
     "selected_candidate": "gap_t0p03_g1p08_b0p88",
     "rules": [
       {

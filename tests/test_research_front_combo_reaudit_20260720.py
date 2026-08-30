@@ -6,7 +6,13 @@ from pathlib import Path
 import pandas as pd
 
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "research_front_combo_reaudit_20260720.py"
+MODULE_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "research"
+    / "archive"
+    / "root-scripts"
+    / "research_front_combo_reaudit_20260720.py"
+)
 SPEC = importlib.util.spec_from_file_location("research_front_combo_reaudit_20260720", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 mod = importlib.util.module_from_spec(SPEC)

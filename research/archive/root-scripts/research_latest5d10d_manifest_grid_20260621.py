@@ -7,7 +7,12 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
+
+MAIN = Path(__file__).resolve().parents[3]
+if str(MAIN) not in sys.path:
+    sys.path.insert(0, str(MAIN))
 
 import research_10d_with_new5d_confirm_probe_20260621 as base
 from gm_signal_module import build_gm_signal_rows, load_market_rows_by_trade_date, write_gm_signals_csv
@@ -15,7 +20,7 @@ from research_list_age_current_best_probe_20260620 import JUEJIN_PYTHON, MAIN, M
 from selection_module import SelectionConfig
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[5]
 REPORT_DIR = (
     ROOT
     / "quant"

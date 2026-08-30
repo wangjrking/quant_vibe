@@ -7,12 +7,17 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
+
+MAIN = Path(__file__).resolve().parents[3]
+if str(MAIN) not in sys.path:
+    sys.path.insert(0, str(MAIN))
 
 from research_list_age_current_best_probe_20260620 import JUEJIN_PYTHON, MAIN, MARKET_DB, PRED_DB, STRATEGY_DIR, TABLE_10D
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[5]
 REPORT_ROOT_20260620 = ROOT / "quant" / "data_file" / "reports" / "strategy_agent_model_application_20260620"
 REPORT_ROOT_20260621 = ROOT / "quant" / "data_file" / "reports" / "strategy_agent_model_application_20260621"
 REPORT_DIR = REPORT_ROOT_20260621 / "robustness_5d10d_matrix_20260621"

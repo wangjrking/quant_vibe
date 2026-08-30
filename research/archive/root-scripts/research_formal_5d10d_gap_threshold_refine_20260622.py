@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from pathlib import Path
+
+MAIN = Path(__file__).resolve().parents[3]
+if str(MAIN) not in sys.path:
+    sys.path.insert(0, str(MAIN))
 
 import research_formal_5d10d_attribution_scale_refine_20260622 as base
 

@@ -7,9 +7,14 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
+
+MAIN = Path(__file__).resolve().parents[3]
+if str(MAIN) not in sys.path:
+    sys.path.insert(0, str(MAIN))
 
 import tune_strict_sync_liquidity_refill_20260624 as liq
 import validate_force_sell_pos56_candidate_20260624 as validator

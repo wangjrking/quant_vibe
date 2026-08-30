@@ -13,7 +13,7 @@ import pandas as pd
 import xgboost as xgb
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[5]
 MAIN = ROOT / "quant" / "main"
 DATA_DIR = ROOT / "quant" / "data_file"
 REPORT_DIR = DATA_DIR / "reports" / "model_agent_front_combo_reaudit_20260720"

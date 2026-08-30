@@ -3,8 +3,8 @@
   "strategy_id": "candidate_dynamic_h2m3_sl06dd0612_pos74_v20260624",
   "status": "production_candidate_pending_audit_not_published",
   "python_commands": [
-    ".venv\\Scripts\\python.exe quant\\main\\tune_dynamic_h2_m3_sl06_dd0612_position_20260624.py",
-    ".venv\\Scripts\\python.exe quant\\main\\validate_dynamic_h2_m3_sl06_dd0612_pos74_20260624.py"
+    ".venv\\Scripts\\python.exe quant\\main\\research\\archive\\root-scripts\\tune_dynamic_h2_m3_sl06_dd0612_position_20260624.py",
+    ".venv\\Scripts\\python.exe quant\\main\\research\\archive\\root-scripts\\validate_dynamic_h2_m3_sl06_dd0612_pos74_20260624.py"
   ],
   "juejin_strategy_dir": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_strategy_snapshot_20260624",
   "source_signal": "D:\\work\\quant\\quant_mcp\\quant\\data_file\\reports\\strategy_agent_goal_high_annual_20260623\\top1_no_delist_rerun_20260624\\diversification_tune_20260624\\strict_sync_liquidity_neighborhood_20260624\\formal_horizon_entry_confirmation_20260624\\dynamic_h2_m3_sl06_dd0612_position_20260624\\signals\\sl06_dd0612_pos74.csv",
