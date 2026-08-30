@@ -1,50 +1,12 @@
-# research archive 目录
+# 历史研究脚本归档
 
-本目录用于保存不再作为 `quant/main` 主干入口，但仍有研究证据、复现或 provenance 价值的研究脚本。
+本目录保存从 `quant/main` 根目录迁入的历史研究脚本。它们用于记录过去的候选、诊断和一次性实验，不属于当前 L1-L8 正式工作流，也不会被默认调度。
 
-## 归档原则
+## 使用边界
 
-- 归档脚本不得作为当前标准研究入口默认调用。
-- 归档前必须完成路径级引用扫描。
-- 与 production / exploration / code_snapshot / research queue 有关的脚本，必须保留分组语义和证据链接。
-- 归档动作必须记录原路径、目标路径、责任智能体、原因和批次。
+- 当前正式入口以 `WORKFLOW.md`、`workflows/` 与 `docs/governance/` 为准。
+- 新研究代码应放在 `research/` 的明确专题目录，不要重新堆放到项目根目录。
+- 归档脚本保留源代码与 Git 历史，若需要复现，先确认其数据版本、依赖和当时的审计上下文；不能据此修改生产资产。
+- 少数仍被测试、正式归档或历史复现记录直接引用的脚本暂留在根目录，待对应证据链自然退役后再单独迁移。
 
-## 推荐子目录
-
-| 子目录 | 用途 |
-| --- | --- |
-| `formal_5d10d/` | formal 5D/10D 研究家族和策略库复现证据 |
-| `formal_l4/` | formal L4、latest formal、formal state 相关研究家族 |
-| `diagnostics_20260620_20260621/` | 早期诊断、确认、探针和锚点研究脚本 |
-| `active_research_provenance/` | 当前仍与 research-only 候选 provenance 有关的脚本 |
-| `strategy_oneoff/` | 已完成且不再作为入口的一次性策略研究脚本 |
-
-## 必要 manifest 字段
-
-实际迁移前必须建立 manifest，至少包含：
-
-```json
-{
-  "actor": "commander-agent",
-  "batch_id": "YYYYMMDDTHHMMSSZ",
-  "group_name": "formal_5d10d",
-  "reason": "历史研究归档证据链",
-  "family_rule": "research_formal_5d10d_*.py",
-  "family_members": [],
-  "moves": [
-    {
-      "original_path": "quant/main/example.py",
-      "archived_path": "quant/main/research/archive/formal_5d10d/example.py",
-      "evidence_links": [],
-      "still_referenced_by": []
-    }
-  ],
-  "approval_scope": "审计复核后执行"
-}
-```
-
-## 禁止事项
-
-- 不得把当前标准入口移动到本目录。
-- 不得用 archive 替代正式 manifest 或策略归档。
-- 不得在未建立 manifest 的情况下批量移动脚本。
+本次迁移清单由版本控制记录；根目录研究脚本数量由 790 个收敛至 6 个受保护入口。

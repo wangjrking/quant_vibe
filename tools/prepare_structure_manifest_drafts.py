@@ -27,7 +27,18 @@ def write_json(path: Path, data: object) -> None:
 
 def find_files(root: Path, predicates: Iterable[tuple[str, callable]]) -> dict[str, list[str]]:
     main_dir = root / "quant" / "main"
-    file_names = sorted(path.name for path in main_dir.glob("research_*.py"))
+    # Historical research scripts are intentionally archived outside the root.
+    # Include both locations so governance drafts remain complete during and
+    # after the root-directory cleanup.
+    research_dirs = (main_dir, main_dir / "research" / "archive" / "root-scripts")
+    file_names = sorted(
+        {
+            path.name
+            for directory in research_dirs
+            if directory.exists()
+            for path in directory.glob("research_*.py")
+        }
+    )
     result: dict[str, list[str]] = {}
     for group_name, predicate in predicates:
         result[group_name] = [name for name in file_names if predicate(name)]

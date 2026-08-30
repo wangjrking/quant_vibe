@@ -21,6 +21,7 @@ logs/
 
 # Generated strategy and research artifacts. Source code, manifests and docs
 # remain versioned; local score databases, signals and backtest outputs do not.
+.pytest-reorg/
 strategy_library/**/backtests/
 strategy_library/**/experiments/
 strategy_library/**/inputs/*.duckdb
