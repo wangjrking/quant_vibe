@@ -1,0 +1,50 @@
+{
+  "policy_id": "source_layout_policy_v1_20260830",
+  "scope": "quant/main source tree",
+  "root_python_file_limit": 220,
+  "required_root_entrypoints": [
+    "run_all_a_raw_update.py",
+    "integrate_l2_latest_and_recompute_qfq.py",
+    "deliver_l3_target_date_duckdb_mainline.py",
+    "incremental_formal_l4_duckdb_mainline.py",
+    "run_production_tasks.py",
+    "build_l7_delivery_package.py"
+  ],
+  "required_directories": [
+    "core",
+    "tools",
+    "workflows",
+    "config",
+    "docs",
+    "research",
+    "research/active/model",
+    "research/archive/root-scripts",
+    "legacy",
+    "legacy/dated-scripts",
+    "tests",
+    "strategy_library"
+  ],
+  "allowed_root_dated_python": [
+    "research_5d10d_robustness_matrix_20260621.py",
+    "research_active_l4_v258_position_warmup_v260_20260723.py",
+    "research_core10d_risk_sharpe_refine_20260622.py",
+    "research_formal_5d10d_gap_threshold_refine_20260622.py",
+    "research_front_combo_reaudit_20260720.py",
+    "research_latest5d10d_manifest_grid_20260621.py",
+    "tune_dynamic_h2_m3_sl06_dd0612_position_20260624.py",
+    "validate_dynamic_h2_m3_sl06_dd0612_pos74_20260624.py",
+    "validate_dynamic_h2_m3_sl06_dd0612_pos76_20260624.py"
+  ],
+  "root_research_prefix_exception_only": true,
+  "new_file_placement": {
+    "shared_production_code": "core/<domain>/",
+    "standard_workflow_contract": "workflows/",
+    "administrative_or_validation_tool": "tools/",
+    "active_research": "research/<topic>/",
+    "historical_research": "research/archive/",
+    "dated_one_off_or_legacy_reproduction": "legacy/dated-scripts/",
+    "unit_or_integration_test": "tests/",
+    "runtime_evidence_or_generated_data": "quant/data_file/runtime/ or quant/data_file/reports/ and never source root"
+  },
+  "enforcement": "fail_closed_in_check_source_layout"
+}

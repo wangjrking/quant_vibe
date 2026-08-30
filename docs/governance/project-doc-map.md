@@ -37,9 +37,10 @@
 | `.codex/agents/` | 角色卡、通信协议、专项协作规范 | 智能体启动层 |
 | `.codex/skills/` | 平台 AGENT 入口 | 只放智能体路由和触发描述 |
 | `.codex/agent_packages/` | 智能体完整文档包 | 职责、技能、权限、流程、工具、日志、交接 |
-| `quant/main/docs/governance/` | 项目治理文档 | 架构、资产、技能、文档、GitHub、云中台 |
+| `quant/main/docs/governance/` | 项目治理文档 | 架构、资产、技能、文档、GitHub 与本地运行治理 |
 | `quant/main/docs/governance/project-structure-guide.md` | 项目目录导航 | 说明阅读顺序和主要目录定位 |
 | `quant/main/docs/governance/project-structure-reorganization.md` | 项目结构整理方案 | 说明 Keep / Move / Archive / Move to recycle bin 规则 |
+| `quant/main/docs/governance/source-layout-policy.md` | 源码布局规则 | 说明根目录准入、唯一落点和自动门禁 |
 | `quant/main/docs/governance/runtime-governance.md` | runtime 目录治理规则 | 说明运行态目录保留、归档和回收规则 |
 | `quant/main/docs/governance/duckdb-materialization-readiness.md` | DuckDB 真实物化前准备规范 | 定义真实物化前送审包、证据字段、责任归口和审批边界 |
 | `quant/main/docs/governance/mcp-asset-gateway-platform.md` | MCP 资产网关中台方案 | 当前 L8 MCP 资产发布层主线，说明 PostgreSQL、MinIO/对象存储、MCP gateway、发布资产、权限和审计边界 |
@@ -59,7 +60,7 @@
 | 平台触发描述 | `.codex/skills/<agent-id>/SKILL.md` |
 | 跨线程通信和回执模板 | `.codex/agents/communication-layer.md` |
 | 线程制智能体管理、线程注册表和自动化绑定规则 | `quant/main/docs/governance/thread-based-agent-management.md` |
-| 项目目录导航、结构整理、根目录瘦身和 runtime 留痕治理 | `quant/main/docs/governance/project-structure-guide.md`、`quant/main/docs/governance/project-structure-reorganization.md`、`quant/main/docs/governance/runtime-governance.md` |
+| 项目目录导航、结构整理、根目录瘦身、源码布局和 runtime 留痕治理 | `quant/main/docs/governance/project-structure-guide.md`、`quant/main/docs/governance/project-structure-reorganization.md`、`quant/main/docs/governance/source-layout-policy.md`、`quant/main/docs/governance/runtime-governance.md` |
 | 正式资产和实验资产边界 | `quant/main/docs/governance/standard-agent-architecture.md`、资产 registry |
 | Markdown 文档治理 | `quant/main/docs/governance/markdown-document-registry.md` |
 | 旧规则快照 | `quant/main/docs/governance/history/` |

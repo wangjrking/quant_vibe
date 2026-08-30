@@ -81,7 +81,7 @@ DuckDB 切换硬规则：未通过 DuckDB 迁移审计前，不得把 DuckDB 产
 | --- | --- |
 | 跨智能体协作、线程发送、回执闭环 | `.codex/agents/communication-layer.md` |
 | 线程制智能体管理、线程注册表字段、线程生命周期 | `quant/main/docs/governance/thread-based-agent-management.md` |
-| 项目目录导航、结构整理、根目录瘦身、runtime 治理 | `quant/main/docs/governance/project-structure-guide.md`、`quant/main/docs/governance/project-structure-reorganization.md`、`quant/main/docs/governance/runtime-governance.md` |
+| 项目目录导航、结构整理、根目录瘦身、源码布局、runtime 治理 | `quant/main/docs/governance/project-structure-guide.md`、`quant/main/docs/governance/project-structure-reorganization.md`、`quant/main/docs/governance/source-layout-policy.md`、`quant/main/docs/governance/runtime-governance.md` |
 | 全体智能体通用硬规则 | `.codex/agent_packages/common-rules.md` |
 | 智能体完整职责、技能、权限、工具、日志、监控 | `.codex/agent_packages/<agent-id>/` |
 | 工作流定义和指挥官调度 | `WORKFLOW.md`、`.codex/agent_packages/commander-agent/workflows.md` |

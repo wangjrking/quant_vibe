@@ -122,6 +122,7 @@ cd D:\work\quant\quant_mcp\quant\main
 | 数据与路由契约 | [incremental-route-contract.md](docs/governance/incremental-route-contract.md) |
 | 多智能体与线程协作 | [thread-based-agent-management.md](docs/governance/thread-based-agent-management.md) |
 | 运行与模型治理 | [runtime-governance.md](docs/governance/runtime-governance.md) |
+| 源码目录与归档规则 | [source-layout-policy.md](docs/governance/source-layout-policy.md) |
 | 项目文档索引 | [project-doc-map.md](docs/governance/project-doc-map.md) |
 
 ## 使用边界

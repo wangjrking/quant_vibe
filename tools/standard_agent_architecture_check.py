@@ -12,6 +12,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+try:
+    from .check_source_layout import run_check as run_source_layout_check
+except ImportError:  # Direct execution from the tools directory.
+    from check_source_layout import run_check as run_source_layout_check
+
 
 AGENTS = [
     "commander-agent",
@@ -206,6 +211,9 @@ def check_governance_docs(root: Path, errors: list[str]) -> None:
         root / "quant" / "main" / "docs" / "governance" / "project-doc-map.md",
         root / "quant" / "main" / "docs" / "governance" / "skill-system.md",
         root / "quant" / "main" / "docs" / "governance" / "markdown-document-registry.md",
+        root / "quant" / "main" / "docs" / "governance" / "source-layout-policy.md",
+        root / "quant" / "main" / "config" / "source_layout_policy_v1.json",
+        root / "quant" / "main" / "tools" / "check_source_layout.py",
         root / "quant" / "main" / "tools" / "production_asset_gate.py",
         root / "quant" / "main" / "core" / "README.md",
         root / "quant" / "main" / "workflows" / "README.md",
@@ -218,12 +226,17 @@ def check_governance_docs(root: Path, errors: list[str]) -> None:
             errors.append(f"missing governance doc: {path}")
 
 
+def check_source_layout(root: Path, errors: list[str]) -> None:
+    errors.extend(run_source_layout_check(root))
+
+
 def run_check(root: Path) -> list[str]:
     errors: list[str] = []
     check_governance_docs(root, errors)
     check_agent_packages(root, errors)
     check_asset_registry(root, errors)
     check_workflow_monitor(root, errors)
+    check_source_layout(root, errors)
     return errors
 
 
