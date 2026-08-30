@@ -77,10 +77,6 @@ L3_MUTATION_ENTRY_REGISTRY: dict[str, dict[str, Any]] = {
         "mutation_scope": "single production registry change",
         "active_write_policy": "shared_writer_lease_required",
     },
-    "probe_l3_short_lived_scheduler.py": {
-        "policy": "readonly_observer",
-        "mutation_scope": "non-production L3 memory probe",
-    },
     "production_asset_gate.py": {
         "policy": "readonly_observer",
         "mutation_scope": "production registry validation",

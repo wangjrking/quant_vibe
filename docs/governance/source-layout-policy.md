@@ -33,7 +33,7 @@ quant/main/
 2. 被多个标准入口导入、尚未完成包化迁移的共享模块。
 3. 被测试、策略归档、复现清单或正式配置按原路径直接引用的受保护历史文件。
 
-根目录 Python 文件上限为 **220**。带完整日期的 Python 文件默认不得新增到根目录；现有例外必须登记在 `config/source_layout_policy_v1.json`。任何新增例外都需要在同一变更中说明引用方与退役计划。
+根目录 Python 文件上限为 **180**。带完整日期的 Python 文件默认不得新增到根目录；现有例外必须登记在 `config/source_layout_policy_v1.json`。任何新增例外都需要在同一变更中说明引用方与退役计划。
 
 ## 新文件唯一落点
 
@@ -88,4 +88,4 @@ D:\work\quant\quant_mcp\.venv\Scripts\python.exe tools\check_source_layout.py
 
 ## 当前状态
 
-2026-08-30 整理后，根目录有 194 个 Python 文件；历史研究脚本位于 `research/archive/root-scripts/`，带日期的一次性脚本位于 `legacy/dated-scripts/`。此状态是后续新增代码的基线，而不是再次堆积脚本的许可。
+2026-08-30 清理后，根目录有 178 个 Python 文件；历史研究脚本位于 `research/archive/root-scripts/`，带日期的一次性脚本位于 `legacy/dated-scripts/`。旧 L3 候选、探针和一次性排障脚本已从工作树移除，可通过 Git 历史追溯。此状态是后续新增代码的基线，而不是再次堆积脚本的许可。

@@ -18,7 +18,7 @@
 - L7：`build_l7_delivery_package.py`
 - L8：`workflow_monitor_manage.py`
 
-以下入口不得出现在本路由中：`rebuild_l2_stock_daily_duckdb_mainline.py`、`rebuild_l3_full_duckdb_mainline.py`、`rebuild_l3_memory_bounded_v2_candidate.py`、`refresh_l3_active_duckdb_full_delivery.py`、`rebuild_factor_data_batched.py`、`gtja_alpha_workflow.py`。
+以下入口不得出现在本路由中：`rebuild_l2_stock_daily_duckdb_mainline.py`、`rebuild_l3_full_duckdb_mainline.py`、`refresh_l3_active_duckdb_full_delivery.py`、`rebuild_factor_data_batched.py`、`gtja_alpha_workflow.py`。
 
 ## 启动门
 

@@ -20,7 +20,6 @@ FORBIDDEN_INCREMENTAL_ENTRYPOINTS = frozenset(
     {
         "rebuild_l2_stock_daily_duckdb_mainline.py",
         "rebuild_l3_full_duckdb_mainline.py",
-        "rebuild_l3_memory_bounded_v2_candidate.py",
         "refresh_l3_active_duckdb_full_delivery.py",
         "rebuild_factor_data_batched.py",
         "gtja_alpha_workflow.py",
