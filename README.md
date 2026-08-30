@@ -16,6 +16,37 @@ Quant Vibe 是面向 A 股的多因子研究与信号生成项目，覆盖原始
 
 `quant/data_file/stock_factor_data.parquet`、`quant/data_file/production_factor_parts/`、`quant/data_file/prediction_label_parts/`、`quant/data_file/standard_factor_by_date_parts/`、`quant/data_file/standard_factor_by_date_parts_fast40/` 与 `quant/data_file/odb.db::stock_predict_data_*` 均为历史兼容、回滚或审计资产，不能作为默认训练或预测输入。模型侧如需使用旧链路，必须显式设置 `QUANT_ALLOW_LEGACY_MODEL_ASSET_CHAIN=1`。
 
+## 技术架构
+
+```mermaid
+flowchart LR
+    TS["Tushare 官方数据"] --> L1["L1 原始数据\n一表一 DuckDB"]
+    L1 --> L2["L2 市场底表\n复权与质量校验"]
+    L2 --> L3["L3 特征与标签\n目标日增量"]
+    L3 --> L4["L4 四期限模型\n1D / 3D / 5D / 10D"]
+    L4 --> L5["L5 策略信号\n组合构建"]
+    L5 --> L6["L6 信号校验\n买入日门控"]
+    L6 --> L7["L7 交易交付\nPending-only"]
+    L7 --> L8["L8 治理登记\n非执行态"]
+
+    L1 -. "原始数据与报告" .-> DATA[("data_file/")]
+    L2 -. "正式资产" .-> DATA
+    L3 -. "正式资产" .-> DATA
+    L4 -. "预测资产" .-> DATA
+    L5 -. "信号与审计证据" .-> DATA
+
+    CFG["config.json / 环境变量"] --> L1
+    CFG --> L4
+    CFG --> L5
+    AUDIT["机器门禁与审计"] -. "质量、血缘、回滚" .-> L1
+    AUDIT -.-> L2
+    AUDIT -.-> L3
+    AUDIT -.-> L4
+    AUDIT -.-> L5
+```
+
+日常流程在本机 Python 与 DuckDB 上运行；Docker 仅是可选的可复现部署方式，并非当前流水线依赖。
+
 ## 快速开始
 
 ### 1. 打开本地项目
@@ -53,16 +84,6 @@ $env:TUSHARE_TOKEN="your_token_here"
 ```powershell
 copy config.example.json config.json
 ```
-
-默认目录：
-
-| 项目 | 默认路径 |
-| --- | --- |
-| 配置 | `config.json` |
-| 数据 | `data_file/` |
-| 日志 | `log/`、`logs/` |
-| 报告 | `data_file/reports/` |
-| GM 策略 | `juejin_strategies/` |
 
 如需覆盖数据目录：
 
@@ -207,18 +228,25 @@ GM 相关脚本默认读取 `juejin_strategies/` 下的相对路径。请将自�
 
 | 路径 | 用途 |
 | --- | --- |
+| `README.md` | 项目说明、技术架构和本地运行入口 |
+| `AGENTS.md` | 多智能体职责、模型路由和治理约束 |
+| `WORKFLOW.md` | L1 到 L8 的标准工作流 |
 | `project_paths.py` | 集中的路径与配置解析器 |
 | `config.json` | 本地默认配置，可通过环境变量提供 Token |
 | `config.example.json` | 可共享配置模板 |
+| `config/` | 生产任务、模型与运行策略配置 |
 | `Dockerfile` | 可复现运行镜像 |
 | `docker-compose.yml` | 挂载数据/日志目录的本地容器入口 |
 | `.dockerignore` | 排除 Docker 构建上下文中的数据、缓存和 Git 文件 |
+| `deploy/` | 可选的云中心和 MCP 容器部署方案 |
 | `config/production_tasks.example.json` | 已登记生产策略的自动化配置示例 |
 | `run_production_tasks.py` | 运行已登记生产策略的自动化任务 |
 | `install_production_scheduled_task.ps1` | 安装 Windows 每日 24:00 生产自动化任务 |
-| `data_file/` | 本地数据、SQLite、信号和报告，不提交 |
+| `data_file/` | 本地 DuckDB 数据、信号、报告和运行证据，不提交 |
 | `log/`、`logs/` | 运行日志，不提交 |
 | `juejin_strategies/` | 本地 GM 策略，不提交 |
+| `docs/` | 架构、治理与部署文档 |
+| `tools/` | 校验、切换、审计和运维脚本 |
 | `tests/` | 单元测试 |
 
 ## 说明
